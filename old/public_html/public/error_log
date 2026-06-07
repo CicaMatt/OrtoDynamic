@@ -1,0 +1,80 @@
+[01-Apr-2026 10:48:40 Europe/Rome] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/generaPdf.php on line 42
+[01-Apr-2026 10:48:40 Europe/Rome] PHP Deprecated:  Function get_magic_quotes_runtime() is deprecated in /home2/wqortody/public_html/public/fpdf.php on line 2085
+[01-Apr-2026 10:48:40 Europe/Rome] PHP Deprecated:  The each() function is deprecated. This message will be suppressed on further calls in /home2/wqortody/public_html/public/fpdi.php on line 1147
+[01-Apr-2026 10:48:40 Europe/Rome] PHP Fatal error:  Uncaught Exception: FPDF error: Some data has already been output, can't send PDF file (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/fpdf.php:541
+Stack trace:
+#0 /home2/wqortody/public_html/public/fpdf.php(2103): FPDF->Error('Some data has a...')
+#1 /home2/wqortody/public_html/public/fpdf.php(1997): FPDF->_checkoutput()
+#2 /home2/wqortody/public_html/public/generaPdf.php(334): FPDF->Output('I', './uploads/userf...')
+#3 {main}
+  thrown in /home2/wqortody/public_html/public/fpdf.php on line 541
+[01-Apr-2026 10:48:51 Europe/Rome] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/generaPdf.php on line 42
+[01-Apr-2026 10:48:51 Europe/Rome] PHP Deprecated:  Function get_magic_quotes_runtime() is deprecated in /home2/wqortody/public_html/public/fpdf.php on line 2085
+[01-Apr-2026 10:48:51 Europe/Rome] PHP Deprecated:  The each() function is deprecated. This message will be suppressed on further calls in /home2/wqortody/public_html/public/fpdi.php on line 1147
+[01-Apr-2026 10:48:51 Europe/Rome] PHP Fatal error:  Uncaught Exception: FPDF error: Some data has already been output, can't send PDF file (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/fpdf.php:541
+Stack trace:
+#0 /home2/wqortody/public_html/public/fpdf.php(2103): FPDF->Error('Some data has a...')
+#1 /home2/wqortody/public_html/public/fpdf.php(1997): FPDF->_checkoutput()
+#2 /home2/wqortody/public_html/public/generaPdf.php(334): FPDF->Output('I', './uploads/userf...')
+#3 {main}
+  thrown in /home2/wqortody/public_html/public/fpdf.php on line 541
+[01-Apr-2026 10:49:17 Europe/Rome] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/generaPdf.php on line 42
+[01-Apr-2026 10:49:17 Europe/Rome] PHP Deprecated:  Function get_magic_quotes_runtime() is deprecated in /home2/wqortody/public_html/public/fpdf.php on line 2085
+[01-Apr-2026 10:49:17 Europe/Rome] PHP Deprecated:  The each() function is deprecated. This message will be suppressed on further calls in /home2/wqortody/public_html/public/fpdi.php on line 1147
+[01-Apr-2026 10:49:17 Europe/Rome] PHP Fatal error:  Uncaught Exception: FPDF error: Some data has already been output, can't send PDF file (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/fpdf.php:541
+Stack trace:
+#0 /home2/wqortody/public_html/public/fpdf.php(2103): FPDF->Error('Some data has a...')
+#1 /home2/wqortody/public_html/public/fpdf.php(1997): FPDF->_checkoutput()
+#2 /home2/wqortody/public_html/public/generaPdf.php(334): FPDF->Output('I', './uploads/userf...')
+#3 {main}
+  thrown in /home2/wqortody/public_html/public/fpdf.php on line 541
+[01-Apr-2026 10:49:51 Europe/Rome] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/generaPdf.php on line 42
+[01-Apr-2026 10:49:51 Europe/Rome] PHP Deprecated:  Function get_magic_quotes_runtime() is deprecated in /home2/wqortody/public_html/public/fpdf.php on line 2085
+[01-Apr-2026 10:49:51 Europe/Rome] PHP Deprecated:  The each() function is deprecated. This message will be suppressed on further calls in /home2/wqortody/public_html/public/fpdi.php on line 1147
+[01-Apr-2026 10:49:51 Europe/Rome] PHP Fatal error:  Uncaught Exception: FPDF error: Some data has already been output, can't send PDF file (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/fpdf.php:541
+Stack trace:
+#0 /home2/wqortody/public_html/public/fpdf.php(2103): FPDF->Error('Some data has a...')
+#1 /home2/wqortody/public_html/public/fpdf.php(1997): FPDF->_checkoutput()
+#2 /home2/wqortody/public_html/public/generaPdf.php(334): FPDF->Output('I', './uploads/userf...')
+#3 {main}
+  thrown in /home2/wqortody/public_html/public/fpdf.php on line 541
+[01-Apr-2026 10:50:41 Europe/Rome] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/generaPdf.php on line 42
+[01-Apr-2026 10:50:41 Europe/Rome] PHP Deprecated:  Function get_magic_quotes_runtime() is deprecated in /home2/wqortody/public_html/public/fpdf.php on line 2085
+[01-Apr-2026 10:50:41 Europe/Rome] PHP Deprecated:  The each() function is deprecated. This message will be suppressed on further calls in /home2/wqortody/public_html/public/fpdi.php on line 1147
+[01-Apr-2026 10:50:41 Europe/Rome] PHP Fatal error:  Uncaught Exception: FPDF error: Some data has already been output, can't send PDF file (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/fpdf.php:541
+Stack trace:
+#0 /home2/wqortody/public_html/public/fpdf.php(2103): FPDF->Error('Some data has a...')
+#1 /home2/wqortody/public_html/public/fpdf.php(1997): FPDF->_checkoutput()
+#2 /home2/wqortody/public_html/public/generaPdf.php(334): FPDF->Output('I', './uploads/userf...')
+#3 {main}
+  thrown in /home2/wqortody/public_html/public/fpdf.php on line 541
+[01-Apr-2026 10:54:04 Europe/Rome] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/generaPdf.php on line 42
+[01-Apr-2026 10:54:04 Europe/Rome] PHP Deprecated:  Function get_magic_quotes_runtime() is deprecated in /home2/wqortody/public_html/public/fpdf.php on line 2085
+[01-Apr-2026 10:54:04 Europe/Rome] PHP Deprecated:  The each() function is deprecated. This message will be suppressed on further calls in /home2/wqortody/public_html/public/fpdi.php on line 1147
+[01-Apr-2026 10:54:04 Europe/Rome] PHP Fatal error:  Uncaught Exception: FPDF error: Some data has already been output, can't send PDF file (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/fpdf.php:541
+Stack trace:
+#0 /home2/wqortody/public_html/public/fpdf.php(2103): FPDF->Error('Some data has a...')
+#1 /home2/wqortody/public_html/public/fpdf.php(1997): FPDF->_checkoutput()
+#2 /home2/wqortody/public_html/public/generaPdf.php(334): FPDF->Output('I', './uploads/userf...')
+#3 {main}
+  thrown in /home2/wqortody/public_html/public/fpdf.php on line 541
+[01-Apr-2026 11:20:23 Europe/Rome] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/generaPdf.php on line 42
+[01-Apr-2026 11:20:23 Europe/Rome] PHP Deprecated:  Function get_magic_quotes_runtime() is deprecated in /home2/wqortody/public_html/public/fpdf.php on line 2085
+[01-Apr-2026 11:20:23 Europe/Rome] PHP Deprecated:  The each() function is deprecated. This message will be suppressed on further calls in /home2/wqortody/public_html/public/fpdi.php on line 1147
+[01-Apr-2026 11:20:23 Europe/Rome] PHP Fatal error:  Uncaught Exception: FPDF error: Some data has already been output, can't send PDF file (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/fpdf.php:541
+Stack trace:
+#0 /home2/wqortody/public_html/public/fpdf.php(2103): FPDF->Error('Some data has a...')
+#1 /home2/wqortody/public_html/public/fpdf.php(1997): FPDF->_checkoutput()
+#2 /home2/wqortody/public_html/public/generaPdf.php(334): FPDF->Output('I', './uploads/userf...')
+#3 {main}
+  thrown in /home2/wqortody/public_html/public/fpdf.php on line 541
+[01-Apr-2026 11:21:07 Europe/Rome] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/generaPdf.php on line 42
+[01-Apr-2026 11:21:07 Europe/Rome] PHP Deprecated:  Function get_magic_quotes_runtime() is deprecated in /home2/wqortody/public_html/public/fpdf.php on line 2085
+[01-Apr-2026 11:21:07 Europe/Rome] PHP Deprecated:  The each() function is deprecated. This message will be suppressed on further calls in /home2/wqortody/public_html/public/fpdi.php on line 1147
+[01-Apr-2026 11:21:07 Europe/Rome] PHP Fatal error:  Uncaught Exception: FPDF error: Some data has already been output, can't send PDF file (output started at /home2/wqortody/public_html/public/fpdf.php:3796) in /home2/wqortody/public_html/public/fpdf.php:541
+Stack trace:
+#0 /home2/wqortody/public_html/public/fpdf.php(2103): FPDF->Error('Some data has a...')
+#1 /home2/wqortody/public_html/public/fpdf.php(1997): FPDF->_checkoutput()
+#2 /home2/wqortody/public_html/public/generaPdf.php(334): FPDF->Output('I', './uploads/userf...')
+#3 {main}
+  thrown in /home2/wqortody/public_html/public/fpdf.php on line 541

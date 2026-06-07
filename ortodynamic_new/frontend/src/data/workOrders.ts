@@ -1,0 +1,60 @@
+import type { WorkOrder } from '../types';
+
+export const workOrders: WorkOrder[] = [
+  {
+    id: 'LAV-1001',
+    patient: 'Mario Rossi',
+    technician: 'Dott. Bianchi',
+    device: 'Plantare su misura',
+    deadline: '12/10/2023',
+    status: 'IN LAVORAZIONE',
+  },
+  {
+    id: 'LAV-1002',
+    patient: 'Laura Neri',
+    technician: 'Dott. Verdi',
+    device: 'Busto ortopedico',
+    deadline: '15/10/2023',
+    status: 'TERMINATO',
+  },
+  {
+    id: 'LAV-1003',
+    patient: 'Giuseppe Verdi',
+    technician: 'Dott. Colombo',
+    device: 'Tutore ginocchio',
+    deadline: '18/10/2023',
+    status: 'IN ATTESA',
+  },
+  {
+    id: 'LAV-1004',
+    patient: 'Anna Gialli',
+    technician: 'Dott. Bianchi',
+    device: 'Scarpe ortopediche',
+    deadline: '20/10/2023',
+    status: 'IN LAVORAZIONE',
+  },
+  {
+    id: 'LAV-1005',
+    patient: 'Marco Bruni',
+    technician: 'Dott. Verdi',
+    device: 'Plantare sportivo',
+    deadline: '22/10/2023',
+    status: 'TERMINATO',
+  },
+  {
+    id: 'LAV-1006',
+    patient: 'Elena Conti',
+    technician: 'Dott. Colombo',
+    device: 'Corsetto',
+    deadline: '25/10/2023',
+    status: 'IN ATTESA',
+  },
+  {
+    id: 'LAV-1007',
+    patient: 'Luca Ricci',
+    technician: 'Dott. Bianchi',
+    device: 'Tutore caviglia',
+    deadline: '28/10/2023',
+    status: 'IN LAVORAZIONE',
+  },
+];

@@ -1,0 +1,278 @@
+<?php namespace App\Http\Controllers;
+
+use App\Models\Preventivi;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Validator, Input, Redirect ; 
+
+
+class PreventiviController extends Controller {
+
+	protected $layout = "layouts.main";
+	protected $data = array();	
+	public $module = 'preventivi';
+	static $per_page	= '10';
+
+	public function __construct()
+	{		
+		parent::__construct();
+		$this->model = new Preventivi();	
+		$this->modelview = new  \App\Models\Prodottipreventivi();
+		$this->info = $this->model->makeInfo( $this->module);	
+		$this->data = array(
+			'pageTitle'	=> 	$this->info['title'],
+			'pageNote'	=>  $this->info['note'],
+			'pageModule'=> 'preventivi',
+			'return'	=> self::returnUrl()
+			
+		);
+		$this->data['subgrid']	= (isset($this->info['config']['subgrid']) ? $this->info['config']['subgrid'][0] : array()); 
+	}
+
+	public function index( Request $request )
+	{
+		// Make Sure users Logged 
+		if(!\Auth::check()) 
+			return redirect('user/login')->with('status', 'error')->with('message','You are not login');
+		$this->grab( $request) ;
+		if($this->access['is_view'] ==0) 
+			return redirect('dashboard')->with('message', __('core.note_restric'))->with('status','error');				
+		// Render into template
+		return view( $this->module.'.index',$this->data);
+	}	
+
+	function create( Request $request , $id =0 ) 
+	{
+		$this->hook( $request  );
+		if($this->access['is_add'] ==0) 
+			return redirect('dashboard')->with('message', __('core.note_restric'))->with('status','error');
+
+		$this->data['row'] = $this->model->getColumnTable( $this->info['table']); 
+		
+	 	$relation_key = $this->modelview->makeInfo($this->info['config']['subform']['module']);
+	 	$this->data['accesschild'] = $this->modelview->validAccess($relation_key['id'] , session('gid'));	
+	 	$this->data['relation_key'] = $relation_key['key'];
+	 	$this->data['subform'] = $this->detailview($this->modelview ,  $this->info['config']['subform'] ,$id );
+		$this->data['id'] = '';
+		return view($this->module.'.form',$this->data);
+	}
+	function edit( Request $request , $id ) 
+	{
+		$this->hook( $request , $id );
+		if(!isset($this->data['row']))
+			return redirect($this->module)->with('message','Record Not Found !')->with('status','error');
+		if($this->access['is_edit'] ==0 )
+			return redirect('dashboard')->with('message',__('core.note_restric'))->with('status','error');
+		$this->data['row'] = (array) $this->data['row'];
+		
+	 	$relation_key = $this->modelview->makeInfo($this->info['config']['subform']['module']);
+	 	$this->data['accesschild'] = $this->modelview->validAccess($relation_key['id'] , session('gid'));	
+	 	$this->data['relation_key'] = $relation_key['key'];
+	 	$this->data['subform'] = $this->detailview($this->modelview ,  $this->info['config']['subform'] ,$id );
+		$this->data['id'] = $id;
+		return view($this->module.'.form',$this->data);
+	}	
+	function show( Request $request , $id ) 
+	{
+		/* Handle import , export and view */
+		$task =$id ;
+		switch( $task)
+		{
+			case 'search':
+				return $this->getSearch();
+				break;
+			case 'lookup':
+				return $this->getLookup($request );
+				break;
+			case 'comboselect':
+				return $this->getComboselect( $request );
+				break;
+			case 'import':
+				return $this->getImport( $request );
+				break;
+			case 'export':
+				return $this->getExport( $request );
+				break;
+			default:
+				$this->hook( $request , $id );
+				if(!isset($this->data['row']))
+					return redirect($this->module)->with('message','Record Not Found !')->with('status','error');
+
+				if($this->access['is_detail'] ==0) 
+					return redirect('dashboard')->with('message', __('core.note_restric'))->with('status','error');
+
+				return view($this->module.'.view',$this->data);	
+				break;		
+		}
+	}
+	function store( Request $request  )
+	{
+		$task = $request->input('action_task');
+		switch ($task)
+		{
+			default:
+				$rules = $this->validateForm();
+				$validator = Validator::make($request->all(), $rules);
+				if ($validator->passes()) 
+				{
+					$data = $this->validatePost( $request );
+					$id = $this->model->insertRow($data , $request->input( $this->info['key']));
+					$this->detailviewsave( $this->modelview , $request->all() ,$this->info['config']['subform'] , $id) ;
+					/* Insert logs */
+					$this->model->logs($request , $id);
+					if(!is_null($request->input('apply')))
+						return redirect( $this->module .'/'.$id.'/edit?'. $this->returnUrl() )->with('message',__('core.note_success'))->with('status','success');
+
+					return redirect( $this->module .'?'. $this->returnUrl() )->with('message',__('core.note_success'))->with('status','success');
+				} 
+				else {
+					return redirect($this->module.'/'. $request->input(  $this->info['key'] ).'/edit')
+							->with('message',__('core.note_error'))->with('status','error')
+							->withErrors($validator)->withInput();
+
+				}
+				break;
+			case 'public':
+				return $this->store_public( $request );
+				break;
+
+			case 'delete':
+				$result = $this->destroy( $request );
+				return redirect($this->module.'?'.$this->returnUrl())->with($result);
+				break;
+            case 'changeState':
+				$result = $this->changeState( $request );
+				return redirect($this->module.'?'.$this->returnUrl())->with($result);
+				break;
+			case 'import':
+				return $this->PostImport( $request );
+				break;
+
+			case 'copy':
+				$result = $this->copy( $request );
+				return redirect($this->module.'?'.$this->returnUrl())->with($result);
+				break;		
+		}	
+	
+	}	
+
+	public function destroy( $request)
+	{
+		// Make Sure users Logged 
+		if(!\Auth::check()) 
+			return redirect('user/login')->with('status', 'error')->with('message','You are not login');
+
+		$this->access = $this->model->validAccess($this->info['id'] , session('gid'));
+		if($this->access['is_remove'] ==0) 
+			return redirect('dashboard')
+				->with('message', __('core.note_restric'))->with('status','error');
+		// delete multipe rows 
+		if(count($request->input('ids')) >=1)
+		{
+			$this->model->destroy($request->input('ids'));
+			\DB::table('item_preventivi')->whereIn('id_preventivo',$request->input('ids'))->delete();
+			\SiteHelpers::auditTrail( $request , "ID : ".implode(",",$request->input('ids'))."  , Has Been Removed Successfull");
+			// redirect
+        	return ['message'=>__('core.note_success_delete'),'status'=>'success'];	
+	
+		} else {
+			return ['message'=>__('No Item Deleted'),'status'=>'error'];				
+		}
+
+	}	
+	
+	public function changeState( $request)
+	{
+		$newState = $request->input('state');
+		$task = $request->input('action_task');
+		// Make Sure users Logged 
+		if(!\Auth::check()) 
+			return redirect('user/login')->with('status', 'error')->with('message','You are not login');
+
+		$this->access = $this->model->validAccess($this->info['id'] , session('gid'));
+		if(count($request->input('ids')) >=1)
+		{
+		    $oldState = \DB::table('preventivi')->where('id',$request->input('ids')) ->first();
+		    
+		    
+		    $idState = \DB::table('stato_check')->select('id') ->where([['stato_partenza', '=', $oldState->stato],['stato_arrivo', '=', $newState],])->first();
+		    
+		    if (count($idState)>=1) {
+			    \DB::table('preventivi')->whereIn('id',$request->input('ids'))->update(['stato' => $newState]);
+			    \SiteHelpers::auditTrail( $request , "ID : ".implode(",",$request->input('ids'))."  , Lo stato è cambiato in " . $newState);
+			    // redirect
+        	    return ['message'=>__('STATO PREVENTIVO AGGIORNATO'),'status'=>'success']; 
+		    } else {
+		        return ['message'=>__('NON è POSSIBILE AGGIORNARE LO STATO'),'status'=>'error'];
+		    }
+	
+		} else {
+			return ['message'=>__('No Item Deleted'),'status'=>'error'];				
+		}
+
+	}	
+	
+	public static function display(  )
+	{
+		$mode  = isset($_GET['view']) ? 'view' : 'default' ;
+		$model  = new Preventivi();
+		$info = $model::makeInfo('preventivi');
+		$data = array(
+			'pageTitle'	=> 	$info['title'],
+			'pageNote'	=>  $info['note']			
+		);	
+		if($mode == 'view')
+		{
+			$id = $_GET['view'];
+			$row = $model::getRow($id);
+			if($row)
+			{
+				$data['row'] =  $row;
+				$data['fields'] 		=  \SiteHelpers::fieldLang($info['config']['grid']);
+				$data['id'] = $id;
+				return view('preventivi.public.view',$data);			
+			}			
+		} 
+		else {
+
+			$page = isset($_GET['page']) ? $_GET['page'] : 1;
+			$params = array(
+				'page'		=> $page ,
+				'limit'		=>  (isset($_GET['rows']) ? filter_var($_GET['rows'],FILTER_VALIDATE_INT) : 10 ) ,
+				'sort'		=> $info['key'] ,
+				'order'		=> 'asc',
+				'params'	=> '',
+				'global'	=> 1 
+			);
+
+			$result = $model::getRows( $params );
+			$data['tableGrid'] 	= $info['config']['grid'];
+			$data['rowData'] 	= $result['rows'];	
+
+			$page = $page >= 1 && filter_var($page, FILTER_VALIDATE_INT) !== false ? $page : 1;	
+			$pagination = new Paginator($result['rows'], $result['total'], $params['limit']);	
+			$pagination->setPath('');
+			$data['i']			= ($page * $params['limit'])- $params['limit']; 
+			$data['pagination'] = $pagination;
+			return view('preventivi.public.index',$data);	
+		}
+
+	}
+	function store_public( $request)
+	{
+		
+		$rules = $this->validateForm();
+		$validator = Validator::make($request->all(), $rules);	
+		if ($validator->passes()) {
+			$data = $this->validatePost(  $request );		
+			 $this->model->insertRow($data , $request->input('id'));
+			return  Redirect::back()->with('message',__('core.note_success'))->with('status','success');
+		} else {
+
+			return  Redirect::back()->with('message',__('core.note_error'))->with('status','error')
+			->withErrors($validator)->withInput();
+
+		}	
+	
+	}
+}

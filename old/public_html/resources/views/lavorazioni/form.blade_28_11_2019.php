@@ -1,0 +1,236 @@
+@extends('layouts.app')
+
+@section('content')
+<section class="page-header row">
+	<h2> {{ $pageTitle }} <small> {{ $pageNote }} </small></h2>
+	<ol class="breadcrumb">
+		<li><a href="{{ url('') }}"> Dashboard </a></li>
+		<li><a href="{{ url($pageModule) }}"> {{ $pageTitle }} </a></li>
+		<li class="active"> Form  </li>		
+	</ol>
+</section>
+<div class="page-content row">
+	<div class="page-content-wrapper no-margin">
+
+	{!! Form::open(array('url'=>'lavorazioni?return='.$return, 'class'=>'form-horizontal validated','files' => true )) !!}
+	<div class="sbox">
+		<div class="sbox-title clearfix">
+			<div class="sbox-tools " >
+				<a href="{{ url($pageModule.'?return='.$return) }}" class="tips btn btn-sm "  title="{{ __('core.btn_back') }}" ><i class="fa  fa-times"></i></a> 
+			</div>
+			<div class="sbox-tools pull-left" >
+				<button name="apply" class="tips btn btn-sm btn-apply  "  title="{{ __('core.btn_back') }}" ><i class="fa  fa-check"></i> {{ __('core.sb_apply') }} </button>
+				<button name="save" class="tips btn btn-sm btn-save"  title="{{ __('core.btn_back') }}" ><i class="fa  fa-paste"></i> {{ __('core.sb_save') }} </button> 
+			</div>
+		</div>	
+		<div class="sbox-content clearfix">
+	<ul class="parsley-error-list">
+		@foreach($errors->all() as $error)
+			<li>{{ $error }}</li>
+		@endforeach
+	</ul>		
+<div class="col-md-12">
+						<fieldset><legend> Lavorazioni</legend>
+									
+									  <div class="form-group  " >
+										<label for="Preventivo" class=" control-label col-md-4 text-left"> Preventivo </label>
+										<div class="col-md-6">
+										  <select name='id_preventivo' rows='5' id='id_preventivo' class='select2 '   ></select> 
+										 </div> 
+										 <div class="col-md-2">
+										 	
+										 </div>
+									  </div> 					
+									  <div class="form-group  " >
+										<label for="Cliente" class=" control-label col-md-4 text-left"> Cliente </label>
+										<div class="col-md-6" readonly>
+										  <select name='id_cliente' rows='5' id='id_cliente'  class='select2 '  ></select> 
+										 </div> 
+										 <div class="col-md-2">
+										 	
+										 </div>
+									  </div> 					
+									  <div class="form-group  " >
+										<label for="Stato" class=" control-label col-md-4 text-left"> Stato </label>
+										<div class="col-md-6">
+										  
+					<?php $stato = explode(',',$row['stato']);
+					$stato_opt = array( 'IN LAVORAZIONE' => 'IN LAVORAZIONE' ,  'LAVORATO' => 'LAVORATO' ,  'LAVORATO PARZIALE' => 'LAVORATO PARZIALE' ,  'ANNULLATO' => 'ANNULLATO' ,  'DA CONSEGNARE' => 'DA CONSEGNARE' , ); ?>
+					<select name='stato' rows='5'   class='select2 '  > 
+						<?php 
+						foreach($stato_opt as $key=>$val)
+						{
+							echo "<option  value ='$key' ".($row['stato'] == $key ? " selected='selected' " : '' ).">$val</option>"; 						
+						}						
+						?></select> 
+										 </div> 
+										 <div class="col-md-2">
+										 	
+										 </div>
+									  </div> 					
+									  <div class="form-group  " >
+										<label for="Data Inizio Lavorazione" class=" control-label col-md-4 text-left"> Data Inizio Lavorazione </label>
+										<div class="col-md-6">
+										  
+				<div class="input-group m-b" style="width:150px !important;">
+					{!! Form::date('data_creazione_lavorazione', $row['data_creazione_lavorazione'],array('class'=>'form-control input')) !!}
+					<span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+				</div> 
+										 </div> 
+										 <div class="col-md-2">
+										 	
+										 </div>
+									  </div> 					
+									  <div class="form-group  " >
+										<label for="Data Annullamento" class=" control-label col-md-4 text-left"> Data Annullamento </label>
+										<div class="col-md-6">
+										  
+				<div class="input-group m-b" style="width:150px !important;">
+					{!! Form::date('data_annullamento', $row['data_annullamento'],array('class'=>'form-control input')) !!}
+					<span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+				</div> 
+										 </div> 
+										 <div class="col-md-2">
+										 	
+										 </div>
+									  </div> 					
+									  <div class="form-group  " >
+										<label for="Data Fine Lavorazione" class=" control-label col-md-4 text-left"> Data Fine Lavorazione </label>
+										<div class="col-md-6">
+										  
+				<div class="input-group m-b" style="width:150px !important;">
+					{!! Form::date('data_fine_lavorazione', $row['data_fine_lavorazione'],array('class'=>'form-control input')) !!}
+					<span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+				</div> 
+										 </div> 
+										 <div class="col-md-2">
+										 	
+										 </div>
+									  </div> 					
+									  <div class="form-group  " >
+										<label for="Data Consegna" class=" control-label col-md-4 text-left"> Data Consegna </label>
+										<div class="col-md-6">
+										  
+				<div class="input-group m-b" style="width:150px !important;">
+					{!! Form::date('data_consegna', $row['data_consegna'],array('class'=>'form-control input')) !!}
+					<span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+				</div> 
+										 </div> 
+										 <div class="col-md-2">
+										 	
+										 </div>
+									  </div> </fieldset>
+			</div>
+			
+			
+			
+	@if($accesschild['is_add'] == '1' && $accesschild['is_edit'] == '1' )
+	<hr />
+	<div class="clr clear"></div>
+	
+	<h5> Prodotti Lavorazioni </h5>
+	
+	<div class="table-responsive">
+    <table class="table table-striped ">
+        <thead>
+			<tr>
+				@foreach ($subform['tableGrid'] as $t)
+					@if($t['view'] =='1' && $t['field'] !='id' && $t['field'] != $relation_key)
+						<th>{{ $t['label'] }}</th>
+					@endif
+				@endforeach
+				<th></th>	
+			  </tr>
+
+        </thead>
+
+        <tbody>
+        @if(count($subform['rowData'])>=1)
+            @foreach ($subform['rowData'] as $rows)
+            <tr class="clone clonedInput">
+									
+			 @foreach ($subform['tableGrid'] as $field)
+				 @if($field['view'] =='1' && $field['field'] !='id' && $field['field'] != $relation_key)
+				 <td>					 
+				 	{!! SiteHelpers::bulkForm($field['field'] , $subform['tableForm'] , $rows->{$field['field']}) !!}							 
+				 </td>
+				 @endif					 
+			 
+			 @endforeach
+			 <td>
+			 	<a onclick=" $(this).parents('.clonedInput').remove(); return false" href="#" class="remove btn btn-xs btn-danger">-</a>
+			 	<input type="hidden" name="counter[]">
+			 	<input type="hidden" name="bulk_{{ $relation_key}}[]" value="{{  $rows->{$relation_key} }}" >
+			 </td>
+			@endforeach
+			</tr> 
+
+		@else
+            <tr class="clone clonedInput">
+									
+			 @foreach ($subform['tableGrid'] as $field)
+
+				 @if($field['view'] =='1' && $field['field'] !='id' && $field['field'] != $relation_key)
+				 <td>					 
+				 	{!! SiteHelpers::bulkForm($field['field'] , $subform['tableForm'] ) !!}							 
+				 </td>
+				 @endif					 
+			 
+			 @endforeach
+			 <td>
+			 	<a onclick=" $(this).parents('.clonedInput').remove(); return false" href="#" class="remove btn btn-xs btn-danger">-</a>
+			 	<input type="hidden" name="counter[]">
+			 	<input type="hidden" name="bulk_{{ $relation_key}}[]" value="" >
+			 </td>
+			
+			</tr> 
+
+		
+		@endif	
+
+
+        </tbody>	
+
+     </table>  
+     <input type="hidden" name="enable-masterdetail" value="true">
+     </div>
+	<br /><br />
+     
+     <a href="javascript:void(0);" class="addC btn btn-xs btn-info" rel=".clone"><i class="fa fa-plus"></i> New Item</a>
+     <hr />
+	@endif
+    
+		</div>
+	</div>
+	<input type="hidden" name="action_task" value="save" />
+	{!! Form::close() !!}
+	</div>
+</div>		
+	
+		 
+   <script type="text/javascript">
+	$(document).ready(function() { 
+		
+		$('.addC').relCopy({});
+		
+		$("#id_preventivo").jCombo("{!! url('lavorazioni/comboselect?filter=preventivi:id:id|diagnosi_circostanziata|programma_terapeutico') !!}",
+		{  selected_value : '{{ $row["id_preventivo"] }}' });
+		
+		$("#id_cliente").jCombo("{!! url('lavorazioni/comboselect?filter=clienti:id:cognome|nome|data_nascita') !!}",
+		{  selected_value : '{{ $row["id_cliente"] }}' });
+		 		 
+
+		$('.removeMultiFiles').on('click',function(){
+			var removeUrl = '{{ url("lavorazioni/removefiles?file=")}}'+$(this).attr('url');
+			$(this).parent().remove();
+			$.get(removeUrl,function(response){});
+			$(this).parent('div').empty();	
+			return false;
+		});
+		$(':input').attr('readonly','readonly');
+		$('#id_cliente').prop('disabled',true);
+		$('#id_preventivo').prop('disabled',true);
+		
+	});
+	</script>		 
+@stop
