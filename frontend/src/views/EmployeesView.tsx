@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
+import { FieldValue } from '../components/common/FieldValue';
 import { Icon } from '../components/common/Icon';
+import { Pagination } from '../components/common/Pagination';
 import { ViewToolbar, type ToolbarFilters } from '../components/common/ViewToolbar';
+import { usePagination } from '../hooks/usePagination';
 import { employees } from '../data/employees';
 import type { Employee } from '../types';
 
@@ -44,6 +47,9 @@ export function EmployeesView() {
     [searchValue, activeFilters],
   );
 
+  const { pageItems, page, totalPages, totalItems, rangeStart, rangeEnd, setPage } =
+    usePagination(filteredEmployees);
+
   return (
     <div>
       <header className="flex justify-between items-center mb-8">
@@ -75,12 +81,12 @@ export function EmployeesView() {
             </tr>
           </thead>
           <tbody>
-            {filteredEmployees.length > 0 ? (
-              filteredEmployees.map((employee, idx) => (
+            {pageItems.length > 0 ? (
+              pageItems.map((employee, idx) => (
                 <EmployeeRow
                   key={employee.username}
                   employee={employee}
-                  isLast={idx === filteredEmployees.length - 1}
+                  isLast={idx === pageItems.length - 1}
                 />
               ))
             ) : (
@@ -93,6 +99,15 @@ export function EmployeesView() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        onPageChange={setPage}
+      />
     </div>
   );
 }
@@ -102,12 +117,12 @@ function EmployeeRow({ employee, isLast }: { employee: Employee; isLast: boolean
 
   return (
     <tr className={`${borderClass} hover:bg-surface-container-low/50 transition-colors h-row-height`}>
-      <td className="p-4 font-medium text-primary">{employee.username}</td>
-      <td className="p-4">{employee.userType}</td>
-      <td className="p-4">{employee.assignment}</td>
-      <td className="p-4">{employee.name}</td>
-      <td className="p-4">{employee.surname}</td>
-      <td className="p-4 text-on-surface-variant">{employee.email}</td>
+      <td className="p-4 font-medium text-primary"><FieldValue value={employee.username} /></td>
+      <td className="p-4"><FieldValue value={employee.userType} /></td>
+      <td className="p-4"><FieldValue value={employee.assignment} /></td>
+      <td className="p-4"><FieldValue value={employee.name} /></td>
+      <td className="p-4"><FieldValue value={employee.surname} /></td>
+      <td className="p-4 text-on-surface-variant"><FieldValue value={employee.email} /></td>
       <td className="p-4 text-center">
         <button className="text-on-surface-variant hover:text-primary transition-colors">
           <Icon name="more_vert" />

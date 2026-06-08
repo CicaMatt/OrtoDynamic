@@ -1,8 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { fetchClients } from '../api/clients';
+import { FieldValue } from '../components/common/FieldValue';
+import { Pagination } from '../components/common/Pagination';
 import { ViewToolbar, type ToolbarFilters } from '../components/common/ViewToolbar';
 import { useNavigation } from '../contexts/NavigationContext';
 import { useApiData } from '../hooks/useApiData';
+import { usePagination } from '../hooks/usePagination';
 import type { ClientListItem } from '../types';
 import { formatBirthDate } from '../utils/format';
 
@@ -48,6 +51,9 @@ export function ClientsView() {
     [clients, searchValue, activeFilters],
   );
 
+  const { pageItems, page, totalPages, totalItems, rangeStart, rangeEnd, setPage } =
+    usePagination(filteredClients);
+
   return (
     <div>
       <header className="flex justify-between items-center mb-8">
@@ -78,7 +84,7 @@ export function ClientsView() {
           </thead>
           <tbody>
             <ClientsTableBody
-              clients={filteredClients}
+              clients={pageItems}
               loading={loading}
               error={error}
               columnCount={clientColumns.length}
@@ -86,6 +92,15 @@ export function ClientsView() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        onPageChange={setPage}
+      />
     </div>
   );
 }
@@ -152,7 +167,7 @@ function ClientRow({ client }: { client: ClientListItem }) {
     >
       {clientColumns.map((column) => (
         <td key={column.key} className={cellClassName(column.key)}>
-          {renderCell(column.key, client[column.key])}
+          <FieldValue value={renderCell(column.key, client[column.key])} />
         </td>
       ))}
     </tr>

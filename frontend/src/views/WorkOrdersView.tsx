@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
+import { FieldValue } from '../components/common/FieldValue';
 import { Icon } from '../components/common/Icon';
+import { Pagination } from '../components/common/Pagination';
 import { WorkOrderBadge } from '../components/common/StatusBadge';
 import { ViewToolbar, type ToolbarFilters } from '../components/common/ViewToolbar';
 import { useNavigation } from '../contexts/NavigationContext';
+import { usePagination } from '../hooks/usePagination';
 import { workOrders } from '../data/workOrders';
 import type { WorkOrder } from '../types';
 
@@ -45,6 +48,9 @@ export function WorkOrdersView() {
     [searchValue, activeFilters],
   );
 
+  const { pageItems, page, totalPages, totalItems, rangeStart, rangeEnd, setPage } =
+    usePagination(filteredOrders);
+
   return (
     <div>
       <header className="flex justify-between items-center mb-8">
@@ -60,8 +66,15 @@ export function WorkOrdersView() {
         />
       </header>
 
-      <WorkOrdersTable orders={filteredOrders} />
-      <Pagination current={1} total={1} count={filteredOrders.length} />
+      <WorkOrdersTable orders={pageItems} />
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        rangeStart={rangeStart}
+        rangeEnd={rangeEnd}
+        onPageChange={setPage}
+      />
     </div>
   );
 }
@@ -110,11 +123,11 @@ function WorkOrderRow({ order, isLast }: { order: WorkOrder; isLast: boolean }) 
       onClick={() => openWorkDetail(order.id)}
       className={`${borderClass} hover:bg-surface-container-low/50 transition-colors h-row-height cursor-pointer`}
     >
-      <td className="p-4 font-medium text-primary hover:underline">{order.id}</td>
-      <td className="p-4">{order.patient}</td>
-      <td className="p-4">{order.technician}</td>
-      <td className="p-4">{order.device}</td>
-      <td className="p-4">{order.deadline}</td>
+      <td className="p-4 font-medium text-primary hover:underline"><FieldValue value={order.id} /></td>
+      <td className="p-4"><FieldValue value={order.patient} /></td>
+      <td className="p-4"><FieldValue value={order.technician} /></td>
+      <td className="p-4"><FieldValue value={order.device} /></td>
+      <td className="p-4"><FieldValue value={order.deadline} /></td>
       <td className="p-4">
         <WorkOrderBadge status={order.status} />
       </td>
@@ -127,33 +140,6 @@ function WorkOrderRow({ order, isLast }: { order: WorkOrder; isLast: boolean }) 
         </button>
       </td>
     </tr>
-  );
-}
-
-function Pagination({ current, total, count }: { current: number; total: number; count: number }) {
-  const visibleCount = count === 0 ? 0 : Math.min(count, 7);
-
-  return (
-    <div className="flex items-center justify-between mt-4 text-body-sm text-on-surface-variant px-2">
-      <div>Visualizzando {visibleCount} di {count} risultati</div>
-      <div className="flex items-center gap-2">
-        <button
-          disabled={current === 1}
-          className="p-1 border border-outline-variant rounded hover:bg-surface-container-high disabled:opacity-50"
-        >
-          <Icon name="chevron_left" className="text-[20px]" />
-        </button>
-        <span className="px-2">
-          Pagina {current} di {total}
-        </span>
-        <button
-          disabled={current === total}
-          className="p-1 border border-outline-variant rounded hover:bg-surface-container-high disabled:opacity-50"
-        >
-          <Icon name="chevron_right" className="text-[20px]" />
-        </button>
-      </div>
-    </div>
   );
 }
 

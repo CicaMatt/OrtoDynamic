@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { fetchClient } from '../api/clients';
+import { FieldValue } from '../components/common/FieldValue';
 import { Icon } from '../components/common/Icon';
 import { useNavigation } from '../contexts/NavigationContext';
 import { useApiData } from '../hooks/useApiData';
@@ -199,7 +200,7 @@ function InfoBlock({ label, value, strong = false }: { label: string; value: str
         {label}
       </dt>
       <dd className={`mt-[8px] font-body-md text-body-md text-[#171a20] ${strong ? 'font-bold' : 'font-medium'}`}>
-        {value}
+        <FieldValue value={value} />
       </dd>
     </div>
   );
@@ -211,7 +212,9 @@ function SpecRow({ label, value }: { label: string; value: string }) {
       <dt className="font-label-caps text-label-caps font-bold uppercase text-[#737780]">
         {label}
       </dt>
-      <dd className="max-w-[230px] text-right font-body-md text-body-md font-bold text-[#171a20]">{value}</dd>
+      <dd className="max-w-[230px] text-right font-body-md text-body-md font-bold text-[#171a20]">
+        <FieldValue value={value} />
+      </dd>
     </div>
   );
 }
