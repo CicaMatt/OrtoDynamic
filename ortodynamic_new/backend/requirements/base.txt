@@ -1,0 +1,12 @@
+# Runtime dependencies shared by every environment.
+Django>=5.0,<5.1
+djangorestframework>=3.15,<3.16
+django-cors-headers>=4.3
+django-environ>=0.11
+
+# Database driver for the existing MySQL database.
+# PyMySQL is a pure-Python driver (no system libraries to build), installed as
+# the MySQLdb interface via the shim in config/__init__.py. For maximum
+# throughput in production, `mysqlclient>=2.2` (C-based) can be swapped in,
+# but it requires the MySQL client C libraries + pkg-config on the build host.
+PyMySQL>=1.1

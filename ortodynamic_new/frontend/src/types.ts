@@ -41,6 +41,12 @@ export type Client = {
   gender: string;
 };
 
+/** Subset of {@link Client} returned by the clients list endpoint. */
+export type ClientListItem = Pick<
+  Client,
+  'code' | 'name' | 'surname' | 'fiscalCode' | 'phone' | 'email'
+>;
+
 export type Employee = {
   username: string;
   userType: string;

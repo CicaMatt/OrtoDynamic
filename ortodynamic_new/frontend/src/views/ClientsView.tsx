@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { fetchClients } from '../api/clients';
 import { ViewToolbar, type ToolbarFilters } from '../components/common/ViewToolbar';
 import { useNavigation } from '../contexts/NavigationContext';
-import { clients } from '../data/clients';
-import type { Client } from '../types';
+import { useApiData } from '../hooks/useApiData';
+import type { ClientListItem } from '../types';
 
 const columns = ['Codice', 'Nome', 'Cognome', 'Codice Fiscale', 'Numero Telefono', 'Email'] as const;
 const clientFilterColumns = [
@@ -17,6 +18,9 @@ const clientFilterColumns = [
 export function ClientsView() {
   const [searchValue, setSearchValue] = useState('');
   const [activeFilters, setActiveFilters] = useState<ToolbarFilters>({});
+  const { data, loading, error } = useApiData(() => fetchClients(), []);
+
+  const clients = useMemo(() => data ?? [], [data]);
 
   const filterOptions = useMemo(
     () =>
@@ -24,12 +28,12 @@ export function ClientsView() {
         ...column,
         options: getUniqueValues(clients.map((client) => String(client[column.key]))),
       })),
-    [],
+    [clients],
   );
 
   const filteredClients = useMemo(
     () => filterClients(clients, searchValue, activeFilters),
-    [searchValue, activeFilters],
+    [clients, searchValue, activeFilters],
   );
 
   return (
@@ -61,15 +65,12 @@ export function ClientsView() {
             </tr>
           </thead>
           <tbody>
-            {filteredClients.length > 0 ? (
-              filteredClients.map((client) => <ClientRow key={client.code} client={client} />)
-            ) : (
-              <tr>
-                <td colSpan={columns.length} className="p-6 text-center text-on-surface-variant">
-                  Nessun cliente trovato.
-                </td>
-              </tr>
-            )}
+            <ClientsTableBody
+              clients={filteredClients}
+              loading={loading}
+              error={error}
+              columnCount={columns.length}
+            />
           </tbody>
         </table>
       </div>
@@ -77,7 +78,59 @@ export function ClientsView() {
   );
 }
 
-function ClientRow({ client }: { client: Client }) {
+function ClientsTableBody({
+  clients,
+  loading,
+  error,
+  columnCount,
+}: {
+  clients: ClientListItem[];
+  loading: boolean;
+  error: string | null;
+  columnCount: number;
+}) {
+  if (loading) {
+    return <MessageRow columnCount={columnCount}>Caricamento clienti...</MessageRow>;
+  }
+  if (error) {
+    return (
+      <MessageRow columnCount={columnCount} tone="error">
+        {error}
+      </MessageRow>
+    );
+  }
+  if (clients.length === 0) {
+    return <MessageRow columnCount={columnCount}>Nessun cliente trovato.</MessageRow>;
+  }
+  return (
+    <>
+      {clients.map((client) => (
+        <ClientRow key={client.code} client={client} />
+      ))}
+    </>
+  );
+}
+
+function MessageRow({
+  columnCount,
+  tone = 'muted',
+  children,
+}: {
+  columnCount: number;
+  tone?: 'muted' | 'error';
+  children: ReactNode;
+}) {
+  const toneClass = tone === 'error' ? 'text-error' : 'text-on-surface-variant';
+  return (
+    <tr>
+      <td colSpan={columnCount} className={`p-6 text-center ${toneClass}`}>
+        {children}
+      </td>
+    </tr>
+  );
+}
+
+function ClientRow({ client }: { client: ClientListItem }) {
   const { openClientDetail } = useNavigation();
 
   return (
@@ -95,7 +148,7 @@ function ClientRow({ client }: { client: Client }) {
   );
 }
 
-function filterClients(clientList: Client[], searchValue: string, activeFilters: ToolbarFilters) {
+function filterClients(clientList: ClientListItem[], searchValue: string, activeFilters: ToolbarFilters) {
   const searchTerm = normalize(searchValue);
 
   return clientList.filter((client) => {
@@ -119,7 +172,7 @@ function filterClients(clientList: Client[], searchValue: string, activeFilters:
 }
 
 function getUniqueValues(values: string[]) {
-  return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b, 'it'));
+  return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, 'it'));
 }
 
 function normalize(value: string) {

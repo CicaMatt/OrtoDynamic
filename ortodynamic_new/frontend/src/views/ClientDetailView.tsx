@@ -1,6 +1,8 @@
+import { type ReactNode } from 'react';
+import { fetchClient } from '../api/clients';
 import { Icon } from '../components/common/Icon';
 import { useNavigation } from '../contexts/NavigationContext';
-import { clients } from '../data/clients';
+import { useApiData } from '../hooks/useApiData';
 import type { Client } from '../types';
 
 const actionGroups = [
@@ -18,10 +20,23 @@ const actionGroups = [
 
 export function ClientDetailView() {
   const { selectedClientCode, navigate } = useNavigation();
-  const client = clients.find((item) => item.code === selectedClientCode);
+  const { data: client, loading, error } = useApiData(
+    () =>
+      selectedClientCode
+        ? fetchClient(selectedClientCode)
+        : Promise.reject(new Error('Nessun cliente selezionato.')),
+    [selectedClientCode],
+  );
 
-  if (!client) {
-    return <NotFound onBack={() => navigate('clients')} />;
+  if (loading) {
+    return <StatusMessage onBack={() => navigate('clients')}>Caricamento cliente...</StatusMessage>;
+  }
+  if (error || !client) {
+    return (
+      <StatusMessage onBack={() => navigate('clients')} tone="error">
+        {error ?? 'Nessun cliente selezionato.'}
+      </StatusMessage>
+    );
   }
 
   return (
@@ -83,8 +98,8 @@ function PersonalDataCard({ client }: { client: Client }) {
         <InfoBlock label="Codice" value={client.code} strong />
         <InfoBlock label="Nome" value={client.name} />
         <InfoBlock label="Cognome" value={client.surname} />
-        <InfoBlock label="Data nascita" value={client.birthDate} />
-        <InfoBlock label="Sesso" value={client.gender} />
+        <InfoBlock label="Data nascita" value={formatBirthDate(client.birthDate)} />
+        <InfoBlock label="Sesso" value={formatGender(client.gender)} />
         <InfoBlock label="Codice fiscale" value={client.fiscalCode} />
       </div>
     </section>
@@ -200,10 +215,19 @@ function SpecRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function NotFound({ onBack }: { onBack: () => void }) {
+function StatusMessage({
+  onBack,
+  tone = 'muted',
+  children,
+}: {
+  onBack: () => void;
+  tone?: 'muted' | 'error';
+  children: ReactNode;
+}) {
+  const toneClass = tone === 'error' ? 'text-error' : 'text-on-surface-variant';
   return (
     <div className="flex flex-col items-start gap-4">
-      <p className="font-body-md text-body-md text-on-surface-variant">Nessun cliente selezionato.</p>
+      <p className={`font-body-md text-body-md ${toneClass}`}>{children}</p>
       <button
         onClick={onBack}
         className="text-on-surface-variant hover:text-primary flex items-center gap-2 font-body-md text-body-md"
@@ -212,4 +236,23 @@ function NotFound({ onBack }: { onBack: () => void }) {
       </button>
     </div>
   );
+}
+
+const MONTHS_IT = [
+  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+];
+
+/** Format an ISO `YYYY-MM-DD` date as `D MMMM YYYY` in Italian (timezone-safe). */
+function formatBirthDate(value: string): string {
+  if (!value) return '';
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return value;
+  return `${day} ${MONTHS_IT[month - 1]} ${year}`;
+}
+
+function formatGender(value: string): string {
+  if (value === 'M') return 'Maschile';
+  if (value === 'F') return 'Femminile';
+  return value;
 }
