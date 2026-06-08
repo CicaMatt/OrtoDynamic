@@ -4,16 +4,27 @@ import { ViewToolbar, type ToolbarFilters } from '../components/common/ViewToolb
 import { useNavigation } from '../contexts/NavigationContext';
 import { useApiData } from '../hooks/useApiData';
 import type { ClientListItem } from '../types';
+import { formatBirthDate } from '../utils/format';
 
-const columns = ['Codice', 'Nome', 'Cognome', 'Codice Fiscale', 'Numero Telefono', 'Email'] as const;
-const clientFilterColumns = [
-  { key: 'code', label: 'Codice' },
+type ColumnKey = keyof ClientListItem;
+
+const clientColumns: ReadonlyArray<{ key: ColumnKey; label: string }> = [
+  { key: 'code', label: 'Codice Cliente' },
   { key: 'name', label: 'Nome' },
   { key: 'surname', label: 'Cognome' },
   { key: 'fiscalCode', label: 'Codice Fiscale' },
-  { key: 'phone', label: 'Numero Telefono' },
-  { key: 'email', label: 'Email' },
-] as const;
+  { key: 'birthDate', label: 'Data Nascita' },
+  { key: 'birthPlace', label: 'Comune Nascita' },
+  { key: 'address', label: 'Indirizzo' },
+  { key: 'city', label: 'Città' },
+  { key: 'province', label: 'Provincia' },
+  { key: 'phone', label: 'Telefono' },
+];
+
+// Columns offered as filters and included in free-text search. birthDate is
+// excluded: an equality dropdown over dates is not useful, and its stored ISO
+// value would not match the formatted text shown in the cell.
+const filterColumns = clientColumns.filter((column) => column.key !== 'birthDate');
 
 export function ClientsView() {
   const [searchValue, setSearchValue] = useState('');
@@ -24,8 +35,9 @@ export function ClientsView() {
 
   const filterOptions = useMemo(
     () =>
-      clientFilterColumns.map((column) => ({
-        ...column,
+      filterColumns.map((column) => ({
+        key: column.key,
+        label: column.label,
         options: getUniqueValues(clients.map((client) => String(client[column.key]))),
       })),
     [clients],
@@ -50,16 +62,16 @@ export function ClientsView() {
         />
       </header>
 
-      <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl shadow-sm overflow-x-auto">
         <table className="w-full text-left font-body-md text-body-md">
           <thead className="bg-surface-container-low font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant/50">
             <tr>
-              {columns.map((col) => (
+              {clientColumns.map((column) => (
                 <th
-                  key={col}
-                  className="py-3 px-6 uppercase font-bold tracking-wider"
+                  key={column.key}
+                  className="py-3 px-6 uppercase font-bold tracking-wider whitespace-nowrap"
                 >
-                  {col}
+                  {column.label}
                 </th>
               ))}
             </tr>
@@ -69,7 +81,7 @@ export function ClientsView() {
               clients={filteredClients}
               loading={loading}
               error={error}
-              columnCount={columns.length}
+              columnCount={clientColumns.length}
             />
           </tbody>
         </table>
@@ -138,31 +150,34 @@ function ClientRow({ client }: { client: ClientListItem }) {
       onClick={() => openClientDetail(client.code)}
       className="border-b border-surface-variant h-row-height hover:bg-surface-container-lowest/50 transition-colors cursor-pointer"
     >
-      <td className="px-6 text-primary font-medium hover:underline">{client.code}</td>
-      <td className="px-6">{client.name}</td>
-      <td className="px-6">{client.surname}</td>
-      <td className="px-6 text-on-surface-variant">{client.fiscalCode}</td>
-      <td className="px-6 text-on-surface-variant">{client.phone}</td>
-      <td className="px-6 text-on-surface-variant">{client.email}</td>
+      {clientColumns.map((column) => (
+        <td key={column.key} className={cellClassName(column.key)}>
+          {renderCell(column.key, client[column.key])}
+        </td>
+      ))}
     </tr>
   );
+}
+
+function renderCell(key: ColumnKey, value: string): string {
+  return key === 'birthDate' ? formatBirthDate(value) : value;
+}
+
+function cellClassName(key: ColumnKey): string {
+  const base = 'px-6 whitespace-nowrap';
+  if (key === 'code') return `${base} text-primary font-medium hover:underline`;
+  if (key === 'name' || key === 'surname') return base;
+  return `${base} text-on-surface-variant`;
 }
 
 function filterClients(clientList: ClientListItem[], searchValue: string, activeFilters: ToolbarFilters) {
   const searchTerm = normalize(searchValue);
 
   return clientList.filter((client) => {
-    const searchableValues = [
-      client.code,
-      client.name,
-      client.surname,
-      client.fiscalCode,
-      client.phone,
-      client.email,
-    ];
     const matchesSearch =
-      searchTerm.length === 0 || searchableValues.some((value) => normalize(value).includes(searchTerm));
-    const matchesFilters = clientFilterColumns.every((column) => {
+      searchTerm.length === 0 ||
+      filterColumns.some((column) => normalize(String(client[column.key])).includes(searchTerm));
+    const matchesFilters = filterColumns.every((column) => {
       const activeValue = activeFilters[column.key];
       return !activeValue || String(client[column.key]) === activeValue;
     });

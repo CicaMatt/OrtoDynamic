@@ -19,14 +19,15 @@ class Client(UnmanagedModel):
     nome = models.CharField(max_length=255, null=True, blank=True)
     codice_fiscale = models.CharField(max_length=20, null=True, blank=True)
     data_nascita = models.DateField(null=True, blank=True)
+    comune_nascita = models.CharField(max_length=100, null=True, blank=True)
     sesso = models.CharField(max_length=1, null=True, blank=True)
 
     telefono = models.CharField(max_length=50, null=True, blank=True)
     email = models.CharField(max_length=100, null=True, blank=True)
 
-    comune_nascita = models.CharField(max_length=100, null=True, blank=True)
     indirizzo = models.CharField(max_length=255, null=True, blank=True)
     citta = models.CharField(max_length=100, null=True, blank=True)
+    provincia = models.CharField(max_length=100, null=True, blank=True)
     cap = models.CharField(max_length=10, null=True, blank=True)
     nazione = models.CharField(max_length=100, null=True, blank=True)
     distretto_appartenenza = models.CharField(max_length=255, null=True, blank=True)

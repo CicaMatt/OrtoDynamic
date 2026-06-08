@@ -4,6 +4,7 @@ import { Icon } from '../components/common/Icon';
 import { useNavigation } from '../contexts/NavigationContext';
 import { useApiData } from '../hooks/useApiData';
 import type { Client } from '../types';
+import { formatBirthDate, formatGender } from '../utils/format';
 
 const actionGroups = [
   [
@@ -113,7 +114,7 @@ function AddressCard({ client }: { client: Client }) {
       <div className="h-px bg-[#dde1e7] mt-[11px] mb-[22px]" />
 
       <dl className="space-y-[26px]">
-        <SpecRow label="Comune" value={client.municipality} />
+        <SpecRow label="Comune" value={client.birthPlace} />
         <SpecRow label="Indirizzo" value={client.address} />
         <SpecRow label="Citta" value={client.city} />
         <SpecRow label="CAP" value={client.postalCode} />
@@ -236,23 +237,4 @@ function StatusMessage({
       </button>
     </div>
   );
-}
-
-const MONTHS_IT = [
-  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-];
-
-/** Format an ISO `YYYY-MM-DD` date as `D MMMM YYYY` in Italian (timezone-safe). */
-function formatBirthDate(value: string): string {
-  if (!value) return '';
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return value;
-  return `${day} ${MONTHS_IT[month - 1]} ${year}`;
-}
-
-function formatGender(value: string): string {
-  if (value === 'M') return 'Maschile';
-  if (value === 'F') return 'Femminile';
-  return value;
 }

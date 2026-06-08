@@ -32,9 +32,10 @@ export type Client = {
   phone: string;
   email: string;
   birthDate: string;
-  municipality: string;
+  birthPlace: string;
   address: string;
   city: string;
+  province: string;
   postalCode: string;
   country: string;
   district: string;
@@ -44,7 +45,16 @@ export type Client = {
 /** Subset of {@link Client} returned by the clients list endpoint. */
 export type ClientListItem = Pick<
   Client,
-  'code' | 'name' | 'surname' | 'fiscalCode' | 'phone' | 'email'
+  | 'code'
+  | 'name'
+  | 'surname'
+  | 'fiscalCode'
+  | 'birthDate'
+  | 'birthPlace'
+  | 'address'
+  | 'city'
+  | 'province'
+  | 'phone'
 >;
 
 export type Employee = {

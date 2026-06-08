@@ -39,8 +39,12 @@ class ClientListSerializer(NullToEmptyMixin):
     name = serializers.CharField(source="nome")
     surname = serializers.CharField(source="cognome")
     fiscalCode = serializers.CharField(source="codice_fiscale")
+    birthDate = serializers.DateField(source="data_nascita")
+    birthPlace = serializers.CharField(source="comune_nascita")
+    address = serializers.CharField(source="indirizzo")
+    city = serializers.CharField(source="citta")
+    province = serializers.CharField(source="provincia")
     phone = serializers.CharField(source="telefono")
-    email = serializers.CharField()
 
 
 class ClientDetailSerializer(NullToEmptyMixin):
@@ -54,9 +58,10 @@ class ClientDetailSerializer(NullToEmptyMixin):
     email = serializers.CharField()
     birthDate = serializers.DateField(source="data_nascita")
     gender = serializers.CharField(source="sesso")
-    municipality = serializers.CharField(source="comune_nascita")
+    birthPlace = serializers.CharField(source="comune_nascita")
     address = serializers.CharField(source="indirizzo")
     city = serializers.CharField(source="citta")
+    province = serializers.CharField(source="provincia")
     postalCode = serializers.CharField(source="cap")
     country = serializers.CharField(source="nazione")
     district = serializers.CharField(source="distretto_appartenenza")
