@@ -7,6 +7,8 @@ import { ClientDetailView } from '../../features/clients/views/ClientDetailView'
 import { ClientOrthopedicView } from '../../features/clients/views/ClientOrthopedicView';
 import { DoctorDetailView } from '../../features/doctors/views/DoctorDetailView';
 import { DoctorsView } from '../../features/doctors/views/DoctorsView';
+import { HealthCompaniesView } from '../../features/healthCompanies/views/HealthCompaniesView';
+import { HealthCompanyDetailView } from '../../features/healthCompanies/views/HealthCompanyDetailView';
 import { PlaceholderView } from '../../features/placeholders/PlaceholderView';
 
 const placeholder = (title: string) => () => <PlaceholderView title={title} />;
@@ -15,7 +17,7 @@ const viewComponents = {
   dashboard: placeholder('Dashboard'),
   clients: ClientsView,
   doctors: DoctorsView,
-  'health-companies': placeholder('Aziende Sanitarie'),
+  'health-companies': HealthCompaniesView,
   products: placeholder('Prodotti'),
   quotes: placeholder('Preventivi'),
   settings: placeholder('Configurazioni'),
@@ -24,6 +26,7 @@ const viewComponents = {
   'client-detail': ClientDetailView,
   'client-orthopedic': ClientOrthopedicView,
   'doctor-detail': DoctorDetailView,
+  'health-company-detail': HealthCompanyDetailView,
 } as const;
 
 export function AppLayout() {

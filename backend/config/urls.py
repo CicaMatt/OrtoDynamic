@@ -11,6 +11,7 @@ from django.urls import include, path
 api_v1_patterns = [
     path("clients/", include("apps.clients.api.urls")),
     path("doctors/", include("apps.doctors.api.urls")),
+    path("health-companies/", include("apps.health_companies.api.urls")),
 ]
 
 urlpatterns = [

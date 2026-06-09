@@ -1,8 +1,13 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { updateClient, type ClientUpdate } from '../../features/clients/api/clients';
 import { updateDoctor, type DoctorUpdate } from '../../features/doctors/api/doctors';
+import {
+  updateHealthCompany,
+  type HealthCompanyUpdate,
+} from '../../features/healthCompanies/api/healthCompanies';
 import type { Client, ClientOrthopedic } from '../../features/clients/types';
 import type { Doctor } from '../../features/doctors/types';
+import type { HealthCompany } from '../../features/healthCompanies/types';
 
 const EDITABLE_CLIENT_KEYS = [
   'name', 'surname', 'fiscalCode', 'gender', 'birthMunicipality', 'birthDate',
@@ -21,7 +26,15 @@ const EDITABLE_DOCTOR_KEYS = [
   'surname', 'name', 'address', 'phone', 'email', 'note',
 ] as const satisfies readonly (keyof Doctor)[];
 
-export type EditTarget = { type: 'client'; id: string } | { type: 'doctor'; id: string };
+const EDITABLE_HEALTH_COMPANY_KEYS = [
+  'municipalityCode', 'municipality', 'regionCode', 'regionName', 'companyCode',
+  'companyName', 'year', 'males', 'females', 'total', 'district',
+] as const satisfies readonly (keyof HealthCompany)[];
+
+export type EditTarget =
+  | { type: 'client'; id: string }
+  | { type: 'doctor'; id: string }
+  | { type: 'healthCompany'; id: string };
 
 type EntityEditValue = {
   editing: boolean;
@@ -33,14 +46,18 @@ type EntityEditValue = {
   clientDraft: Client | null;
   clientOrthopedicDraft: ClientOrthopedic | null;
   doctorDraft: Doctor | null;
+  healthCompanyDraft: HealthCompany | null;
   startClientEdit: (code: string) => void;
   startDoctorEdit: (id: string) => void;
+  startHealthCompanyEdit: (id: string) => void;
   seedClient: (client: Client) => void;
   seedClientOrthopedic: (ortho: ClientOrthopedic) => void;
   seedDoctor: (doctor: Doctor) => void;
+  seedHealthCompany: (company: HealthCompany) => void;
   setClientField: (key: keyof Client, value: string) => void;
   setClientOrthopedicField: (key: keyof ClientOrthopedic, value: string) => void;
   setDoctorField: (key: keyof Doctor, value: string) => void;
+  setHealthCompanyField: (key: keyof HealthCompany, value: string) => void;
   cancel: () => void;
   save: () => Promise<boolean>;
 };
@@ -65,6 +82,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
   const [clientOrthopedicOriginal, setClientOrthopedicOriginal] = useState<ClientOrthopedic | null>(null);
   const [doctorDraft, setDoctorDraft] = useState<Doctor | null>(null);
   const [doctorOriginal, setDoctorOriginal] = useState<Doctor | null>(null);
+  const [healthCompanyDraft, setHealthCompanyDraft] = useState<HealthCompany | null>(null);
+  const [healthCompanyOriginal, setHealthCompanyOriginal] = useState<HealthCompany | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
@@ -76,6 +95,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setClientOrthopedicOriginal(null);
     setDoctorDraft(null);
     setDoctorOriginal(null);
+    setHealthCompanyDraft(null);
+    setHealthCompanyOriginal(null);
     setSaveError(null);
   }, []);
 
@@ -103,6 +124,15 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     [reset],
   );
 
+  const startHealthCompanyEdit = useCallback(
+    (id: string) => {
+      reset();
+      setEditTarget({ type: 'healthCompany', id });
+      setEditing(true);
+    },
+    [reset],
+  );
+
   const seedClient = useCallback((client: Client) => {
     setClientDraft((prev) => prev ?? { ...client });
     setClientOriginal((prev) => prev ?? { ...client });
@@ -118,6 +148,11 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setDoctorOriginal((prev) => prev ?? { ...doctor });
   }, []);
 
+  const seedHealthCompany = useCallback((company: HealthCompany) => {
+    setHealthCompanyDraft((prev) => prev ?? { ...company });
+    setHealthCompanyOriginal((prev) => prev ?? { ...company });
+  }, []);
+
   const setClientField = useCallback((key: keyof Client, value: string) => {
     setClientDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
@@ -128,6 +163,10 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
 
   const setDoctorField = useCallback((key: keyof Doctor, value: string) => {
     setDoctorDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+  }, []);
+
+  const setHealthCompanyField = useCallback((key: keyof HealthCompany, value: string) => {
+    setHealthCompanyDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
 
   const clientChanges = useMemo(
@@ -142,18 +181,25 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     () => diff(doctorDraft, doctorOriginal, EDITABLE_DOCTOR_KEYS),
     [doctorDraft, doctorOriginal],
   );
+  const healthCompanyChanges = useMemo(
+    () => diff(healthCompanyDraft, healthCompanyOriginal, EDITABLE_HEALTH_COMPANY_KEYS),
+    [healthCompanyDraft, healthCompanyOriginal],
+  );
   const isDirty =
     Object.keys(clientChanges).length > 0 ||
     Object.keys(clientOrthopedicChanges).length > 0 ||
-    Object.keys(doctorChanges).length > 0;
+    Object.keys(doctorChanges).length > 0 ||
+    Object.keys(healthCompanyChanges).length > 0;
 
   const save = useCallback(async () => {
     if (!editTarget) return true;
 
-    const payload =
-      editTarget.type === 'client'
-        ? ({ ...clientChanges, ...clientOrthopedicChanges } as ClientUpdate)
-        : ({ ...doctorChanges } as DoctorUpdate);
+    const payload = buildPayload(editTarget, {
+      clientChanges,
+      clientOrthopedicChanges,
+      doctorChanges,
+      healthCompanyChanges,
+    });
     if (Object.keys(payload).length === 0) {
       endSession();
       return true;
@@ -171,8 +217,10 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     try {
       if (editTarget.type === 'client') {
         await updateClient(editTarget.id, payload as ClientUpdate);
-      } else {
+      } else if (editTarget.type === 'doctor') {
         await updateDoctor(editTarget.id, payload as DoctorUpdate);
+      } else {
+        await updateHealthCompany(editTarget.id, payload as HealthCompanyUpdate);
       }
       endSession();
       setDataVersion((v) => v + 1);
@@ -183,7 +231,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     } finally {
       setSaving(false);
     }
-  }, [editTarget, clientChanges, clientOrthopedicChanges, doctorChanges, endSession]);
+  }, [editTarget, clientChanges, clientOrthopedicChanges, doctorChanges, healthCompanyChanges, endSession]);
 
   const value: EntityEditValue = {
     editing,
@@ -195,14 +243,18 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     clientDraft,
     clientOrthopedicDraft,
     doctorDraft,
+    healthCompanyDraft,
     startClientEdit,
     startDoctorEdit,
+    startHealthCompanyEdit,
     seedClient,
     seedClientOrthopedic,
     seedDoctor,
+    seedHealthCompany,
     setClientField,
     setClientOrthopedicField,
     setDoctorField,
+    setHealthCompanyField,
     cancel: endSession,
     save,
   };
@@ -214,4 +266,26 @@ export function useEntityEdit() {
   const ctx = useContext(EntityEditContext);
   if (!ctx) throw new Error('useEntityEdit must be used inside EntityEditProvider');
   return ctx;
+}
+
+function buildPayload(
+  target: EditTarget,
+  changes: {
+    clientChanges: Record<string, unknown>;
+    clientOrthopedicChanges: Record<string, unknown>;
+    doctorChanges: Record<string, unknown>;
+    healthCompanyChanges: Record<string, unknown>;
+  },
+) {
+  if (target.type === 'client') {
+    return { ...changes.clientChanges, ...changes.clientOrthopedicChanges } as ClientUpdate;
+  }
+  if (target.type === 'doctor') {
+    return { ...changes.doctorChanges } as DoctorUpdate;
+  }
+
+  const payload = { ...changes.healthCompanyChanges } as HealthCompanyUpdate;
+  if (payload.year === '') payload.year = null;
+  if ('year' in payload && payload.year !== null) payload.year = Number(payload.year);
+  return payload;
 }

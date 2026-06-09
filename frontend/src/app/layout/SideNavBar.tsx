@@ -13,7 +13,12 @@ const mainNav: NavEntry[] = [
   { view: 'dashboard', icon: 'dashboard', label: 'Dashboard', matches: ['dashboard'] },
   { view: 'clients', icon: 'group', label: 'Clienti', matches: ['clients', 'client-detail', 'client-orthopedic'] },
   { view: 'doctors', icon: 'medical_services', label: 'Medici', matches: ['doctors', 'doctor-detail'] },
-  { view: 'health-companies', icon: 'local_hospital', label: 'Aziende Sanitarie', matches: ['health-companies'] },
+  {
+    view: 'health-companies',
+    icon: 'local_hospital',
+    label: 'Aziende Sanitarie',
+    matches: ['health-companies', 'health-company-detail'],
+  },
   { view: 'products', icon: 'inventory_2', label: 'Prodotti', matches: ['products'] },
   { view: 'quotes', icon: 'request_quote', label: 'Preventivi', matches: ['quotes'] },
   { view: 'work-orders', icon: 'engineering', label: 'Lavorazioni', matches: ['work-orders'] },
