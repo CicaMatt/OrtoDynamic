@@ -8,7 +8,11 @@ needs them.
 from rest_framework import generics
 
 from .selectors import clients_queryset, list_clients
-from .serializers import ClientDetailSerializer, ClientListSerializer
+from .serializers import (
+    ClientDetailSerializer,
+    ClientListSerializer,
+    ClientOrthopedicSerializer,
+)
 
 
 class ClientListView(generics.ListAPIView):
@@ -24,6 +28,13 @@ class ClientListView(generics.ListAPIView):
 
 class ClientDetailView(generics.RetrieveAPIView):
     serializer_class = ClientDetailSerializer
+
+    def get_queryset(self):
+        return clients_queryset()
+
+
+class ClientOrthopedicView(generics.RetrieveAPIView):
+    serializer_class = ClientOrthopedicSerializer
 
     def get_queryset(self):
         return clients_queryset()

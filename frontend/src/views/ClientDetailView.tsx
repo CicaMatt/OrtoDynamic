@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { fetchClient } from '../api/clients';
+import { DataCard, InfoBlock, SectionTitle } from '../components/common/DataCard';
 import { FieldValue } from '../components/common/FieldValue';
 import { Icon } from '../components/common/Icon';
 import { useNavigation } from '../contexts/NavigationContext';
@@ -7,17 +8,10 @@ import { useApiData } from '../hooks/useApiData';
 import type { Client } from '../types';
 import { formatBirthDate, formatGender } from '../utils/format';
 
-const actionGroups = [
-  [
-    { icon: 'edit', label: 'Modifica Dati Cliente' },
-    { icon: 'assignment_ind', label: 'Apri Anagrafica Completa' },
-    { icon: 'print', label: 'Stampa Scheda Cliente' },
-  ],
-  [
-    { icon: 'sms', label: 'Invia SMS' },
-    { icon: 'mail', label: 'Invia Email' },
-    { icon: 'attach_file', label: 'Allega Documento' },
-  ],
+const clientActions = [
+  { icon: 'edit', label: 'Modifica Dati Cliente' },
+  { icon: 'request_quote', label: 'Inserisci Preventivo' },
+  { icon: 'privacy_tip', label: 'Genera Modulo Privacy' },
 ];
 
 export function ClientDetailView() {
@@ -42,50 +36,65 @@ export function ClientDetailView() {
   }
 
   return (
-    <div className="max-w-[1440px]">
+    <div className="max-w-[1440px] -mt-1">
+      <header className="mb-[28px] border-b border-[#dde1e7] pb-[20px]">
+        <div className="flex items-center justify-between gap-[20px]">
+          <button
+            onClick={() => navigate('clients')}
+            className="inline-flex items-center gap-[5px] font-body-sm text-body-sm text-[#3d434c] hover:text-black"
+          >
+            <Icon name="arrow_back" className="text-[16px]" />
+            Torna indietro
+          </button>
+
+          <div className="flex items-center gap-[10px] font-body-md text-body-md">
+            <button onClick={() => navigate('clients')} className="text-[#3d434c] hover:text-black">
+              Clienti
+            </button>
+            <Icon name="chevron_right" className="text-[18px] text-[#3d434c]" />
+            <span className="font-semibold text-black">Dettaglio</span>
+          </div>
+        </div>
+
+        <h2 className="mt-[14px] font-headline-lg text-headline-lg font-bold text-black tracking-normal">
+          {`${client.name} ${client.surname}`.trim()}
+        </h2>
+        <p className="mt-[6px] font-body-md text-body-md text-[#737780]">
+          Codice: <span className="font-semibold text-[#343942]">{client.code}</span>
+        </p>
+      </header>
+
       <div className="grid grid-cols-[minmax(0,1fr)_380px] gap-[28px] items-start">
         <main>
-          <Breadcrumb onBack={() => navigate('clients')} />
-
-          <header className="mb-[38px]">
-            <h2 className="font-headline-lg text-headline-lg font-bold text-black tracking-normal">
-              Dettaglio Cliente: {client.code}
-            </h2>
-            <div className="flex items-center gap-[14px] mt-[7px]">
-              <span className="inline-flex items-center h-[29px] rounded-[14px] bg-[#d8e8ff] px-[15px] font-body-md text-body-md font-bold uppercase text-[#00539f]">
-                {client.surname} {client.name}
-              </span>
-              <span className="font-body-md text-body-md text-[#343942]">
-                Codice fiscale: {client.fiscalCode}
-              </span>
-            </div>
-          </header>
-
           <PersonalDataCard client={client} />
 
           <div className="grid grid-cols-2 gap-[28px] mt-[28px]">
             <AddressCard client={client} />
             <ContactCard client={client} />
           </div>
+
+          <div className="mt-[28px]">
+            <DataCard icon="sticky_note_2" title="Note">
+              <p className="font-body-md text-body-md text-[#171a20] whitespace-pre-line">
+                <FieldValue value={client.note} />
+              </p>
+            </DataCard>
+          </div>
         </main>
 
-        <aside className="space-y-[28px]">
-          <SummaryCard client={client} />
+        <aside className="space-y-[24px] border-l border-[#dde1e7] pl-[28px]">
+          <button
+            type="button"
+            onClick={() => navigate('client-orthopedic')}
+            className="inline-flex w-full items-center justify-center gap-[10px] h-[44px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-container transition-colors"
+          >
+            <Icon name="medical_services" className="text-[20px]" />
+            Visualizza Dati Ortopedici
+          </button>
+
           <ActionsCard />
         </aside>
       </div>
-    </div>
-  );
-}
-
-function Breadcrumb({ onBack }: { onBack: () => void }) {
-  return (
-    <div className="flex items-center gap-[13px] mb-[10px] font-body-md text-body-md">
-      <button onClick={onBack} className="text-[#3d434c] hover:text-black">
-        Clienti
-      </button>
-      <Icon name="chevron_right" className="text-[18px] text-[#3d434c]" />
-      <span className="font-semibold text-black">Dettaglio</span>
     </div>
   );
 }
@@ -97,12 +106,12 @@ function PersonalDataCard({ client }: { client: Client }) {
       <div className="h-px bg-[#dde1e7] mt-[11px] mb-[20px]" />
 
       <div className="grid grid-cols-3 gap-[36px]">
-        <InfoBlock label="Codice" value={client.code} strong />
         <InfoBlock label="Nome" value={client.name} />
         <InfoBlock label="Cognome" value={client.surname} />
-        <InfoBlock label="Data nascita" value={formatBirthDate(client.birthDate)} />
-        <InfoBlock label="Sesso" value={formatGender(client.gender)} />
         <InfoBlock label="Codice fiscale" value={client.fiscalCode} />
+        <InfoBlock label="Sesso" value={formatGender(client.gender)} />
+        <InfoBlock label="Comune Nascita" value={client.birthMunicipality} />
+        <InfoBlock label="Data nascita" value={formatBirthDate(client.birthDate)} />
       </div>
     </section>
   );
@@ -115,7 +124,6 @@ function AddressCard({ client }: { client: Client }) {
       <div className="h-px bg-[#dde1e7] mt-[11px] mb-[22px]" />
 
       <dl className="space-y-[26px]">
-        <SpecRow label="Comune" value={client.birthPlace} />
         <SpecRow label="Indirizzo" value={client.address} />
         <SpecRow label="Citta" value={client.city} />
         <SpecRow label="CAP" value={client.postalCode} />
@@ -133,76 +141,34 @@ function ContactCard({ client }: { client: Client }) {
 
       <dl className="space-y-[26px]">
         <SpecRow label="Numero telefono" value={client.phone} />
+        <SpecRow label="Numero cellulare" value={client.mobile} />
         <SpecRow label="Email" value={client.email} />
         <SpecRow label="Distretto appartenenza" value={client.district} />
+        <SpecRow label="ID Medico" value={client.doctorId} />
       </dl>
-    </section>
-  );
-}
-
-function SummaryCard({ client }: { client: Client }) {
-  return (
-    <section className="rounded-[8px] border border-[#c9cdd4] bg-white px-[24px] py-[24px]">
-      <h3 className="font-label-caps text-label-caps font-bold uppercase text-[#737780]">
-        Riepilogo cliente
-      </h3>
-      <div className="mt-[20px] space-y-[18px]">
-        <InfoBlock label="Cliente" value={`${client.name} ${client.surname}`} strong />
-        <InfoBlock label="Codice" value={client.code} />
-        <InfoBlock label="Distretto" value={client.district} />
-      </div>
     </section>
   );
 }
 
 function ActionsCard() {
   return (
-    <section className="rounded-[8px] border border-[#c9cdd4] bg-white px-[24px] py-[25px]">
+    <section className="rounded-[10px] border border-[#e2e6ec] bg-white px-[24px] py-[25px]">
       <h3 className="font-label-caps text-label-caps font-bold uppercase text-[#737780]">
         Azioni cliente
       </h3>
 
-      <div className="mt-[22px]">
-        {actionGroups.map((group, groupIndex) => (
-          <div key={groupIndex}>
-            {groupIndex > 0 && <div className="my-[19px] h-px bg-[#dde1e7]" />}
-            <div className="space-y-[13px]">
-              {group.map((action) => (
-                <button
-                  key={action.label}
-                  className="flex h-[46px] w-full items-center gap-[18px] rounded-[4px] px-[18px] text-left font-body-md text-body-md text-[#171a20] hover:bg-[#f4f6f9]"
-                >
-                  <Icon name={action.icon} className="text-[24px] text-[#707781]" />
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="mt-[22px] space-y-[8px]">
+        {clientActions.map((action) => (
+          <button
+            key={action.label}
+            className="flex h-[46px] w-full items-center gap-[18px] rounded-[6px] text-left font-body-md text-body-md text-[#171a20] hover:bg-[#f4f6f9] transition-colors"
+          >
+            <Icon name={action.icon} className="text-[24px] text-secondary" />
+            {action.label}
+          </button>
         ))}
       </div>
     </section>
-  );
-}
-
-function SectionTitle({ icon, title }: { icon: string; title: string }) {
-  return (
-    <div className="flex items-center gap-[13px]">
-      <Icon name={icon} className="text-[28px] text-[#005eb8]" />
-      <h3 className="font-headline-md text-headline-md font-bold text-black">{title}</h3>
-    </div>
-  );
-}
-
-function InfoBlock({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
-  return (
-    <div>
-      <dt className="font-label-caps text-label-caps font-bold uppercase text-[#737780]">
-        {label}
-      </dt>
-      <dd className={`mt-[8px] font-body-md text-body-md text-[#171a20] ${strong ? 'font-bold' : 'font-medium'}`}>
-        <FieldValue value={value} />
-      </dd>
-    </div>
   );
 }
 

@@ -20,7 +20,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const navigate = (next: View) => {
     setView(next);
     if (next !== 'work-detail') setSelectedWorkOrderId(null);
-    if (next !== 'client-detail') setSelectedClientCode(null);
+    if (next !== 'client-detail' && next !== 'client-orthopedic') setSelectedClientCode(null);
   };
 
   const openWorkDetail = (orderId: string) => {

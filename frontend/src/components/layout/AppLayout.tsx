@@ -5,6 +5,7 @@ import { ClientsView } from '../../views/ClientsView';
 import { WorkOrdersView } from '../../views/WorkOrdersView';
 import { WorkDetailView } from '../../views/WorkDetailView';
 import { ClientDetailView } from '../../views/ClientDetailView';
+import { ClientOrthopedicView } from '../../views/ClientOrthopedicView';
 import { EmployeesView } from '../../views/EmployeesView';
 import { PlaceholderView } from '../../views/PlaceholderView';
 
@@ -19,6 +20,7 @@ const viewComponents = {
   employees: EmployeesView,
   'work-orders': WorkOrdersView,
   'client-detail': ClientDetailView,
+  'client-orthopedic': ClientOrthopedicView,
   'work-detail': WorkDetailView,
 } as const;
 

@@ -9,6 +9,7 @@ export type View =
   | 'employees'
   | 'work-orders'
   | 'client-detail'
+  | 'client-orthopedic'
   | 'work-detail';
 
 export type WorkOrderStatus = 'IN LAVORAZIONE' | 'TERMINATO' | 'IN ATTESA';
@@ -30,16 +31,19 @@ export type Client = {
   surname: string;
   fiscalCode: string;
   phone: string;
+  mobile: string;
   email: string;
   birthDate: string;
-  birthPlace: string;
+  birthMunicipality: string;
   address: string;
   city: string;
   province: string;
   postalCode: string;
   country: string;
   district: string;
+  doctorId: string;
   gender: string;
+  note: string;
 };
 
 /** Subset of {@link Client} returned by the clients list endpoint. */
@@ -50,12 +54,52 @@ export type ClientListItem = Pick<
   | 'surname'
   | 'fiscalCode'
   | 'birthDate'
-  | 'birthPlace'
+  | 'birthMunicipality'
   | 'address'
   | 'city'
   | 'province'
   | 'phone'
 >;
+
+/** Orthopedic measurements and specifications for a client. */
+export type ClientOrthopedic = {
+  code: string;
+  name: string;
+  surname: string;
+  // Footwear / insole
+  shoeSize: string;
+  shoeModel: string;
+  width: string;
+  collar: string;
+  ankle: string;
+  spur: string;
+  lift: string;
+  inclinedPlane: string;
+  insoleType: string;
+  collarPassage: string;
+  anklePassage: string;
+  // Brace / frame
+  braceType: string;
+  shoulderStraps: string;
+  upToArmpit: string;
+  frontFabricHeight: string;
+  totalFrameHeight: string;
+  axillaryDistance: string;
+  // Body measurements
+  waist: string;
+  pelvisSize: string;
+  measure24: string;
+  neck: string;
+  humerus: string;
+  arm: string;
+  wrist: string;
+  pelvis: string;
+  thigh: string;
+  leg: string;
+  // Notes
+  clientNote: string;
+  other: string;
+};
 
 export type Employee = {
   username: string;

@@ -23,7 +23,9 @@ class Client(UnmanagedModel):
     sesso = models.CharField(max_length=1, null=True, blank=True)
 
     telefono = models.CharField(max_length=50, null=True, blank=True)
+    cellulare = models.CharField(max_length=50, null=True, blank=True)
     email = models.CharField(max_length=100, null=True, blank=True)
+    id_medico = models.BigIntegerField(null=True, blank=True)
 
     indirizzo = models.CharField(max_length=255, null=True, blank=True)
     citta = models.CharField(max_length=100, null=True, blank=True)
@@ -31,6 +33,44 @@ class Client(UnmanagedModel):
     cap = models.CharField(max_length=10, null=True, blank=True)
     nazione = models.CharField(max_length=100, null=True, blank=True)
     distretto_appartenenza = models.CharField(max_length=255, null=True, blank=True)
+
+    # --- Orthopedic data (footwear / insole) ---
+    misura_scarpa = models.CharField(max_length=100, null=True, blank=True)
+    modello_scarpa = models.CharField(max_length=255, null=True, blank=True)
+    pianta = models.CharField(max_length=100, null=True, blank=True)
+    collo = models.CharField(max_length=100, null=True, blank=True)
+    caviglia = models.CharField(max_length=50, null=True, blank=True)
+    speronatura = models.CharField(max_length=100, null=True, blank=True)
+    rialzo = models.CharField(max_length=100, null=True, blank=True)
+    piano_incl_tot = models.CharField(max_length=100, null=True, blank=True)
+    tipo_plantare = models.CharField(max_length=100, null=True, blank=True)
+    passaggio_collo = models.CharField(max_length=50, null=True, blank=True)
+    passaggio_caviglie = models.CharField(max_length=50, null=True, blank=True)
+
+    # --- Orthopedic data (brace / frame) ---
+    tipo_tutore = models.CharField(max_length=100, null=True, blank=True)
+    spallacci = models.CharField(max_length=255, null=True, blank=True)
+    fino_ascella = models.CharField(max_length=10, null=True, blank=True)
+    alt_stoffa_ant = models.CharField(max_length=10, null=True, blank=True)
+    alt_tot_armatura = models.CharField(max_length=255, null=True, blank=True)
+    dist_ascellare = models.CharField(max_length=10, null=True, blank=True)
+
+    # --- Orthopedic data (body measurements) ---
+    misura_vita = models.CharField(max_length=10, null=True, blank=True)
+    misura_bacino = models.CharField(max_length=10, null=True, blank=True)
+    misura_2_4 = models.CharField(max_length=10, null=True, blank=True)
+    mis_collo = models.CharField(max_length=10, null=True, blank=True)
+    mis_omero = models.CharField(max_length=10, null=True, blank=True)
+    mis_braccio = models.CharField(max_length=10, null=True, blank=True)
+    mis_polso = models.CharField(max_length=10, null=True, blank=True)
+    mis_bacino = models.CharField(max_length=10, null=True, blank=True)
+    mis_coscia = models.CharField(max_length=10, null=True, blank=True)
+    mis_gamba = models.CharField(max_length=10, null=True, blank=True)
+
+    # --- Orthopedic notes ---
+    note = models.CharField(max_length=1000, null=True, blank=True)
+    altro = models.CharField(max_length=1000, null=True, blank=True)
+    note_cliente = models.CharField(max_length=4000, null=True, blank=True)
 
     class Meta(UnmanagedModel.Meta):
         db_table = "clienti"

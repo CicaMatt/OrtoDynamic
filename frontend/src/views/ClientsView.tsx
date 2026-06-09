@@ -17,7 +17,7 @@ const clientColumns: ReadonlyArray<{ key: ColumnKey; label: string }> = [
   { key: 'surname', label: 'Cognome' },
   { key: 'fiscalCode', label: 'Codice Fiscale' },
   { key: 'birthDate', label: 'Data Nascita' },
-  { key: 'birthPlace', label: 'Comune Nascita' },
+  { key: 'birthMunicipality', label: 'Comune Nascita' },
   { key: 'address', label: 'Indirizzo' },
   { key: 'city', label: 'Città' },
   { key: 'province', label: 'Provincia' },
