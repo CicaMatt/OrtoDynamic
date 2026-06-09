@@ -1,0 +1,13 @@
+export type View =
+  | 'dashboard'
+  | 'clients'
+  | 'doctors'
+  | 'health-companies'
+  | 'products'
+  | 'quotes'
+  | 'settings'
+  | 'employees'
+  | 'work-orders'
+  | 'client-detail'
+  | 'client-orthopedic'
+  | 'doctor-detail';

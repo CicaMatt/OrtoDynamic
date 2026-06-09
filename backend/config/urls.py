@@ -9,7 +9,8 @@ from django.contrib import admin
 from django.urls import include, path
 
 api_v1_patterns = [
-    path("clients/", include("apps.clients.urls")),
+    path("clients/", include("apps.clients.api.urls")),
+    path("doctors/", include("apps.doctors.api.urls")),
 ]
 
 urlpatterns = [

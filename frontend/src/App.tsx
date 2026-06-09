@@ -1,13 +1,13 @@
-import { ClientEditProvider } from './contexts/ClientEditContext';
-import { NavigationProvider } from './contexts/NavigationContext';
-import { AppLayout } from './components/layout/AppLayout';
+import { EntityEditProvider } from './app/editing/EntityEditContext';
+import { NavigationProvider } from './app/navigation/NavigationContext';
+import { AppLayout } from './app/layout/AppLayout';
 
 export function App() {
   return (
-    <ClientEditProvider>
+    <EntityEditProvider>
       <NavigationProvider>
         <AppLayout />
       </NavigationProvider>
-    </ClientEditProvider>
+    </EntityEditProvider>
   );
 }
