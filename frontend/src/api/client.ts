@@ -22,6 +22,26 @@ export async function apiGet<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+/** PATCH a JSON body to the API, with the same error handling as {@link apiGet}. */
+export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error('Impossibile contattare il server.');
+  }
+
+  if (!response.ok) {
+    throw new Error(await extractErrorMessage(response));
+  }
+
+  return (await response.json()) as T;
+}
+
 async function extractErrorMessage(response: Response): Promise<string> {
   try {
     const body = await response.json();

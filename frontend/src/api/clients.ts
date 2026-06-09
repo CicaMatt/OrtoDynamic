@@ -1,5 +1,8 @@
 import type { Client, ClientListItem, ClientOrthopedic } from '../types';
-import { apiGet } from './client';
+import { apiGet, apiPatch } from './client';
+
+/** Editable client fields, keyed as the API expects (camelCase). */
+export type ClientUpdate = Record<string, string | number | null>;
 
 /** All clients, as shown in the Clienti table. */
 export function fetchClients(): Promise<ClientListItem[]> {
@@ -14,4 +17,9 @@ export function fetchClient(code: string): Promise<Client> {
 /** Orthopedic data for a single client, by its code. */
 export function fetchClientOrthopedic(code: string): Promise<ClientOrthopedic> {
   return apiGet<ClientOrthopedic>(`/clients/${code}/orthopedic/`);
+}
+
+/** Persist edits to a client (anagrafica + orthopedic fields) in one PATCH. */
+export function updateClient(code: string, changes: ClientUpdate): Promise<unknown> {
+  return apiPatch(`/clients/${code}/`, changes);
 }

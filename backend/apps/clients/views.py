@@ -12,6 +12,7 @@ from .serializers import (
     ClientDetailSerializer,
     ClientListSerializer,
     ClientOrthopedicSerializer,
+    ClientUpdateSerializer,
 )
 
 
@@ -26,8 +27,13 @@ class ClientListView(generics.ListAPIView):
         return list_clients()
 
 
-class ClientDetailView(generics.RetrieveAPIView):
-    serializer_class = ClientDetailSerializer
+class ClientDetailView(generics.RetrieveUpdateAPIView):
+    """GET returns the full client detail; PATCH updates editable fields."""
+
+    def get_serializer_class(self):
+        if self.request.method in ("PUT", "PATCH"):
+            return ClientUpdateSerializer
+        return ClientDetailSerializer
 
     def get_queryset(self):
         return clients_queryset()

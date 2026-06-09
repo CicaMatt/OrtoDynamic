@@ -1,5 +1,7 @@
 import { useNavigation } from '../../contexts/NavigationContext';
 import { SideNavBar } from './SideNavBar';
+import { EditActionBar } from './EditActionBar';
+import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { DashboardView } from '../../views/DashboardView';
 import { ClientsView } from '../../views/ClientsView';
 import { WorkOrdersView } from '../../views/WorkOrdersView';
@@ -34,6 +36,8 @@ export function AppLayout() {
       <main className="ml-sidebar-width w-[calc(100%-theme(spacing.sidebar-width))] min-h-screen p-container-padding">
         <ActiveView />
       </main>
+      <EditActionBar />
+      <UnsavedChangesDialog />
     </div>
   );
 }

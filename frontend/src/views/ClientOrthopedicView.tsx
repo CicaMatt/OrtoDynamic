@@ -1,12 +1,14 @@
-import { type ReactNode } from 'react';
+import { useEffect } from 'react';
 import { fetchClientOrthopedic } from '../api/clients';
-import { DataCard, InfoBlock } from '../components/common/DataCard';
-import { Icon } from '../components/common/Icon';
+import { ClientPageHeader } from '../components/common/ClientPageHeader';
+import { DataCard, FieldGrid, type FieldConfig } from '../components/common/DataCard';
+import { StatusMessage } from '../components/common/StatusMessage';
+import { useClientEdit } from '../contexts/ClientEditContext';
 import { useNavigation } from '../contexts/NavigationContext';
 import { useApiData } from '../hooks/useApiData';
 import type { ClientOrthopedic } from '../types';
 
-type Field = { label: string; key: keyof ClientOrthopedic };
+type Field = FieldConfig<ClientOrthopedic>;
 
 const footwearFields: Field[] = [
   { label: 'Misura scarpa', key: 'shoeSize' },
@@ -45,124 +47,75 @@ const bodyFields: Field[] = [
 ];
 
 const noteFields: Field[] = [
-  { label: 'Note cliente', key: 'clientNote' },
-  { label: 'Altro', key: 'other' },
+  { label: 'Note cliente', key: 'clientNote', type: 'textarea' },
+  { label: 'Altro', key: 'other', type: 'textarea' },
 ];
 
 export function ClientOrthopedicView() {
   const { selectedClientCode, navigate } = useNavigation();
-  const { data, loading, error } = useApiData(
+  const { editing, orthoDraft, dataVersion, seedOrtho, setOrthoField } = useClientEdit();
+
+  const { data: fetched, loading, error } = useApiData(
     () =>
       selectedClientCode
         ? fetchClientOrthopedic(selectedClientCode)
         : Promise.reject(new Error('Nessun cliente selezionato.')),
-    [selectedClientCode],
+    [selectedClientCode, dataVersion],
   );
 
+  useEffect(() => {
+    if (editing && fetched) seedOrtho(fetched);
+  }, [editing, fetched, seedOrtho]);
+
   if (loading) {
-    return <StatusMessage onBack={() => navigate('client-detail')}>Caricamento dati...</StatusMessage>;
-  }
-  if (error || !data) {
     return (
-      <StatusMessage onBack={() => navigate('client-detail')} tone="error">
+      <StatusMessage onBack={() => navigate('client-detail')} backLabel="Torna al dettaglio">
+        Caricamento dati...
+      </StatusMessage>
+    );
+  }
+  if (error || !fetched) {
+    return (
+      <StatusMessage onBack={() => navigate('client-detail')} backLabel="Torna al dettaglio" tone="error">
         {error ?? 'Nessun cliente selezionato.'}
       </StatusMessage>
     );
   }
 
+  const data = editing && orthoDraft ? orthoDraft : fetched;
+
   return (
     <div className="max-w-[1440px] -mt-1">
-      <header className="mb-[28px] border-b border-[#dde1e7] pb-[20px]">
-        <div className="flex items-center justify-between gap-[20px]">
-          <button
-            onClick={() => navigate('client-detail')}
-            className="inline-flex items-center gap-[5px] font-body-sm text-body-sm text-[#3d434c] hover:text-black"
-          >
-            <Icon name="arrow_back" className="text-[16px]" />
-            Torna al dettaglio
-          </button>
-
-          <div className="flex items-center gap-[10px] font-body-md text-body-md">
-            <button onClick={() => navigate('clients')} className="text-[#3d434c] hover:text-black">
-              Clienti
-            </button>
-            <Icon name="chevron_right" className="text-[18px] text-[#3d434c]" />
-            <button onClick={() => navigate('client-detail')} className="text-[#3d434c] hover:text-black">
-              Dettaglio
-            </button>
-            <Icon name="chevron_right" className="text-[18px] text-[#3d434c]" />
-            <span className="font-semibold text-black">Dati Ortopedici</span>
-          </div>
-        </div>
-
-        <h2 className="mt-[14px] font-headline-lg text-headline-lg font-bold text-black tracking-normal">
-          {`${data.name} ${data.surname}`.trim()}
-        </h2>
-        <p className="mt-[6px] font-body-md text-body-md text-[#737780]">
-          Codice: <span className="font-semibold text-[#343942]">{data.code}</span>
-        </p>
-      </header>
+      <ClientPageHeader
+        back={{ label: 'Torna al dettaglio', onClick: () => navigate('client-detail') }}
+        crumbs={[
+          { label: 'Clienti', onClick: () => navigate('clients') },
+          { label: 'Dettaglio', onClick: () => navigate('client-detail') },
+          { label: 'Dati Ortopedici' },
+        ]}
+        name={data.name}
+        surname={data.surname}
+        code={data.code}
+      />
 
       <div className="space-y-[28px]">
         <DataCard icon="footprint" title="Calzatura e Plantare">
-          <FieldGrid data={data} fields={footwearFields} />
+          <FieldGrid data={data} fields={footwearFields} editing={editing} onChange={setOrthoField} />
         </DataCard>
 
         <div className="grid grid-cols-2 gap-[28px]">
           <DataCard icon="straighten" title="Tutore e Armatura">
-            <FieldGrid data={data} fields={braceFields} columns={2} />
+            <FieldGrid data={data} fields={braceFields} columns={2} editing={editing} onChange={setOrthoField} />
           </DataCard>
           <DataCard icon="accessibility_new" title="Misure Corporee">
-            <FieldGrid data={data} fields={bodyFields} columns={2} />
+            <FieldGrid data={data} fields={bodyFields} columns={2} editing={editing} onChange={setOrthoField} />
           </DataCard>
         </div>
 
         <DataCard icon="sticky_note_2" title="Note">
-          <FieldGrid data={data} fields={noteFields} columns={1} />
+          <FieldGrid data={data} fields={noteFields} columns={1} editing={editing} onChange={setOrthoField} />
         </DataCard>
       </div>
-    </div>
-  );
-}
-
-function FieldGrid({
-  data,
-  fields,
-  columns = 3,
-}: {
-  data: ClientOrthopedic;
-  fields: Field[];
-  columns?: 1 | 2 | 3;
-}) {
-  const columnsClass = columns === 1 ? 'grid-cols-1' : columns === 2 ? 'grid-cols-2' : 'grid-cols-3';
-  return (
-    <div className={`grid ${columnsClass} gap-x-[36px] gap-y-[24px]`}>
-      {fields.map((field) => (
-        <InfoBlock key={field.key} label={field.label} value={data[field.key]} />
-      ))}
-    </div>
-  );
-}
-
-function StatusMessage({
-  onBack,
-  tone = 'muted',
-  children,
-}: {
-  onBack: () => void;
-  tone?: 'muted' | 'error';
-  children: ReactNode;
-}) {
-  const toneClass = tone === 'error' ? 'text-error' : 'text-on-surface-variant';
-  return (
-    <div className="flex flex-col items-start gap-4">
-      <p className={`font-body-md text-body-md ${toneClass}`}>{children}</p>
-      <button
-        onClick={onBack}
-        className="text-on-surface-variant hover:text-primary flex items-center gap-2 font-body-md text-body-md"
-      >
-        <Icon name="arrow_back" /> Torna al dettaglio
-      </button>
     </div>
   );
 }
