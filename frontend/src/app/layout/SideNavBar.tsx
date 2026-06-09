@@ -19,7 +19,7 @@ const mainNav: NavEntry[] = [
     label: 'Aziende Sanitarie',
     matches: ['health-companies', 'health-company-detail'],
   },
-  { view: 'products', icon: 'inventory_2', label: 'Prodotti', matches: ['products'] },
+  { view: 'products', icon: 'inventory_2', label: 'Prodotti', matches: ['products', 'product-detail'] },
   { view: 'quotes', icon: 'request_quote', label: 'Preventivi', matches: ['quotes'] },
   { view: 'work-orders', icon: 'engineering', label: 'Lavorazioni', matches: ['work-orders'] },
   { view: 'settings', icon: 'settings', label: 'Configurazioni', matches: ['settings'] },

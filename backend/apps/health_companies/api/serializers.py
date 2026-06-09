@@ -4,7 +4,11 @@ Serializers for the HealthCompany resource backed by `aziende_sanitarie`.
 
 from rest_framework import serializers
 
-from apps.common.api.serializers import NullToEmptyMixin
+from apps.common.api.serializers import (
+    NullToEmptyMixin,
+    UpdateFieldsSerializer,
+    nullable_text,
+)
 
 
 class HealthCompanyListSerializer(NullToEmptyMixin):
@@ -29,29 +33,17 @@ class HealthCompanyDetailSerializer(HealthCompanyListSerializer):
     district = serializers.CharField(source="distretto")
 
 
-def _nullable_text(source):
-    """Optional, blank/null-tolerant text field bound to a nullable column."""
-    return serializers.CharField(source=source, required=False, allow_blank=True, allow_null=True)
-
-
-class HealthCompanyUpdateSerializer(serializers.Serializer):
+class HealthCompanyUpdateSerializer(UpdateFieldsSerializer):
     """Writable serializer for health-company detail edits."""
 
     year = serializers.IntegerField(source="anno", required=False, allow_null=True)
-    municipalityCode = _nullable_text("codice_comune")
-    municipality = _nullable_text("comune")
-    regionCode = _nullable_text("codice_regione")
-    regionName = _nullable_text("denominazione_regione")
-    companyCode = _nullable_text("codice_azienda")
-    companyName = _nullable_text("denominazione_azienda")
-    males = _nullable_text("maschi")
-    females = _nullable_text("femmine")
-    total = _nullable_text("totale")
-    district = _nullable_text("distretto")
-
-    def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        if validated_data:
-            instance.save(update_fields=list(validated_data.keys()))
-        return instance
+    municipalityCode = nullable_text("codice_comune")
+    municipality = nullable_text("comune")
+    regionCode = nullable_text("codice_regione")
+    regionName = nullable_text("denominazione_regione")
+    companyCode = nullable_text("codice_azienda")
+    companyName = nullable_text("denominazione_azienda")
+    males = nullable_text("maschi")
+    females = nullable_text("femmine")
+    total = nullable_text("totale")
+    district = nullable_text("distretto")

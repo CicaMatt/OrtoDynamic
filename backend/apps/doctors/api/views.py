@@ -1,28 +1,16 @@
-"""
-Thin endpoints for the Doctor resource.
-"""
+"""Thin endpoints for the Doctor resource."""
 
-from rest_framework import generics
-
-from apps.doctors.selectors import doctors_queryset, list_doctors
+from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListAPIView
+from apps.doctors.models import Doctor
 from .serializers import DoctorDetailSerializer, DoctorListSerializer, DoctorUpdateSerializer
 
 
-class DoctorListView(generics.ListAPIView):
+class DoctorListView(UnpaginatedListAPIView):
     serializer_class = DoctorListSerializer
-    pagination_class = None
-
-    def get_queryset(self):
-        return list_doctors()
+    queryset = Doctor.objects.order_by("cognome", "nome", "id")
 
 
-class DoctorDetailView(generics.RetrieveUpdateAPIView):
-    """GET returns full doctor detail; PATCH updates editable fields."""
-
-    def get_serializer_class(self):
-        if self.request.method in ("PUT", "PATCH"):
-            return DoctorUpdateSerializer
-        return DoctorDetailSerializer
-
-    def get_queryset(self):
-        return doctors_queryset()
+class DoctorDetailView(ReadUpdateDetailAPIView):
+    serializer_class = DoctorDetailSerializer
+    write_serializer_class = DoctorUpdateSerializer
+    queryset = Doctor.objects.all()

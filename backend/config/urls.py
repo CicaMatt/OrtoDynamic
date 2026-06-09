@@ -12,6 +12,7 @@ api_v1_patterns = [
     path("clients/", include("apps.clients.api.urls")),
     path("doctors/", include("apps.doctors.api.urls")),
     path("health-companies/", include("apps.health_companies.api.urls")),
+    path("products/", include("apps.products.api.urls")),
 ]
 
 urlpatterns = [

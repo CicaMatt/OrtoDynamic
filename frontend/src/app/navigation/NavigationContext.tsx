@@ -7,10 +7,12 @@ type NavigationValue = {
   selectedClientCode: string | null;
   selectedDoctorId: string | null;
   selectedHealthCompanyId: string | null;
+  selectedProductId: string | null;
   navigate: (view: View) => void;
   openClientDetail: (clientCode: string) => void;
   openDoctorDetail: (id: string) => void;
   openHealthCompanyDetail: (id: string) => void;
+  openProductDetail: (id: string) => void;
   /** Target of a navigation blocked by unsaved edits (drives the confirm dialog). */
   pendingView: View | null;
   keepAndContinue: () => void;
@@ -27,6 +29,7 @@ type NavigationTarget = {
   clientCode?: string | null;
   doctorId?: string | null;
   healthCompanyId?: string | null;
+  productId?: string | null;
 };
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
@@ -35,6 +38,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [selectedClientCode, setSelectedClientCode] = useState<string | null>(null);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
   const [selectedHealthCompanyId, setSelectedHealthCompanyId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [pendingTarget, setPendingTarget] = useState<NavigationTarget | null>(null);
 
   const targetForView = (next: View): NavigationTarget => ({
@@ -42,6 +46,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     clientCode: isClientView(next) ? selectedClientCode : null,
     doctorId: next === 'doctor-detail' ? selectedDoctorId : null,
     healthCompanyId: next === 'health-company-detail' ? selectedHealthCompanyId : null,
+    productId: next === 'product-detail' ? selectedProductId : null,
   });
 
   const isSameEditTarget = (target: NavigationTarget) => {
@@ -52,7 +57,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     if (edit.editTarget.type === 'doctor') {
       return target.view === 'doctor-detail' && target.doctorId === edit.editTarget.id;
     }
-    return target.view === 'health-company-detail' && target.healthCompanyId === edit.editTarget.id;
+    if (edit.editTarget.type === 'healthCompany') {
+      return target.view === 'health-company-detail' && target.healthCompanyId === edit.editTarget.id;
+    }
+    return target.view === 'product-detail' && target.productId === edit.editTarget.id;
   };
 
   const applyTarget = (target: NavigationTarget) => {
@@ -62,6 +70,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     setSelectedHealthCompanyId(
       target.view === 'health-company-detail' ? target.healthCompanyId ?? null : null,
     );
+    setSelectedProductId(target.view === 'product-detail' ? target.productId ?? null : null);
   };
 
   const guardedApply = (target: NavigationTarget) => {
@@ -91,6 +100,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     guardedApply({ view: 'health-company-detail', healthCompanyId: id });
   };
 
+  const openProductDetail = (id: string) => {
+    guardedApply({ view: 'product-detail', productId: id });
+  };
+
   const keepAndContinue = async () => {
     const target = pendingTarget;
     const saved = await edit.save();
@@ -114,10 +127,12 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         selectedClientCode,
         selectedDoctorId,
         selectedHealthCompanyId,
+        selectedProductId,
         navigate,
         openClientDetail,
         openDoctorDetail,
         openHealthCompanyDetail,
+        openProductDetail,
         pendingView: pendingTarget?.view ?? null,
         keepAndContinue,
         discardAndContinue,

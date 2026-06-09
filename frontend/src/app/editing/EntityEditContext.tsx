@@ -5,9 +5,11 @@ import {
   updateHealthCompany,
   type HealthCompanyUpdate,
 } from '../../features/healthCompanies/api/healthCompanies';
+import { updateProduct, type ProductUpdate } from '../../features/products/api/products';
 import type { Client, ClientOrthopedic } from '../../features/clients/types';
 import type { Doctor } from '../../features/doctors/types';
 import type { HealthCompany } from '../../features/healthCompanies/types';
+import type { Product } from '../../features/products/types';
 
 const EDITABLE_CLIENT_KEYS = [
   'name', 'surname', 'fiscalCode', 'gender', 'birthMunicipality', 'birthDate',
@@ -31,10 +33,15 @@ const EDITABLE_HEALTH_COMPANY_KEYS = [
   'companyName', 'year', 'males', 'females', 'total', 'district',
 ] as const satisfies readonly (keyof HealthCompany)[];
 
+const EDITABLE_PRODUCT_KEYS = [
+  'code', 'description', 'price', 'year',
+] as const satisfies readonly (keyof Product)[];
+
 export type EditTarget =
   | { type: 'client'; id: string }
   | { type: 'doctor'; id: string }
-  | { type: 'healthCompany'; id: string };
+  | { type: 'healthCompany'; id: string }
+  | { type: 'product'; id: string };
 
 type EntityEditValue = {
   editing: boolean;
@@ -47,17 +54,21 @@ type EntityEditValue = {
   clientOrthopedicDraft: ClientOrthopedic | null;
   doctorDraft: Doctor | null;
   healthCompanyDraft: HealthCompany | null;
+  productDraft: Product | null;
   startClientEdit: (code: string) => void;
   startDoctorEdit: (id: string) => void;
   startHealthCompanyEdit: (id: string) => void;
+  startProductEdit: (id: string) => void;
   seedClient: (client: Client) => void;
   seedClientOrthopedic: (ortho: ClientOrthopedic) => void;
   seedDoctor: (doctor: Doctor) => void;
   seedHealthCompany: (company: HealthCompany) => void;
+  seedProduct: (product: Product) => void;
   setClientField: (key: keyof Client, value: string) => void;
   setClientOrthopedicField: (key: keyof ClientOrthopedic, value: string) => void;
   setDoctorField: (key: keyof Doctor, value: string) => void;
   setHealthCompanyField: (key: keyof HealthCompany, value: string) => void;
+  setProductField: (key: keyof Product, value: string) => void;
   cancel: () => void;
   save: () => Promise<boolean>;
 };
@@ -84,6 +95,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
   const [doctorOriginal, setDoctorOriginal] = useState<Doctor | null>(null);
   const [healthCompanyDraft, setHealthCompanyDraft] = useState<HealthCompany | null>(null);
   const [healthCompanyOriginal, setHealthCompanyOriginal] = useState<HealthCompany | null>(null);
+  const [productDraft, setProductDraft] = useState<Product | null>(null);
+  const [productOriginal, setProductOriginal] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
@@ -97,6 +110,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setDoctorOriginal(null);
     setHealthCompanyDraft(null);
     setHealthCompanyOriginal(null);
+    setProductDraft(null);
+    setProductOriginal(null);
     setSaveError(null);
   }, []);
 
@@ -133,6 +148,15 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     [reset],
   );
 
+  const startProductEdit = useCallback(
+    (id: string) => {
+      reset();
+      setEditTarget({ type: 'product', id });
+      setEditing(true);
+    },
+    [reset],
+  );
+
   const seedClient = useCallback((client: Client) => {
     setClientDraft((prev) => prev ?? { ...client });
     setClientOriginal((prev) => prev ?? { ...client });
@@ -153,6 +177,11 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setHealthCompanyOriginal((prev) => prev ?? { ...company });
   }, []);
 
+  const seedProduct = useCallback((product: Product) => {
+    setProductDraft((prev) => prev ?? { ...product });
+    setProductOriginal((prev) => prev ?? { ...product });
+  }, []);
+
   const setClientField = useCallback((key: keyof Client, value: string) => {
     setClientDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
@@ -167,6 +196,10 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
 
   const setHealthCompanyField = useCallback((key: keyof HealthCompany, value: string) => {
     setHealthCompanyDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+  }, []);
+
+  const setProductField = useCallback((key: keyof Product, value: string) => {
+    setProductDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
 
   const clientChanges = useMemo(
@@ -185,11 +218,16 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     () => diff(healthCompanyDraft, healthCompanyOriginal, EDITABLE_HEALTH_COMPANY_KEYS),
     [healthCompanyDraft, healthCompanyOriginal],
   );
+  const productChanges = useMemo(
+    () => diff(productDraft, productOriginal, EDITABLE_PRODUCT_KEYS),
+    [productDraft, productOriginal],
+  );
   const isDirty =
     Object.keys(clientChanges).length > 0 ||
     Object.keys(clientOrthopedicChanges).length > 0 ||
     Object.keys(doctorChanges).length > 0 ||
-    Object.keys(healthCompanyChanges).length > 0;
+    Object.keys(healthCompanyChanges).length > 0 ||
+    Object.keys(productChanges).length > 0;
 
   const save = useCallback(async () => {
     if (!editTarget) return true;
@@ -199,6 +237,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
       clientOrthopedicChanges,
       doctorChanges,
       healthCompanyChanges,
+      productChanges,
     });
     if (Object.keys(payload).length === 0) {
       endSession();
@@ -219,8 +258,10 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
         await updateClient(editTarget.id, payload as ClientUpdate);
       } else if (editTarget.type === 'doctor') {
         await updateDoctor(editTarget.id, payload as DoctorUpdate);
-      } else {
+      } else if (editTarget.type === 'healthCompany') {
         await updateHealthCompany(editTarget.id, payload as HealthCompanyUpdate);
+      } else {
+        await updateProduct(editTarget.id, payload as ProductUpdate);
       }
       endSession();
       setDataVersion((v) => v + 1);
@@ -231,7 +272,15 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     } finally {
       setSaving(false);
     }
-  }, [editTarget, clientChanges, clientOrthopedicChanges, doctorChanges, healthCompanyChanges, endSession]);
+  }, [
+    editTarget,
+    clientChanges,
+    clientOrthopedicChanges,
+    doctorChanges,
+    healthCompanyChanges,
+    productChanges,
+    endSession,
+  ]);
 
   const value: EntityEditValue = {
     editing,
@@ -244,17 +293,21 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     clientOrthopedicDraft,
     doctorDraft,
     healthCompanyDraft,
+    productDraft,
     startClientEdit,
     startDoctorEdit,
     startHealthCompanyEdit,
+    startProductEdit,
     seedClient,
     seedClientOrthopedic,
     seedDoctor,
     seedHealthCompany,
+    seedProduct,
     setClientField,
     setClientOrthopedicField,
     setDoctorField,
     setHealthCompanyField,
+    setProductField,
     cancel: endSession,
     save,
   };
@@ -275,6 +328,7 @@ function buildPayload(
     clientOrthopedicChanges: Record<string, unknown>;
     doctorChanges: Record<string, unknown>;
     healthCompanyChanges: Record<string, unknown>;
+    productChanges: Record<string, unknown>;
   },
 ) {
   if (target.type === 'client') {
@@ -283,9 +337,16 @@ function buildPayload(
   if (target.type === 'doctor') {
     return { ...changes.doctorChanges } as DoctorUpdate;
   }
+  if (target.type === 'healthCompany') {
+    const payload = { ...changes.healthCompanyChanges } as HealthCompanyUpdate;
+    if (payload.year === '') payload.year = null;
+    if ('year' in payload && payload.year !== null) payload.year = Number(payload.year);
+    return payload;
+  }
 
-  const payload = { ...changes.healthCompanyChanges } as HealthCompanyUpdate;
+  const payload = { ...changes.productChanges } as ProductUpdate;
   if (payload.year === '') payload.year = null;
-  if ('year' in payload && payload.year !== null) payload.year = Number(payload.year);
+  if (payload.price === '') payload.price = null;
+  if ('price' in payload && payload.price !== null) payload.price = Number(payload.price);
   return payload;
 }

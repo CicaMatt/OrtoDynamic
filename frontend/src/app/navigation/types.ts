@@ -11,4 +11,5 @@ export type View =
   | 'client-detail'
   | 'client-orthopedic'
   | 'doctor-detail'
-  | 'health-company-detail';
+  | 'health-company-detail'
+  | 'product-detail';

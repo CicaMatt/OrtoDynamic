@@ -1,10 +1,7 @@
-"""
-Thin endpoints for the HealthCompany resource.
-"""
+"""Thin endpoints for the HealthCompany resource."""
 
-from rest_framework import generics
-
-from apps.health_companies.selectors import health_companies_queryset, list_health_companies
+from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListAPIView
+from apps.health_companies.models import HealthCompany
 from .serializers import (
     HealthCompanyDetailSerializer,
     HealthCompanyListSerializer,
@@ -12,21 +9,17 @@ from .serializers import (
 )
 
 
-class HealthCompanyListView(generics.ListAPIView):
+class HealthCompanyListView(UnpaginatedListAPIView):
     serializer_class = HealthCompanyListSerializer
-    pagination_class = None
+    queryset = HealthCompany.objects.order_by(
+        "denominazione_regione",
+        "denominazione_azienda",
+        "comune",
+        "id",
+    )
 
-    def get_queryset(self):
-        return list_health_companies()
 
-
-class HealthCompanyDetailView(generics.RetrieveUpdateAPIView):
-    """GET returns full detail; PATCH updates editable fields."""
-
-    def get_serializer_class(self):
-        if self.request.method in ("PUT", "PATCH"):
-            return HealthCompanyUpdateSerializer
-        return HealthCompanyDetailSerializer
-
-    def get_queryset(self):
-        return health_companies_queryset()
+class HealthCompanyDetailView(ReadUpdateDetailAPIView):
+    serializer_class = HealthCompanyDetailSerializer
+    write_serializer_class = HealthCompanyUpdateSerializer
+    queryset = HealthCompany.objects.all()

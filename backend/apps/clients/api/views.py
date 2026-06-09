@@ -1,13 +1,11 @@
-"""
-Thin read endpoints for the Client resource.
+"""Thin endpoints for the Client resource."""
 
-Views only wire HTTP to serializers and selectors — no query or business logic
-lives here. Writes (create/update/state changes) will be added as the frontend
-needs them.
-"""
-from rest_framework import generics
-
-from apps.clients.selectors import clients_queryset, list_clients
+from apps.clients.models import Client
+from apps.common.api.views import (
+    ReadDetailAPIView,
+    ReadUpdateDetailAPIView,
+    UnpaginatedListAPIView,
+)
 from .serializers import (
     ClientDetailSerializer,
     ClientListSerializer,
@@ -16,31 +14,17 @@ from .serializers import (
 )
 
 
-class ClientListView(generics.ListAPIView):
+class ClientListView(UnpaginatedListAPIView):
     serializer_class = ClientListSerializer
-    # The Clienti view filters and searches client-side over the full list, so
-    # this endpoint returns every client rather than a paginated page. Revisit
-    # with server-side search/pagination if the dataset grows substantially.
-    pagination_class = None
-
-    def get_queryset(self):
-        return list_clients()
+    queryset = Client.objects.order_by("cognome", "nome", "id")
 
 
-class ClientDetailView(generics.RetrieveUpdateAPIView):
-    """GET returns the full client detail; PATCH updates editable fields."""
-
-    def get_serializer_class(self):
-        if self.request.method in ("PUT", "PATCH"):
-            return ClientUpdateSerializer
-        return ClientDetailSerializer
-
-    def get_queryset(self):
-        return clients_queryset()
+class ClientDetailView(ReadUpdateDetailAPIView):
+    serializer_class = ClientDetailSerializer
+    write_serializer_class = ClientUpdateSerializer
+    queryset = Client.objects.all()
 
 
-class ClientOrthopedicView(generics.RetrieveAPIView):
+class ClientOrthopedicView(ReadDetailAPIView):
     serializer_class = ClientOrthopedicSerializer
-
-    def get_queryset(self):
-        return clients_queryset()
+    queryset = Client.objects.all()

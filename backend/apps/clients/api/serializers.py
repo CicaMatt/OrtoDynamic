@@ -8,7 +8,11 @@ strings — the frontend treats every field as a plain string.
 """
 from rest_framework import serializers
 
-from apps.common.api.serializers import NullToEmptyMixin
+from apps.common.api.serializers import (
+    NullToEmptyMixin,
+    UpdateFieldsSerializer,
+    nullable_text,
+)
 
 from apps.clients.models import Client
 
@@ -96,12 +100,7 @@ class ClientOrthopedicSerializer(NullToEmptyMixin):
     other = serializers.CharField(source="altro")
 
 
-def _text(source):
-    """Optional, blank/null-tolerant text field bound to a column."""
-    return serializers.CharField(source=source, required=False, allow_blank=True, allow_null=True)
-
-
-class ClientUpdateSerializer(serializers.Serializer):
+class ClientUpdateSerializer(UpdateFieldsSerializer):
     """
     Writable serializer for editing a client (anagrafica + orthopedic fields).
 
@@ -111,63 +110,56 @@ class ClientUpdateSerializer(serializers.Serializer):
     """
 
     # Anagrafica
-    name = _text("nome")
-    surname = _text("cognome")
-    fiscalCode = _text("codice_fiscale")
-    gender = _text("sesso")
-    birthMunicipality = _text("comune_nascita")
+    name = nullable_text("nome")
+    surname = nullable_text("cognome")
+    fiscalCode = nullable_text("codice_fiscale")
+    gender = nullable_text("sesso")
+    birthMunicipality = nullable_text("comune_nascita")
     birthDate = serializers.DateField(source="data_nascita", required=False, allow_null=True)
-    address = _text("indirizzo")
-    city = _text("citta")
-    postalCode = _text("cap")
-    country = _text("nazione")
-    phone = _text("telefono")
-    mobile = _text("cellulare")
-    email = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    district = _text("distretto_appartenenza")
+    address = nullable_text("indirizzo")
+    city = nullable_text("citta")
+    postalCode = nullable_text("cap")
+    country = nullable_text("nazione")
+    phone = nullable_text("telefono")
+    mobile = nullable_text("cellulare")
+    email = nullable_text()
+    district = nullable_text("distretto_appartenenza")
     doctorId = serializers.IntegerField(source="id_medico", required=False, allow_null=True)
-    note = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    note = nullable_text()
 
     # Orthopedic — footwear / insole
-    shoeSize = _text("misura_scarpa")
-    shoeModel = _text("modello_scarpa")
-    width = _text("pianta")
-    collar = _text("collo")
-    ankle = _text("caviglia")
-    spur = _text("speronatura")
-    lift = _text("rialzo")
-    inclinedPlane = _text("piano_incl_tot")
-    insoleType = _text("tipo_plantare")
-    collarPassage = _text("passaggio_collo")
-    anklePassage = _text("passaggio_caviglie")
+    shoeSize = nullable_text("misura_scarpa")
+    shoeModel = nullable_text("modello_scarpa")
+    width = nullable_text("pianta")
+    collar = nullable_text("collo")
+    ankle = nullable_text("caviglia")
+    spur = nullable_text("speronatura")
+    lift = nullable_text("rialzo")
+    inclinedPlane = nullable_text("piano_incl_tot")
+    insoleType = nullable_text("tipo_plantare")
+    collarPassage = nullable_text("passaggio_collo")
+    anklePassage = nullable_text("passaggio_caviglie")
 
     # Orthopedic — brace / frame
-    braceType = _text("tipo_tutore")
-    shoulderStraps = _text("spallacci")
-    upToArmpit = _text("fino_ascella")
-    frontFabricHeight = _text("alt_stoffa_ant")
-    totalFrameHeight = _text("alt_tot_armatura")
-    axillaryDistance = _text("dist_ascellare")
+    braceType = nullable_text("tipo_tutore")
+    shoulderStraps = nullable_text("spallacci")
+    upToArmpit = nullable_text("fino_ascella")
+    frontFabricHeight = nullable_text("alt_stoffa_ant")
+    totalFrameHeight = nullable_text("alt_tot_armatura")
+    axillaryDistance = nullable_text("dist_ascellare")
 
     # Orthopedic — body measurements
-    waist = _text("misura_vita")
-    pelvisSize = _text("misura_bacino")
-    measure24 = _text("misura_2_4")
-    neck = _text("mis_collo")
-    humerus = _text("mis_omero")
-    arm = _text("mis_braccio")
-    wrist = _text("mis_polso")
-    pelvis = _text("mis_bacino")
-    thigh = _text("mis_coscia")
-    leg = _text("mis_gamba")
+    waist = nullable_text("misura_vita")
+    pelvisSize = nullable_text("misura_bacino")
+    measure24 = nullable_text("misura_2_4")
+    neck = nullable_text("mis_collo")
+    humerus = nullable_text("mis_omero")
+    arm = nullable_text("mis_braccio")
+    wrist = nullable_text("mis_polso")
+    pelvis = nullable_text("mis_bacino")
+    thigh = nullable_text("mis_coscia")
+    leg = nullable_text("mis_gamba")
 
     # Orthopedic — notes
-    clientNote = _text("note_cliente")
-    other = _text("altro")
-
-    def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        if validated_data:
-            instance.save(update_fields=list(validated_data.keys()))
-        return instance
+    clientNote = nullable_text("note_cliente")
+    other = nullable_text("altro")
