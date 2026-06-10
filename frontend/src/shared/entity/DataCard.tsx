@@ -2,7 +2,10 @@ import type { ReactNode } from 'react';
 import { FieldValue } from '../ui/FieldValue';
 import { Icon } from '../ui/Icon';
 
-export type FieldInputType = 'text' | 'date' | 'gender' | 'number' | 'textarea';
+export type FieldInputType = 'text' | 'date' | 'gender' | 'number' | 'textarea' | 'select';
+
+/** Option for a `select` field; `value` is persisted, `label` is shown. */
+export type SelectOption = { value: string; label: string };
 
 const inputClass =
   'w-full rounded-[6px] border border-[#c9cdd4] bg-white px-[11px] py-[8px] font-body-md text-body-md text-[#171a20] focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary';
@@ -11,10 +14,13 @@ const inputClass =
 export function EditInput({
   type = 'text',
   value,
+  options,
   onChange,
 }: {
   type?: FieldInputType;
   value: string;
+  /** Choices for the `select` type; ignored otherwise. */
+  options?: ReadonlyArray<SelectOption>;
   onChange: (value: string) => void;
 }) {
   if (type === 'textarea') {
@@ -28,6 +34,18 @@ export function EditInput({
         <option value="">—</option>
         <option value="M">Maschile</option>
         <option value="F">Femminile</option>
+      </select>
+    );
+  }
+  if (type === 'select') {
+    return (
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+        <option value="">—</option>
+        {(options ?? []).map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
       </select>
     );
   }
@@ -78,6 +96,8 @@ type InfoBlockProps = {
   /** Raw value bound to the input in edit mode (defaults to `value`). */
   editValue?: string;
   inputType?: FieldInputType;
+  /** Choices for a `select` input type. */
+  inputOptions?: ReadonlyArray<SelectOption>;
   onChange?: (value: string) => void;
 };
 
@@ -89,6 +109,7 @@ export function InfoBlock({
   editing = false,
   editValue,
   inputType = 'text',
+  inputOptions,
   onChange,
 }: InfoBlockProps) {
   return (
@@ -96,7 +117,7 @@ export function InfoBlock({
       <dt className="font-label-caps text-label-caps font-bold uppercase text-[#737780]">{label}</dt>
       <dd className="mt-[8px]">
         {editing && onChange ? (
-          <EditInput type={inputType} value={editValue ?? value} onChange={onChange} />
+          <EditInput type={inputType} value={editValue ?? value} options={inputOptions} onChange={onChange} />
         ) : (
           <span className={`font-body-md text-body-md text-[#171a20] ${strong ? 'font-bold' : 'font-medium'}`}>
             <FieldValue value={value} />
@@ -108,7 +129,14 @@ export function InfoBlock({
 }
 
 /** A single field in a {@link FieldGrid}: its label, the data key, and input type. */
-export type FieldConfig<T> = { label: string; key: keyof T; type?: FieldInputType; readonly?: boolean };
+export type FieldConfig<T> = {
+  label: string;
+  key: keyof T;
+  type?: FieldInputType;
+  readonly?: boolean;
+  /** Choices for a `select` field type. */
+  options?: ReadonlyArray<SelectOption>;
+};
 
 /**
  * Grid of {@link InfoBlock}s built from a field config. The raw value is read
@@ -144,6 +172,7 @@ export function FieldGrid<T extends object>({
             editing={canEdit}
             editValue={raw}
             inputType={field.type}
+            inputOptions={field.options}
             onChange={canEdit ? (value) => onChange(field.key, value) : undefined}
           />
         );

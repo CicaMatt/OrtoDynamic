@@ -6,10 +6,12 @@ import {
   type HealthCompanyUpdate,
 } from '../../features/healthCompanies/api/healthCompanies';
 import { updateProduct, type ProductUpdate } from '../../features/products/api/products';
+import { updateQuote, type QuoteUpdate } from '../../features/quotes/api/quotes';
 import type { Client, ClientOrthopedic } from '../../features/clients/types';
 import type { Doctor } from '../../features/doctors/types';
 import type { HealthCompany } from '../../features/healthCompanies/types';
 import type { Product } from '../../features/products/types';
+import type { Quote } from '../../features/quotes/types';
 
 const EDITABLE_CLIENT_KEYS = [
   'name', 'surname', 'fiscalCode', 'gender', 'birthMunicipality', 'birthDate',
@@ -37,11 +39,20 @@ const EDITABLE_PRODUCT_KEYS = [
   'code', 'description', 'price', 'year',
 ] as const satisfies readonly (keyof Product)[];
 
+const EDITABLE_QUOTE_KEYS = [
+  'clientId', 'doctorId', 'quoteNumber', 'quoteType', 'status', 'creationDate', 'quoteDate',
+  'total', 'entryBy', 'diagnosis', 'therapeuticProgram', 'detailedPrescription',
+  'authorizationNumber', 'acceptanceDate', 'authorizationReceiptDate', 'expiryDays', 'maxExpiry',
+  'measurementsOk', 'commissionsPaid', 'orderNumber', 'model', 'measurements', 'invoiceNumber',
+  'quote', 'note', 'privateNote', 'finalNote',
+] as const satisfies readonly (keyof Quote)[];
+
 export type EditTarget =
   | { type: 'client'; id: string }
   | { type: 'doctor'; id: string }
   | { type: 'healthCompany'; id: string }
-  | { type: 'product'; id: string };
+  | { type: 'product'; id: string }
+  | { type: 'quote'; id: string };
 
 type EntityEditValue = {
   editing: boolean;
@@ -55,20 +66,24 @@ type EntityEditValue = {
   doctorDraft: Doctor | null;
   healthCompanyDraft: HealthCompany | null;
   productDraft: Product | null;
+  quoteDraft: Quote | null;
   startClientEdit: (code: string) => void;
   startDoctorEdit: (id: string) => void;
   startHealthCompanyEdit: (id: string) => void;
   startProductEdit: (id: string) => void;
+  startQuoteEdit: (id: string) => void;
   seedClient: (client: Client) => void;
   seedClientOrthopedic: (ortho: ClientOrthopedic) => void;
   seedDoctor: (doctor: Doctor) => void;
   seedHealthCompany: (company: HealthCompany) => void;
   seedProduct: (product: Product) => void;
+  seedQuote: (quote: Quote) => void;
   setClientField: (key: keyof Client, value: string) => void;
   setClientOrthopedicField: (key: keyof ClientOrthopedic, value: string) => void;
   setDoctorField: (key: keyof Doctor, value: string) => void;
   setHealthCompanyField: (key: keyof HealthCompany, value: string) => void;
   setProductField: (key: keyof Product, value: string) => void;
+  setQuoteField: (key: keyof Quote, value: string) => void;
   cancel: () => void;
   save: () => Promise<boolean>;
 };
@@ -97,6 +112,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
   const [healthCompanyOriginal, setHealthCompanyOriginal] = useState<HealthCompany | null>(null);
   const [productDraft, setProductDraft] = useState<Product | null>(null);
   const [productOriginal, setProductOriginal] = useState<Product | null>(null);
+  const [quoteDraft, setQuoteDraft] = useState<Quote | null>(null);
+  const [quoteOriginal, setQuoteOriginal] = useState<Quote | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
@@ -112,6 +129,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setHealthCompanyOriginal(null);
     setProductDraft(null);
     setProductOriginal(null);
+    setQuoteDraft(null);
+    setQuoteOriginal(null);
     setSaveError(null);
   }, []);
 
@@ -157,6 +176,15 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     [reset],
   );
 
+  const startQuoteEdit = useCallback(
+    (id: string) => {
+      reset();
+      setEditTarget({ type: 'quote', id });
+      setEditing(true);
+    },
+    [reset],
+  );
+
   const seedClient = useCallback((client: Client) => {
     setClientDraft((prev) => prev ?? { ...client });
     setClientOriginal((prev) => prev ?? { ...client });
@@ -182,6 +210,11 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setProductOriginal((prev) => prev ?? { ...product });
   }, []);
 
+  const seedQuote = useCallback((quote: Quote) => {
+    setQuoteDraft((prev) => prev ?? { ...quote });
+    setQuoteOriginal((prev) => prev ?? { ...quote });
+  }, []);
+
   const setClientField = useCallback((key: keyof Client, value: string) => {
     setClientDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
@@ -200,6 +233,10 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
 
   const setProductField = useCallback((key: keyof Product, value: string) => {
     setProductDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+  }, []);
+
+  const setQuoteField = useCallback((key: keyof Quote, value: string) => {
+    setQuoteDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
 
   const clientChanges = useMemo(
@@ -222,12 +259,17 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     () => diff(productDraft, productOriginal, EDITABLE_PRODUCT_KEYS),
     [productDraft, productOriginal],
   );
+  const quoteChanges = useMemo(
+    () => diff(quoteDraft, quoteOriginal, EDITABLE_QUOTE_KEYS),
+    [quoteDraft, quoteOriginal],
+  );
   const isDirty =
     Object.keys(clientChanges).length > 0 ||
     Object.keys(clientOrthopedicChanges).length > 0 ||
     Object.keys(doctorChanges).length > 0 ||
     Object.keys(healthCompanyChanges).length > 0 ||
-    Object.keys(productChanges).length > 0;
+    Object.keys(productChanges).length > 0 ||
+    Object.keys(quoteChanges).length > 0;
 
   const save = useCallback(async () => {
     if (!editTarget) return true;
@@ -238,6 +280,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
       doctorChanges,
       healthCompanyChanges,
       productChanges,
+      quoteChanges,
     });
     if (Object.keys(payload).length === 0) {
       endSession();
@@ -260,8 +303,10 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
         await updateDoctor(editTarget.id, payload as DoctorUpdate);
       } else if (editTarget.type === 'healthCompany') {
         await updateHealthCompany(editTarget.id, payload as HealthCompanyUpdate);
-      } else {
+      } else if (editTarget.type === 'product') {
         await updateProduct(editTarget.id, payload as ProductUpdate);
+      } else {
+        await updateQuote(editTarget.id, payload as QuoteUpdate);
       }
       endSession();
       setDataVersion((v) => v + 1);
@@ -279,6 +324,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     doctorChanges,
     healthCompanyChanges,
     productChanges,
+    quoteChanges,
     endSession,
   ]);
 
@@ -294,20 +340,24 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     doctorDraft,
     healthCompanyDraft,
     productDraft,
+    quoteDraft,
     startClientEdit,
     startDoctorEdit,
     startHealthCompanyEdit,
     startProductEdit,
+    startQuoteEdit,
     seedClient,
     seedClientOrthopedic,
     seedDoctor,
     seedHealthCompany,
     seedProduct,
+    seedQuote,
     setClientField,
     setClientOrthopedicField,
     setDoctorField,
     setHealthCompanyField,
     setProductField,
+    setQuoteField,
     cancel: endSession,
     save,
   };
@@ -329,6 +379,7 @@ function buildPayload(
     doctorChanges: Record<string, unknown>;
     healthCompanyChanges: Record<string, unknown>;
     productChanges: Record<string, unknown>;
+    quoteChanges: Record<string, unknown>;
   },
 ) {
   if (target.type === 'client') {
@@ -343,10 +394,33 @@ function buildPayload(
     if ('year' in payload && payload.year !== null) payload.year = Number(payload.year);
     return payload;
   }
+  if (target.type === 'product') {
+    const payload = { ...changes.productChanges } as ProductUpdate;
+    if (payload.year === '') payload.year = null;
+    if (payload.price === '') payload.price = null;
+    if ('price' in payload && payload.price !== null) payload.price = Number(payload.price);
+    return payload;
+  }
 
-  const payload = { ...changes.productChanges } as ProductUpdate;
-  if (payload.year === '') payload.year = null;
-  if (payload.price === '') payload.price = null;
-  if ('price' in payload && payload.price !== null) payload.price = Number(payload.price);
+  return buildQuotePayload(changes.quoteChanges);
+}
+
+const QUOTE_DATE_KEYS = ['creationDate', 'quoteDate', 'acceptanceDate', 'authorizationReceiptDate'];
+
+/** Normalize quote edits: blank dates/numbers become null, FK ids become numbers. */
+function buildQuotePayload(quoteChanges: Record<string, unknown>): QuoteUpdate {
+  const payload = { ...quoteChanges } as QuoteUpdate;
+  for (const key of QUOTE_DATE_KEYS) {
+    if (payload[key] === '') payload[key] = null;
+  }
+  if ('clientId' in payload) {
+    payload.clientId = payload.clientId === '' ? null : Number(payload.clientId);
+  }
+  if ('doctorId' in payload) {
+    payload.doctorId = payload.doctorId === '' ? null : Number(payload.doctorId);
+  }
+  if ('total' in payload) {
+    payload.total = payload.total === '' ? null : Number(payload.total);
+  }
   return payload;
 }
