@@ -118,6 +118,7 @@ class ClientUpdateSerializer(UpdateFieldsSerializer):
     birthDate = serializers.DateField(source="data_nascita", required=False, allow_null=True)
     address = nullable_text("indirizzo")
     city = nullable_text("citta")
+    province = nullable_text("provincia")
     postalCode = nullable_text("cap")
     country = nullable_text("nazione")
     phone = nullable_text("telefono")
@@ -163,3 +164,17 @@ class ClientUpdateSerializer(UpdateFieldsSerializer):
     # Orthopedic — notes
     clientNote = nullable_text("note_cliente")
     other = nullable_text("altro")
+
+
+class ClientCreateSerializer(ClientUpdateSerializer):
+    """
+    Create a client. Reuses every writable field from the update serializer; the
+    database assigns the id (AUTO_INCREMENT). Required-field enforcement lives in
+    the frontend form, so all fields stay optional here.
+    """
+
+    def create(self, validated_data):
+        return Client.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        return ClientDetailSerializer(instance).data

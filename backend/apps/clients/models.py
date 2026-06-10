@@ -13,7 +13,9 @@ from apps.common.models import UnmanagedModel
 
 
 class Client(UnmanagedModel):
-    id = models.BigIntegerField(primary_key=True)
+    # `clienti.id` is AUTO_INCREMENT; BigAutoField lets Django assign and read
+    # back the generated id when creating new clients.
+    id = models.BigAutoField(primary_key=True)
 
     cognome = models.CharField(max_length=255, null=True, blank=True)
     nome = models.CharField(max_length=255, null=True, blank=True)

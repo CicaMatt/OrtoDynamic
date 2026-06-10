@@ -4,9 +4,10 @@ from apps.clients.models import Client
 from apps.common.api.views import (
     ReadDetailAPIView,
     ReadUpdateDetailAPIView,
-    UnpaginatedListAPIView,
+    UnpaginatedListCreateAPIView,
 )
 from .serializers import (
+    ClientCreateSerializer,
     ClientDetailSerializer,
     ClientListSerializer,
     ClientOrthopedicSerializer,
@@ -14,8 +15,9 @@ from .serializers import (
 )
 
 
-class ClientListView(UnpaginatedListAPIView):
+class ClientListView(UnpaginatedListCreateAPIView):
     serializer_class = ClientListSerializer
+    create_serializer_class = ClientCreateSerializer
     queryset = Client.objects.order_by("cognome", "nome", "id")
 
 

@@ -11,7 +11,7 @@ type NavEntry = {
 
 const mainNav: NavEntry[] = [
   { view: 'dashboard', icon: 'dashboard', label: 'Dashboard', matches: ['dashboard'] },
-  { view: 'clients', icon: 'group', label: 'Clienti', matches: ['clients', 'client-detail', 'client-orthopedic'] },
+  { view: 'clients', icon: 'group', label: 'Clienti', matches: ['clients', 'client-detail', 'client-orthopedic', 'client-create'] },
   { view: 'doctors', icon: 'medical_services', label: 'Medici', matches: ['doctors', 'doctor-detail'] },
   {
     view: 'health-companies',

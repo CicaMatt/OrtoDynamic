@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
-import { updateClient, type ClientUpdate } from '../../features/clients/api/clients';
+import { createClient, updateClient, type ClientUpdate } from '../../features/clients/api/clients';
 import { updateDoctor, type DoctorUpdate } from '../../features/doctors/api/doctors';
 import {
   updateHealthCompany,
@@ -17,7 +17,7 @@ import type { WorkOrder } from '../../features/workOrders/types';
 
 const EDITABLE_CLIENT_KEYS = [
   'name', 'surname', 'fiscalCode', 'gender', 'birthMunicipality', 'birthDate',
-  'address', 'city', 'postalCode', 'country', 'phone', 'mobile', 'email',
+  'address', 'city', 'province', 'postalCode', 'country', 'phone', 'mobile', 'email',
   'district', 'doctorId', 'note',
 ] as const satisfies readonly (keyof Client)[];
 
@@ -66,11 +66,22 @@ export type EditTarget =
   | { type: 'quote'; id: string }
   | { type: 'workOrder'; id: string };
 
+export type EntityKind = EditTarget['type'];
+
+/** `edit` updates an existing record; `create` inserts a new one. */
+export type EditMode = 'edit' | 'create';
+
+/** Result of a save: `created` is set only when a new record was inserted. */
+export type SaveResult = { ok: boolean; created?: { type: EntityKind; id: string } };
+
 type EntityEditValue = {
   editing: boolean;
+  mode: EditMode;
   editTarget: EditTarget | null;
   saving: boolean;
   saveError: string | null;
+  /** Field keys that failed required-validation on the last create attempt. */
+  invalidFields: string[];
   isDirty: boolean;
   dataVersion: number;
   clientDraft: Client | null;
@@ -81,6 +92,7 @@ type EntityEditValue = {
   quoteDraft: Quote | null;
   workOrderDraft: WorkOrder | null;
   startClientEdit: (code: string) => void;
+  startClientCreate: (requiredKeys: ReadonlyArray<keyof Client>) => void;
   startDoctorEdit: (id: string) => void;
   startHealthCompanyEdit: (id: string) => void;
   startProductEdit: (id: string) => void;
@@ -101,7 +113,7 @@ type EntityEditValue = {
   setQuoteField: (key: keyof Quote, value: string) => void;
   setWorkOrderField: (key: keyof WorkOrder, value: string) => void;
   cancel: () => void;
-  save: () => Promise<boolean>;
+  save: () => Promise<SaveResult>;
 };
 
 const EntityEditContext = createContext<EntityEditValue | null>(null);
@@ -115,9 +127,41 @@ function diff<T extends object>(draft: T | null, original: T | null, keys: reado
   return changes;
 }
 
+/** Collect the given keys from a draft into a full (non-diff) payload, for creation. */
+function buildCreatePayload<T extends object>(
+  draft: T | null,
+  keys: readonly (keyof T)[],
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  if (!draft) return payload;
+  for (const key of keys) payload[key as string] = draft[key];
+  return payload;
+}
+
+/** A blank client used to seed the creation form. */
+function makeEmptyClient(): Client {
+  return {
+    code: '', name: '', surname: '', fiscalCode: '', phone: '', mobile: '', email: '',
+    birthDate: '', birthMunicipality: '', address: '', city: '', province: '', postalCode: '',
+    country: '', district: '', doctorId: '', gender: '', note: '',
+  };
+}
+
+/** Shared client conversions: blank birth date → null, doctor id → number/null. */
+function normalizeClientPayload(payload: ClientUpdate): ClientUpdate {
+  if (payload.birthDate === '') payload.birthDate = null;
+  if ('doctorId' in payload) {
+    payload.doctorId = payload.doctorId === '' ? null : Number(payload.doctorId);
+  }
+  return payload;
+}
+
 export function EntityEditProvider({ children }: { children: ReactNode }) {
   const [editing, setEditing] = useState(false);
+  const [mode, setMode] = useState<EditMode>('edit');
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [requiredFields, setRequiredFields] = useState<string[]>([]);
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [clientDraft, setClientDraft] = useState<Client | null>(null);
   const [clientOriginal, setClientOriginal] = useState<Client | null>(null);
   const [clientOrthopedicDraft, setClientOrthopedicDraft] = useState<ClientOrthopedic | null>(null);
@@ -151,6 +195,9 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setQuoteOriginal(null);
     setWorkOrderDraft(null);
     setWorkOrderOriginal(null);
+    setMode('edit');
+    setRequiredFields([]);
+    setInvalidFields([]);
     setSaveError(null);
   }, []);
 
@@ -164,6 +211,20 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     (code: string) => {
       reset();
       setEditTarget({ type: 'client', id: code });
+      setEditing(true);
+    },
+    [reset],
+  );
+
+  const startClientCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof Client>) => {
+      reset();
+      const empty = makeEmptyClient();
+      setClientDraft(empty);
+      setClientOriginal(empty);
+      setRequiredFields(requiredKeys.map(String));
+      setMode('create');
+      setEditTarget({ type: 'client', id: '' });
       setEditing(true);
     },
     [reset],
@@ -251,6 +312,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
 
   const setClientField = useCallback((key: keyof Client, value: string) => {
     setClientDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
   }, []);
 
   const setClientOrthopedicField = useCallback((key: keyof ClientOrthopedic, value: string) => {
@@ -314,8 +376,36 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     Object.keys(quoteChanges).length > 0 ||
     Object.keys(workOrderChanges).length > 0;
 
-  const save = useCallback(async () => {
-    if (!editTarget) return true;
+  const save = useCallback(async (): Promise<SaveResult> => {
+    if (!editTarget) return { ok: true };
+
+    if (mode === 'create') {
+      // Only clients support creation today; other entities are added the same way.
+      const missing = requiredFields.filter(
+        (key) => !String((clientDraft as Record<string, unknown> | null)?.[key] ?? '').trim(),
+      );
+      if (missing.length > 0) {
+        setInvalidFields(missing);
+        setSaveError('Compila i campi obbligatori evidenziati.');
+        return { ok: false };
+      }
+      const payload = normalizeClientPayload(
+        buildCreatePayload(clientDraft, EDITABLE_CLIENT_KEYS) as ClientUpdate,
+      );
+      setSaving(true);
+      setSaveError(null);
+      try {
+        const created = await createClient(payload);
+        endSession();
+        setDataVersion((v) => v + 1);
+        return { ok: true, created: { type: 'client', id: created.code } };
+      } catch (error) {
+        setSaveError(error instanceof Error ? error.message : 'Errore durante il salvataggio.');
+        return { ok: false };
+      } finally {
+        setSaving(false);
+      }
+    }
 
     const payload = buildPayload(editTarget, {
       clientChanges,
@@ -328,14 +418,10 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     });
     if (Object.keys(payload).length === 0) {
       endSession();
-      return true;
+      return { ok: true };
     }
     if (editTarget.type === 'client') {
-      const clientPayload = payload as ClientUpdate;
-      if (clientPayload.birthDate === '') clientPayload.birthDate = null;
-      if ('doctorId' in clientPayload) {
-        clientPayload.doctorId = clientPayload.doctorId === '' ? null : Number(clientPayload.doctorId);
-      }
+      normalizeClientPayload(payload as ClientUpdate);
     }
 
     setSaving(true);
@@ -356,15 +442,18 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
       }
       endSession();
       setDataVersion((v) => v + 1);
-      return true;
+      return { ok: true };
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Errore durante il salvataggio.');
-      return false;
+      return { ok: false };
     } finally {
       setSaving(false);
     }
   }, [
     editTarget,
+    mode,
+    clientDraft,
+    requiredFields,
     clientChanges,
     clientOrthopedicChanges,
     doctorChanges,
@@ -377,9 +466,11 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
 
   const value: EntityEditValue = {
     editing,
+    mode,
     editTarget,
     saving,
     saveError,
+    invalidFields,
     isDirty,
     dataVersion,
     clientDraft,
@@ -390,6 +481,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     quoteDraft,
     workOrderDraft,
     startClientEdit,
+    startClientCreate,
     startDoctorEdit,
     startHealthCompanyEdit,
     startProductEdit,

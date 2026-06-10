@@ -23,6 +23,8 @@ type EntityListViewProps<T extends object> = {
   onRowClick: (item: T) => void;
   loadingLabel: string;
   emptyLabel: string;
+  /** When provided, shows the toolbar's "Crea Nuovo" button. */
+  onCreate?: () => void;
 };
 
 export function EntityListView<T extends object>({
@@ -33,6 +35,7 @@ export function EntityListView<T extends object>({
   onRowClick,
   loadingLabel,
   emptyLabel,
+  onCreate,
 }: EntityListViewProps<T>) {
   const [searchValue, setSearchValue] = useState('');
   const [activeFilters, setActiveFilters] = useState<ToolbarFilters>({});
@@ -73,6 +76,7 @@ export function EntityListView<T extends object>({
         <ViewToolbar
           searchValue={searchValue}
           onSearchChange={setSearchValue}
+          onCreate={onCreate}
           filters={filterOptions}
           activeFilters={activeFilters}
           onFilterChange={(key, value) => setActiveFilters((current) => ({ ...current, [key]: value }))}

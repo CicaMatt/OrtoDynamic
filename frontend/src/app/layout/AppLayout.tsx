@@ -4,6 +4,7 @@ import { EditActionBar } from './EditActionBar';
 import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { ClientsView } from '../../features/clients/views/ClientsView';
 import { ClientDetailView } from '../../features/clients/views/ClientDetailView';
+import { ClientCreateView } from '../../features/clients/views/ClientCreateView';
 import { ClientOrthopedicView } from '../../features/clients/views/ClientOrthopedicView';
 import { DoctorDetailView } from '../../features/doctors/views/DoctorDetailView';
 import { DoctorsView } from '../../features/doctors/views/DoctorsView';
@@ -31,6 +32,7 @@ const viewComponents = {
   'work-orders': WorkOrdersView,
   'client-detail': ClientDetailView,
   'client-orthopedic': ClientOrthopedicView,
+  'client-create': ClientCreateView,
   'doctor-detail': DoctorDetailView,
   'health-company-detail': HealthCompanyDetailView,
   'product-detail': ProductDetailView,

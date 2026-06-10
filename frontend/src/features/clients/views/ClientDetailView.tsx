@@ -8,47 +8,18 @@ import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { useApiData } from '../../../shared/hooks/useApiData';
-import type { Client } from '../types';
-import { formatBirthDate, formatGender } from '../../../shared/format/format';
-import type { FieldConfig } from '../../../shared/entity/DataCard';
-
-type ClientField = FieldConfig<Client>;
-
-const personalFields: ClientField[] = [
-  { label: 'Nome', key: 'name' },
-  { label: 'Cognome', key: 'surname' },
-  { label: 'Codice fiscale', key: 'fiscalCode' },
-  { label: 'Sesso', key: 'gender', type: 'gender' },
-  { label: 'Comune Nascita', key: 'birthMunicipality' },
-  { label: 'Data nascita', key: 'birthDate', type: 'date' },
-];
-
-const addressFields: ClientField[] = [
-  { label: 'Indirizzo', key: 'address' },
-  { label: 'Citta', key: 'city' },
-  { label: 'CAP', key: 'postalCode' },
-  { label: 'Nazione', key: 'country' },
-];
-
-const contactFields: ClientField[] = [
-  { label: 'Numero telefono', key: 'phone' },
-  { label: 'Numero cellulare', key: 'mobile' },
-  { label: 'Email', key: 'email' },
-  { label: 'Distretto appartenenza', key: 'district' },
-  { label: 'ID Medico', key: 'doctorId', type: 'number' },
-];
+import {
+  addressFields,
+  contactFields,
+  displayClientValue,
+  personalFields,
+} from '../components/clientFields';
 
 const clientActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Cliente' },
   { id: 'quote', icon: 'request_quote', label: 'Inserisci Preventivo' },
   { id: 'privacy', icon: 'privacy_tip', label: 'Genera Modulo Privacy' },
 ];
-
-function displayClientValue(field: ClientField, raw: string): string {
-  if (field.type === 'gender') return formatGender(raw);
-  if (field.type === 'date') return formatBirthDate(raw);
-  return raw;
-}
 
 export function ClientDetailView() {
   const { selectedClientCode, navigate } = useNavigation();

@@ -9,6 +9,7 @@ export function FieldSectionCard<T extends object>({
   editing,
   onChange,
   format,
+  invalidKeys,
   className,
 }: {
   icon: string;
@@ -19,6 +20,7 @@ export function FieldSectionCard<T extends object>({
   editing: boolean;
   onChange: (key: keyof T, value: string) => void;
   format?: (field: FieldConfig<T>, raw: string) => string;
+  invalidKeys?: ReadonlyArray<keyof T>;
   className?: string;
 }) {
   return (
@@ -30,6 +32,7 @@ export function FieldSectionCard<T extends object>({
         editing={editing}
         onChange={onChange}
         format={format}
+        invalidKeys={invalidKeys}
       />
     </DataCard>
   );

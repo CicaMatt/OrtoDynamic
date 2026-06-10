@@ -22,12 +22,12 @@ export async function apiGet<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-/** PATCH a JSON body to the API, with the same error handling as {@link apiGet}. */
-export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
+/** Send a JSON body with the given method, sharing {@link apiGet}'s error handling. */
+async function sendJson<T>(method: 'POST' | 'PATCH', path: string, body: unknown): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      method: 'PATCH',
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -40,6 +40,16 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+/** POST a JSON body to create a resource. */
+export function apiPost<T>(path: string, body: unknown): Promise<T> {
+  return sendJson<T>('POST', path, body);
+}
+
+/** PATCH a JSON body to the API. */
+export function apiPatch<T>(path: string, body: unknown): Promise<T> {
+  return sendJson<T>('PATCH', path, body);
 }
 
 async function extractErrorMessage(response: Response): Promise<string> {

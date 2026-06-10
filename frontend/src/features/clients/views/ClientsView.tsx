@@ -25,7 +25,7 @@ const clientColumns: ReadonlyArray<EntityColumn<ClientListItem>> = [
 ];
 
 export function ClientsView() {
-  const { openClientDetail } = useNavigation();
+  const { openClientDetail, openClientCreate } = useNavigation();
 
   return (
     <EntityListView
@@ -34,6 +34,7 @@ export function ClientsView() {
       fetchItems={fetchClients}
       rowKey={(client) => client.code}
       onRowClick={(client) => openClientDetail(client.code)}
+      onCreate={openClientCreate}
       loadingLabel="Caricamento clienti..."
       emptyLabel="Nessun cliente trovato."
     />

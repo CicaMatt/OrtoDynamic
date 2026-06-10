@@ -7,22 +7,28 @@ export type FieldInputType = 'text' | 'date' | 'gender' | 'number' | 'textarea' 
 /** Option for a `select` field; `value` is persisted, `label` is shown. */
 export type SelectOption = { value: string; label: string };
 
-const inputClass =
-  'w-full rounded-[6px] border border-[#c9cdd4] bg-white px-[11px] py-[8px] font-body-md text-body-md text-[#171a20] focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary';
+const baseInputClass =
+  'w-full rounded-[6px] border bg-white px-[11px] py-[8px] font-body-md text-body-md text-[#171a20] focus:outline-none focus:ring-1';
+const validBorderClass = 'border-[#c9cdd4] focus:border-secondary focus:ring-secondary';
+const invalidBorderClass = 'border-error focus:border-error focus:ring-error';
 
 /** Input control used when a field is in edit mode. */
 export function EditInput({
   type = 'text',
   value,
   options,
+  invalid = false,
   onChange,
 }: {
   type?: FieldInputType;
   value: string;
   /** Choices for the `select` type; ignored otherwise. */
   options?: ReadonlyArray<SelectOption>;
+  /** Highlight the control as failing validation. */
+  invalid?: boolean;
   onChange: (value: string) => void;
 }) {
+  const inputClass = `${baseInputClass} ${invalid ? invalidBorderClass : validBorderClass}`;
   if (type === 'textarea') {
     return (
       <textarea rows={3} value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} />
@@ -103,6 +109,10 @@ type InfoBlockProps = {
   inputType?: FieldInputType;
   /** Choices for a `select` input type. */
   inputOptions?: ReadonlyArray<SelectOption>;
+  /** Mark the field as required (shows an asterisk on the label). */
+  required?: boolean;
+  /** Highlight the field as failing validation. */
+  invalid?: boolean;
   onChange?: (value: string) => void;
 };
 
@@ -115,14 +125,25 @@ export function InfoBlock({
   editValue,
   inputType = 'text',
   inputOptions,
+  required = false,
+  invalid = false,
   onChange,
 }: InfoBlockProps) {
   return (
     <div>
-      <dt className="font-label-caps text-label-caps font-bold uppercase text-[#737780]">{label}</dt>
+      <dt className="font-label-caps text-label-caps font-bold uppercase text-[#737780]">
+        {label}
+        {required && <span className="text-error"> *</span>}
+      </dt>
       <dd className="mt-[8px]">
         {editing && onChange ? (
-          <EditInput type={inputType} value={editValue ?? value} options={inputOptions} onChange={onChange} />
+          <EditInput
+            type={inputType}
+            value={editValue ?? value}
+            options={inputOptions}
+            invalid={invalid}
+            onChange={onChange}
+          />
         ) : (
           <span className={`font-body-md text-body-md text-[#171a20] ${strong ? 'font-bold' : 'font-medium'}`}>
             <FieldValue value={value} />
@@ -141,6 +162,8 @@ export type FieldConfig<T> = {
   readonly?: boolean;
   /** Choices for a `select` field type. */
   options?: ReadonlyArray<SelectOption>;
+  /** Required in the form; shows an asterisk and participates in validation. */
+  required?: boolean;
 };
 
 /**
@@ -155,6 +178,7 @@ export function FieldGrid<T extends object>({
   editing,
   onChange,
   format,
+  invalidKeys,
 }: {
   data: T;
   fields: FieldConfig<T>[];
@@ -162,6 +186,8 @@ export function FieldGrid<T extends object>({
   editing: boolean;
   onChange: (key: keyof T, value: string) => void;
   format?: (field: FieldConfig<T>, raw: string) => string;
+  /** Field keys currently failing validation (highlighted in edit mode). */
+  invalidKeys?: ReadonlyArray<keyof T>;
 }) {
   const columnsClass = columns === 1 ? 'grid-cols-1' : columns === 2 ? 'grid-cols-2' : 'grid-cols-3';
   return (
@@ -178,6 +204,8 @@ export function FieldGrid<T extends object>({
             editValue={raw}
             inputType={field.type}
             inputOptions={field.options}
+            required={field.required}
+            invalid={canEdit && (invalidKeys?.includes(field.key) ?? false)}
             onChange={canEdit ? (value) => onChange(field.key, value) : undefined}
           />
         );

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { View } from './types';
-import { useEntityEdit } from '../editing/EntityEditContext';
+import { useEntityEdit, type EntityKind } from '../editing/EntityEditContext';
 
 type NavigationValue = {
   view: View;
@@ -12,11 +12,16 @@ type NavigationValue = {
   selectedWorkOrderId: string | null;
   navigate: (view: View) => void;
   openClientDetail: (clientCode: string) => void;
+  openClientCreate: () => void;
   openDoctorDetail: (id: string) => void;
   openHealthCompanyDetail: (id: string) => void;
   openProductDetail: (id: string) => void;
   openQuoteDetail: (id: string) => void;
   openWorkOrderDetail: (id: string) => void;
+  /** Open an entity's detail view by kind — used after a create completes. */
+  openEntityDetail: (type: EntityKind, id: string) => void;
+  /** Navigate to an entity's list view by kind — used when a create is cancelled. */
+  goToEntityList: (type: EntityKind) => void;
   /** Target of a navigation blocked by unsaved edits (drives the confirm dialog). */
   pendingView: View | null;
   keepAndContinue: () => void;
@@ -27,6 +32,37 @@ type NavigationValue = {
 const NavigationContext = createContext<NavigationValue | null>(null);
 
 const isClientView = (view: View) => view === 'client-detail' || view === 'client-orthopedic';
+
+/** The create-form view for each entity kind (only clients so far). */
+const CREATE_VIEW: Partial<Record<EntityKind, View>> = { client: 'client-create' };
+
+/** The list view for each entity kind. */
+const LIST_VIEW: Record<EntityKind, View> = {
+  client: 'clients',
+  doctor: 'doctors',
+  healthCompany: 'health-companies',
+  product: 'products',
+  quote: 'quotes',
+  workOrder: 'work-orders',
+};
+
+/** Build the detail-view navigation target for an entity kind + id. */
+function detailTargetFor(type: EntityKind, id: string): NavigationTarget {
+  switch (type) {
+    case 'client':
+      return { view: 'client-detail', clientCode: id };
+    case 'doctor':
+      return { view: 'doctor-detail', doctorId: id };
+    case 'healthCompany':
+      return { view: 'health-company-detail', healthCompanyId: id };
+    case 'product':
+      return { view: 'product-detail', productId: id };
+    case 'quote':
+      return { view: 'quote-detail', quoteId: id };
+    case 'workOrder':
+      return { view: 'work-order-detail', workOrderId: id };
+  }
+}
 
 type NavigationTarget = {
   view: View;
@@ -61,6 +97,9 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
   const isSameEditTarget = (target: NavigationTarget) => {
     if (!edit.editTarget) return false;
+    if (edit.mode === 'create') {
+      return target.view === CREATE_VIEW[edit.editTarget.type];
+    }
     if (edit.editTarget.type === 'client') {
       return isClientView(target.view) && target.clientCode === edit.editTarget.id;
     }
@@ -110,6 +149,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     guardedApply({ view: 'client-detail', clientCode });
   };
 
+  const openClientCreate = () => {
+    guardedApply({ view: 'client-create' });
+  };
+
   const openDoctorDetail = (id: string) => {
     guardedApply({ view: 'doctor-detail', doctorId: id });
   };
@@ -130,11 +173,22 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     guardedApply({ view: 'work-order-detail', workOrderId: id });
   };
 
+  // These run right after a create session has ended (saved or cancelled), so they
+  // apply the target directly — the edit guard would otherwise see the now-stale
+  // session state and re-prompt for "unsaved changes".
+  const openEntityDetail = (type: EntityKind, id: string) => {
+    applyTarget(detailTargetFor(type, id));
+  };
+
+  const goToEntityList = (type: EntityKind) => {
+    applyTarget({ view: LIST_VIEW[type] });
+  };
+
   const keepAndContinue = async () => {
     const target = pendingTarget;
-    const saved = await edit.save();
+    const result = await edit.save();
     setPendingTarget(null);
-    if (saved && target) applyTarget(target);
+    if (result.ok && target) applyTarget(target);
   };
 
   const discardAndContinue = () => {
@@ -158,11 +212,14 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         selectedWorkOrderId,
         navigate,
         openClientDetail,
+        openClientCreate,
         openDoctorDetail,
         openHealthCompanyDetail,
         openProductDetail,
         openQuoteDetail,
         openWorkOrderDetail,
+        openEntityDetail,
+        goToEntityList,
         pendingView: pendingTarget?.view ?? null,
         keepAndContinue,
         discardAndContinue,
