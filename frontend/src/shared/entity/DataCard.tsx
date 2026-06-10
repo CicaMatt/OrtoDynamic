@@ -38,10 +38,15 @@ export function EditInput({
     );
   }
   if (type === 'select') {
+    const choices = options ?? [];
+    // Preserve a stored value that predates (or falls outside) the known options
+    // so editing an unrelated field never silently drops it.
+    const hasCurrent = value === '' || choices.some((option) => option.value === value);
     return (
       <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
         <option value="">—</option>
-        {(options ?? []).map((option) => (
+        {!hasCurrent && <option value={value}>{value}</option>}
+        {choices.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

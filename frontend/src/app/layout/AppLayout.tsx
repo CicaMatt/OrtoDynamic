@@ -13,6 +13,8 @@ import { ProductDetailView } from '../../features/products/views/ProductDetailVi
 import { ProductsView } from '../../features/products/views/ProductsView';
 import { QuotesView } from '../../features/quotes/views/QuotesView';
 import { QuoteDetailView } from '../../features/quotes/views/QuoteDetailView';
+import { WorkOrdersView } from '../../features/workOrders/views/WorkOrdersView';
+import { WorkOrderDetailView } from '../../features/workOrders/views/WorkOrderDetailView';
 import { PlaceholderView } from '../../features/placeholders/PlaceholderView';
 
 const placeholder = (title: string) => () => <PlaceholderView title={title} />;
@@ -26,13 +28,14 @@ const viewComponents = {
   quotes: QuotesView,
   settings: placeholder('Configurazioni'),
   employees: placeholder('Gestione Dipendenti'),
-  'work-orders': placeholder('Lavorazioni'),
+  'work-orders': WorkOrdersView,
   'client-detail': ClientDetailView,
   'client-orthopedic': ClientOrthopedicView,
   'doctor-detail': DoctorDetailView,
   'health-company-detail': HealthCompanyDetailView,
   'product-detail': ProductDetailView,
   'quote-detail': QuoteDetailView,
+  'work-order-detail': WorkOrderDetailView,
 } as const;
 
 export function AppLayout() {
