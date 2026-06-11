@@ -1,5 +1,5 @@
 import type { Doctor, DoctorListItem } from '../types';
-import { apiGet, apiPatch } from '../../../shared/api/http';
+import { apiGet, apiPatch, apiPost } from '../../../shared/api/http';
 
 /** Editable doctor fields, keyed as the API expects (camelCase). */
 export type DoctorUpdate = Record<string, string | null>;
@@ -17,4 +17,9 @@ export function fetchDoctor(id: string): Promise<Doctor> {
 /** Persist edits to a doctor. */
 export function updateDoctor(id: string, changes: DoctorUpdate): Promise<unknown> {
   return apiPatch(`/doctors/${id}/`, changes);
+}
+
+/** Create a new doctor; the API returns the created record (with its new id). */
+export function createDoctor(values: DoctorUpdate): Promise<Doctor> {
+  return apiPost<Doctor>('/doctors/', values);
 }

@@ -8,19 +8,7 @@ import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { useApiData } from '../../../shared/hooks/useApiData';
-import type { Doctor } from '../types';
-import type { FieldConfig } from '../../../shared/entity/DataCard';
-
-type DoctorField = FieldConfig<Doctor>;
-
-const doctorFields: DoctorField[] = [
-  { label: 'ID Medico', key: 'id', readonly: true },
-  { label: 'Cognome', key: 'surname' },
-  { label: 'Nome', key: 'name' },
-  { label: 'Indirizzo', key: 'address' },
-  { label: 'Telefono', key: 'phone' },
-  { label: 'Email', key: 'email' },
-];
+import { doctorFields } from '../components/doctorFields';
 
 const doctorActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Medico' },

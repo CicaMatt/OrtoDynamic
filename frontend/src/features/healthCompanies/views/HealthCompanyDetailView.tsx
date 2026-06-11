@@ -4,28 +4,10 @@ import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import type { FieldConfig } from '../../../shared/entity/DataCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchHealthCompany } from '../api/healthCompanies';
-import type { HealthCompany } from '../types';
-
-type HealthCompanyField = FieldConfig<HealthCompany>;
-
-const healthCompanyFields: HealthCompanyField[] = [
-  { label: 'ID', key: 'id', readonly: true },
-  { label: 'Anno', key: 'year', type: 'number' },
-  { label: 'Distretto', key: 'district' },
-  { label: 'Codice Comune', key: 'municipalityCode' },
-  { label: 'Codice Regione', key: 'regionCode' },
-  { label: 'Codice Azienda', key: 'companyCode' },
-  { label: 'Nome Comune', key: 'municipality' },
-  { label: 'Nome Regione', key: 'regionName' },
-  { label: 'Nome Azienda', key: 'companyName' },
-  { label: 'Maschi', key: 'males' },
-  { label: 'Femmine', key: 'females' },
-  { label: 'Totale', key: 'total' },
-];
+import { healthCompanyFields } from '../components/healthCompanyFields';
 
 const healthCompanyActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Azienda' },

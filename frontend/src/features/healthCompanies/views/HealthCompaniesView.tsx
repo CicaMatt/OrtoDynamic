@@ -15,7 +15,7 @@ const healthCompanyColumns: ReadonlyArray<EntityColumn<HealthCompanyListItem>> =
 ];
 
 export function HealthCompaniesView() {
-  const { openHealthCompanyDetail } = useNavigation();
+  const { openHealthCompanyDetail, openHealthCompanyCreate } = useNavigation();
 
   return (
     <EntityListView
@@ -24,6 +24,7 @@ export function HealthCompaniesView() {
       fetchItems={fetchHealthCompanies}
       rowKey={(company) => company.id}
       onRowClick={(company) => openHealthCompanyDetail(company.id)}
+      onCreate={openHealthCompanyCreate}
       loadingLabel="Caricamento aziende sanitarie..."
       emptyLabel="Nessuna azienda sanitaria trovata."
     />

@@ -7,10 +7,13 @@ import { ClientDetailView } from '../../features/clients/views/ClientDetailView'
 import { ClientCreateView } from '../../features/clients/views/ClientCreateView';
 import { ClientOrthopedicView } from '../../features/clients/views/ClientOrthopedicView';
 import { DoctorDetailView } from '../../features/doctors/views/DoctorDetailView';
+import { DoctorCreateView } from '../../features/doctors/views/DoctorCreateView';
 import { DoctorsView } from '../../features/doctors/views/DoctorsView';
 import { HealthCompaniesView } from '../../features/healthCompanies/views/HealthCompaniesView';
 import { HealthCompanyDetailView } from '../../features/healthCompanies/views/HealthCompanyDetailView';
+import { HealthCompanyCreateView } from '../../features/healthCompanies/views/HealthCompanyCreateView';
 import { ProductDetailView } from '../../features/products/views/ProductDetailView';
+import { ProductCreateView } from '../../features/products/views/ProductCreateView';
 import { ProductsView } from '../../features/products/views/ProductsView';
 import { QuotesView } from '../../features/quotes/views/QuotesView';
 import { QuoteDetailView } from '../../features/quotes/views/QuoteDetailView';
@@ -34,8 +37,11 @@ const viewComponents = {
   'client-orthopedic': ClientOrthopedicView,
   'client-create': ClientCreateView,
   'doctor-detail': DoctorDetailView,
+  'doctor-create': DoctorCreateView,
   'health-company-detail': HealthCompanyDetailView,
+  'health-company-create': HealthCompanyCreateView,
   'product-detail': ProductDetailView,
+  'product-create': ProductCreateView,
   'quote-detail': QuoteDetailView,
   'work-order-detail': WorkOrderDetailView,
 } as const;

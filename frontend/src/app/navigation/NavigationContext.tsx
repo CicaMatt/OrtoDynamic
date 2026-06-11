@@ -14,8 +14,11 @@ type NavigationValue = {
   openClientDetail: (clientCode: string) => void;
   openClientCreate: () => void;
   openDoctorDetail: (id: string) => void;
+  openDoctorCreate: () => void;
   openHealthCompanyDetail: (id: string) => void;
+  openHealthCompanyCreate: () => void;
   openProductDetail: (id: string) => void;
+  openProductCreate: () => void;
   openQuoteDetail: (id: string) => void;
   openWorkOrderDetail: (id: string) => void;
   /** Open an entity's detail view by kind — used after a create completes. */
@@ -33,8 +36,13 @@ const NavigationContext = createContext<NavigationValue | null>(null);
 
 const isClientView = (view: View) => view === 'client-detail' || view === 'client-orthopedic';
 
-/** The create-form view for each entity kind (only clients so far). */
-const CREATE_VIEW: Partial<Record<EntityKind, View>> = { client: 'client-create' };
+/** The create-form view for each entity kind. */
+const CREATE_VIEW: Partial<Record<EntityKind, View>> = {
+  client: 'client-create',
+  doctor: 'doctor-create',
+  healthCompany: 'health-company-create',
+  product: 'product-create',
+};
 
 /** The list view for each entity kind. */
 const LIST_VIEW: Record<EntityKind, View> = {
@@ -157,12 +165,24 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     guardedApply({ view: 'doctor-detail', doctorId: id });
   };
 
+  const openDoctorCreate = () => {
+    guardedApply({ view: 'doctor-create' });
+  };
+
   const openHealthCompanyDetail = (id: string) => {
     guardedApply({ view: 'health-company-detail', healthCompanyId: id });
   };
 
+  const openHealthCompanyCreate = () => {
+    guardedApply({ view: 'health-company-create' });
+  };
+
   const openProductDetail = (id: string) => {
     guardedApply({ view: 'product-detail', productId: id });
+  };
+
+  const openProductCreate = () => {
+    guardedApply({ view: 'product-create' });
   };
 
   const openQuoteDetail = (id: string) => {
@@ -214,8 +234,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         openClientDetail,
         openClientCreate,
         openDoctorDetail,
+        openDoctorCreate,
         openHealthCompanyDetail,
+        openHealthCompanyCreate,
         openProductDetail,
+        openProductCreate,
         openQuoteDetail,
         openWorkOrderDetail,
         openEntityDetail,

@@ -41,3 +41,23 @@ class UpdateFieldsSerializer(serializers.Serializer):
         if validated_data:
             instance.save(update_fields=list(validated_data.keys()))
         return instance
+
+
+class CreatableSerializerMixin:
+    """
+    Adds creation to a writable serializer (typically an `UpdateFieldsSerializer`
+    subclass), so the same field definitions drive both update and create.
+
+    Subclasses set `create_model` (the Django model to insert) and
+    `read_serializer_class` (used to render the created instance back to the
+    client). Validated field names already map to model attributes via `source`.
+    """
+
+    create_model = None
+    read_serializer_class = None
+
+    def create(self, validated_data):
+        return self.create_model.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        return self.read_serializer_class(instance).data

@@ -12,7 +12,7 @@ const productColumns: ReadonlyArray<EntityColumn<Product>> = [
 ];
 
 export function ProductsView() {
-  const { openProductDetail } = useNavigation();
+  const { openProductDetail, openProductCreate } = useNavigation();
 
   return (
     <EntityListView
@@ -21,6 +21,7 @@ export function ProductsView() {
       fetchItems={fetchProducts}
       rowKey={(product) => product.id}
       onRowClick={(product) => openProductDetail(product.id)}
+      onCreate={openProductCreate}
       loadingLabel="Caricamento prodotti..."
       emptyLabel="Nessun prodotto trovato."
     />

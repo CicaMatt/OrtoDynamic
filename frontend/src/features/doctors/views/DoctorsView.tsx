@@ -13,7 +13,7 @@ const doctorColumns: ReadonlyArray<EntityColumn<DoctorListItem>> = [
 ];
 
 export function DoctorsView() {
-  const { openDoctorDetail } = useNavigation();
+  const { openDoctorDetail, openDoctorCreate } = useNavigation();
 
   return (
     <EntityListView
@@ -22,6 +22,7 @@ export function DoctorsView() {
       fetchItems={fetchDoctors}
       rowKey={(doctor) => doctor.id}
       onRowClick={(doctor) => openDoctorDetail(doctor.id)}
+      onCreate={openDoctorCreate}
       loadingLabel="Caricamento medici..."
       emptyLabel="Nessun medico trovato."
     />

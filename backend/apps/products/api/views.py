@@ -1,12 +1,13 @@
 """Thin endpoints for the Product resource."""
 
-from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListAPIView
+from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListCreateAPIView
 from apps.products.models import Product
-from .serializers import ProductSerializer, ProductUpdateSerializer
+from .serializers import ProductCreateSerializer, ProductSerializer, ProductUpdateSerializer
 
 
-class ProductListView(UnpaginatedListAPIView):
+class ProductListView(UnpaginatedListCreateAPIView):
     serializer_class = ProductSerializer
+    create_serializer_class = ProductCreateSerializer
     queryset = Product.objects.order_by("codice", "id")
 
 

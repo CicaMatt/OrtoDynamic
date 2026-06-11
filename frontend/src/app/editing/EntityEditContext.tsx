@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { createClient, updateClient, type ClientUpdate } from '../../features/clients/api/clients';
-import { updateDoctor, type DoctorUpdate } from '../../features/doctors/api/doctors';
+import { createDoctor, updateDoctor, type DoctorUpdate } from '../../features/doctors/api/doctors';
 import {
+  createHealthCompany,
   updateHealthCompany,
   type HealthCompanyUpdate,
 } from '../../features/healthCompanies/api/healthCompanies';
-import { updateProduct, type ProductUpdate } from '../../features/products/api/products';
+import { createProduct, updateProduct, type ProductUpdate } from '../../features/products/api/products';
 import { updateQuote, type QuoteUpdate } from '../../features/quotes/api/quotes';
 import { updateWorkOrder, type WorkOrderUpdate } from '../../features/workOrders/api/workOrders';
 import type { Client, ClientOrthopedic } from '../../features/clients/types';
@@ -94,8 +95,11 @@ type EntityEditValue = {
   startClientEdit: (code: string) => void;
   startClientCreate: (requiredKeys: ReadonlyArray<keyof Client>) => void;
   startDoctorEdit: (id: string) => void;
+  startDoctorCreate: (requiredKeys: ReadonlyArray<keyof Doctor>) => void;
   startHealthCompanyEdit: (id: string) => void;
+  startHealthCompanyCreate: (requiredKeys: ReadonlyArray<keyof HealthCompany>) => void;
   startProductEdit: (id: string) => void;
+  startProductCreate: (requiredKeys: ReadonlyArray<keyof Product>) => void;
   startQuoteEdit: (id: string) => void;
   startWorkOrderEdit: (id: string) => void;
   seedClient: (client: Client) => void;
@@ -145,6 +149,24 @@ function makeEmptyClient(): Client {
     birthDate: '', birthMunicipality: '', address: '', city: '', province: '', postalCode: '',
     country: '', district: '', doctorId: '', gender: '', note: '',
   };
+}
+
+/** A blank doctor used to seed the creation form. */
+function makeEmptyDoctor(): Doctor {
+  return { id: '', surname: '', name: '', address: '', phone: '', email: '', note: '' };
+}
+
+/** A blank health company used to seed the creation form. */
+function makeEmptyHealthCompany(): HealthCompany {
+  return {
+    id: '', municipalityCode: '', municipality: '', regionCode: '', regionName: '',
+    companyCode: '', companyName: '', year: '', males: '', females: '', total: '', district: '',
+  };
+}
+
+/** A blank product used to seed the creation form. */
+function makeEmptyProduct(): Product {
+  return { id: '', code: '', description: '', price: '', year: '' };
 }
 
 /** Shared client conversions: blank birth date → null, doctor id → number/null. */
@@ -239,6 +261,20 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     [reset],
   );
 
+  const startDoctorCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof Doctor>) => {
+      reset();
+      const empty = makeEmptyDoctor();
+      setDoctorDraft(empty);
+      setDoctorOriginal(empty);
+      setRequiredFields(requiredKeys.map(String));
+      setMode('create');
+      setEditTarget({ type: 'doctor', id: '' });
+      setEditing(true);
+    },
+    [reset],
+  );
+
   const startHealthCompanyEdit = useCallback(
     (id: string) => {
       reset();
@@ -248,10 +284,38 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     [reset],
   );
 
+  const startHealthCompanyCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof HealthCompany>) => {
+      reset();
+      const empty = makeEmptyHealthCompany();
+      setHealthCompanyDraft(empty);
+      setHealthCompanyOriginal(empty);
+      setRequiredFields(requiredKeys.map(String));
+      setMode('create');
+      setEditTarget({ type: 'healthCompany', id: '' });
+      setEditing(true);
+    },
+    [reset],
+  );
+
   const startProductEdit = useCallback(
     (id: string) => {
       reset();
       setEditTarget({ type: 'product', id });
+      setEditing(true);
+    },
+    [reset],
+  );
+
+  const startProductCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof Product>) => {
+      reset();
+      const empty = makeEmptyProduct();
+      setProductDraft(empty);
+      setProductOriginal(empty);
+      setRequiredFields(requiredKeys.map(String));
+      setMode('create');
+      setEditTarget({ type: 'product', id: '' });
       setEditing(true);
     },
     [reset],
@@ -321,14 +385,17 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
 
   const setDoctorField = useCallback((key: keyof Doctor, value: string) => {
     setDoctorDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
   }, []);
 
   const setHealthCompanyField = useCallback((key: keyof HealthCompany, value: string) => {
     setHealthCompanyDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
   }, []);
 
   const setProductField = useCallback((key: keyof Product, value: string) => {
     setProductDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
   }, []);
 
   const setQuoteField = useCallback((key: keyof Quote, value: string) => {
@@ -380,25 +447,58 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     if (!editTarget) return { ok: true };
 
     if (mode === 'create') {
-      // Only clients support creation today; other entities are added the same way.
-      const missing = requiredFields.filter(
-        (key) => !String((clientDraft as Record<string, unknown> | null)?.[key] ?? '').trim(),
-      );
+      const draft = (
+        editTarget.type === 'client'
+          ? clientDraft
+          : editTarget.type === 'doctor'
+            ? doctorDraft
+            : editTarget.type === 'healthCompany'
+              ? healthCompanyDraft
+              : editTarget.type === 'product'
+                ? productDraft
+                : null
+      ) as Record<string, unknown> | null;
+
+      const missing = requiredFields.filter((key) => !String(draft?.[key] ?? '').trim());
       if (missing.length > 0) {
         setInvalidFields(missing);
         setSaveError('Compila i campi obbligatori evidenziati.');
         return { ok: false };
       }
-      const payload = normalizeClientPayload(
-        buildCreatePayload(clientDraft, EDITABLE_CLIENT_KEYS) as ClientUpdate,
-      );
+
       setSaving(true);
       setSaveError(null);
       try {
-        const created = await createClient(payload);
+        let createdId: string;
+        if (editTarget.type === 'client') {
+          const created = await createClient(
+            normalizeClientPayload(buildCreatePayload(clientDraft, EDITABLE_CLIENT_KEYS) as ClientUpdate),
+          );
+          createdId = created.code;
+        } else if (editTarget.type === 'doctor') {
+          const created = await createDoctor(
+            buildCreatePayload(doctorDraft, EDITABLE_DOCTOR_KEYS) as DoctorUpdate,
+          );
+          createdId = created.id;
+        } else if (editTarget.type === 'healthCompany') {
+          const created = await createHealthCompany(
+            normalizeHealthCompanyPayload(
+              buildCreatePayload(healthCompanyDraft, EDITABLE_HEALTH_COMPANY_KEYS) as HealthCompanyUpdate,
+            ),
+          );
+          createdId = created.id;
+        } else if (editTarget.type === 'product') {
+          const created = await createProduct(
+            normalizeProductPayload(buildCreatePayload(productDraft, EDITABLE_PRODUCT_KEYS) as ProductUpdate),
+          );
+          createdId = created.id;
+        } else {
+          setSaveError('Creazione non supportata per questa entità.');
+          return { ok: false };
+        }
         endSession();
         setDataVersion((v) => v + 1);
-        return { ok: true, created: { type: 'client', id: created.code } };
+        return { ok: true, created: { type: editTarget.type, id: createdId } };
       } catch (error) {
         setSaveError(error instanceof Error ? error.message : 'Errore durante il salvataggio.');
         return { ok: false };
@@ -453,6 +553,9 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     editTarget,
     mode,
     clientDraft,
+    doctorDraft,
+    healthCompanyDraft,
+    productDraft,
     requiredFields,
     clientChanges,
     clientOrthopedicChanges,
@@ -483,8 +586,11 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     startClientEdit,
     startClientCreate,
     startDoctorEdit,
+    startDoctorCreate,
     startHealthCompanyEdit,
+    startHealthCompanyCreate,
     startProductEdit,
+    startProductCreate,
     startQuoteEdit,
     startWorkOrderEdit,
     seedClient,
@@ -533,17 +639,10 @@ function buildPayload(
     return { ...changes.doctorChanges } as DoctorUpdate;
   }
   if (target.type === 'healthCompany') {
-    const payload = { ...changes.healthCompanyChanges } as HealthCompanyUpdate;
-    if (payload.year === '') payload.year = null;
-    if ('year' in payload && payload.year !== null) payload.year = Number(payload.year);
-    return payload;
+    return normalizeHealthCompanyPayload({ ...changes.healthCompanyChanges } as HealthCompanyUpdate);
   }
   if (target.type === 'product') {
-    const payload = { ...changes.productChanges } as ProductUpdate;
-    if (payload.year === '') payload.year = null;
-    if (payload.price === '') payload.price = null;
-    if ('price' in payload && payload.price !== null) payload.price = Number(payload.price);
-    return payload;
+    return normalizeProductPayload({ ...changes.productChanges } as ProductUpdate);
   }
 
   if (target.type === 'quote') {
@@ -551,6 +650,21 @@ function buildPayload(
   }
 
   return buildWorkOrderPayload(changes.workOrderChanges);
+}
+
+/** Normalize health-company edits/creates: blank year → null, otherwise numeric. */
+function normalizeHealthCompanyPayload(payload: HealthCompanyUpdate): HealthCompanyUpdate {
+  if (payload.year === '') payload.year = null;
+  if ('year' in payload && payload.year !== null) payload.year = Number(payload.year);
+  return payload;
+}
+
+/** Normalize product edits/creates: blank year/price → null, price otherwise numeric. */
+function normalizeProductPayload(payload: ProductUpdate): ProductUpdate {
+  if (payload.year === '') payload.year = null;
+  if (payload.price === '') payload.price = null;
+  if ('price' in payload && payload.price !== null) payload.price = Number(payload.price);
+  return payload;
 }
 
 /** Blank a set of date keys to null (native date inputs emit '', which the API rejects). */

@@ -1,12 +1,18 @@
 """Thin endpoints for the Doctor resource."""
 
-from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListAPIView
+from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListCreateAPIView
 from apps.doctors.models import Doctor
-from .serializers import DoctorDetailSerializer, DoctorListSerializer, DoctorUpdateSerializer
+from .serializers import (
+    DoctorCreateSerializer,
+    DoctorDetailSerializer,
+    DoctorListSerializer,
+    DoctorUpdateSerializer,
+)
 
 
-class DoctorListView(UnpaginatedListAPIView):
+class DoctorListView(UnpaginatedListCreateAPIView):
     serializer_class = DoctorListSerializer
+    create_serializer_class = DoctorCreateSerializer
     queryset = Doctor.objects.order_by("cognome", "nome", "id")
 
 

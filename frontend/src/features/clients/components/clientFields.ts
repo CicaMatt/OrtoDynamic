@@ -1,8 +1,10 @@
-import type { FieldConfig } from '../../../shared/entity/DataCard';
+import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
 import { formatBirthDate, formatGender } from '../../../shared/format/format';
 import type { Client } from '../types';
 
 export type ClientField = FieldConfig<Client>;
+
+export { markRequired };
 
 /** Anagrafica, address, and contact field groups — shared by the detail and create forms. */
 export const personalFields: ClientField[] = [
@@ -35,14 +37,6 @@ export const contactFields: ClientField[] = [
 export const CLIENT_CREATE_REQUIRED = [
   'name', 'surname', 'birthDate', 'gender', 'address', 'province', 'city', 'phone',
 ] as const satisfies readonly (keyof Client)[];
-
-/** Return a copy of the configs with `required` set on the given keys. */
-export function markRequired(
-  fields: ClientField[],
-  required: ReadonlyArray<keyof Client>,
-): ClientField[] {
-  return fields.map((field) => (required.includes(field.key) ? { ...field, required: true } : field));
-}
 
 /** Read-mode display: map gender code and ISO date to their Italian labels. */
 export function displayClientValue(field: ClientField, raw: string): string {

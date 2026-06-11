@@ -12,7 +12,10 @@ export type View =
   | 'client-orthopedic'
   | 'client-create'
   | 'doctor-detail'
+  | 'doctor-create'
   | 'health-company-detail'
+  | 'health-company-create'
   | 'product-detail'
+  | 'product-create'
   | 'quote-detail'
   | 'work-order-detail';

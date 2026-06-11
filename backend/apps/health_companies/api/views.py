@@ -1,16 +1,18 @@
 """Thin endpoints for the HealthCompany resource."""
 
-from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListAPIView
+from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListCreateAPIView
 from apps.health_companies.models import HealthCompany
 from .serializers import (
+    HealthCompanyCreateSerializer,
     HealthCompanyDetailSerializer,
     HealthCompanyListSerializer,
     HealthCompanyUpdateSerializer,
 )
 
 
-class HealthCompanyListView(UnpaginatedListAPIView):
+class HealthCompanyListView(UnpaginatedListCreateAPIView):
     serializer_class = HealthCompanyListSerializer
+    create_serializer_class = HealthCompanyCreateSerializer
     queryset = HealthCompany.objects.order_by(
         "denominazione_regione",
         "denominazione_azienda",

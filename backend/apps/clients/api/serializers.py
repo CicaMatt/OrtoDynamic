@@ -9,6 +9,7 @@ strings — the frontend treats every field as a plain string.
 from rest_framework import serializers
 
 from apps.common.api.serializers import (
+    CreatableSerializerMixin,
     NullToEmptyMixin,
     UpdateFieldsSerializer,
     nullable_text,
@@ -166,15 +167,12 @@ class ClientUpdateSerializer(UpdateFieldsSerializer):
     other = nullable_text("altro")
 
 
-class ClientCreateSerializer(ClientUpdateSerializer):
+class ClientCreateSerializer(CreatableSerializerMixin, ClientUpdateSerializer):
     """
     Create a client. Reuses every writable field from the update serializer; the
     database assigns the id (AUTO_INCREMENT). Required-field enforcement lives in
     the frontend form, so all fields stay optional here.
     """
 
-    def create(self, validated_data):
-        return Client.objects.create(**validated_data)
-
-    def to_representation(self, instance):
-        return ClientDetailSerializer(instance).data
+    create_model = Client
+    read_serializer_class = ClientDetailSerializer

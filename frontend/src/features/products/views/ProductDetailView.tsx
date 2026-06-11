@@ -4,19 +4,10 @@ import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import type { FieldConfig } from '../../../shared/entity/DataCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchProduct } from '../api/products';
-import type { Product } from '../types';
-
-const productFields: FieldConfig<Product>[] = [
-  { label: 'ID', key: 'id', readonly: true },
-  { label: 'Codice', key: 'code' },
-  { label: 'Descrizione', key: 'description', type: 'textarea' },
-  { label: 'Prezzo', key: 'price', type: 'number' },
-  { label: 'Anno', key: 'year' },
-];
+import { productFields } from '../components/productFields';
 
 const productActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Prodotto' },

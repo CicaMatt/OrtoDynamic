@@ -5,10 +5,13 @@ Serializers for the HealthCompany resource backed by `aziende_sanitarie`.
 from rest_framework import serializers
 
 from apps.common.api.serializers import (
+    CreatableSerializerMixin,
     NullToEmptyMixin,
     UpdateFieldsSerializer,
     nullable_text,
 )
+
+from apps.health_companies.models import HealthCompany
 
 
 class HealthCompanyListSerializer(NullToEmptyMixin):
@@ -47,3 +50,10 @@ class HealthCompanyUpdateSerializer(UpdateFieldsSerializer):
     females = nullable_text("femmine")
     total = nullable_text("totale")
     district = nullable_text("distretto")
+
+
+class HealthCompanyCreateSerializer(CreatableSerializerMixin, HealthCompanyUpdateSerializer):
+    """Create a health company, reusing the update serializer's writable fields."""
+
+    create_model = HealthCompany
+    read_serializer_class = HealthCompanyDetailSerializer

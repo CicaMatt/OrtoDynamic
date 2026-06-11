@@ -179,6 +179,14 @@ export type FieldConfig<T> = {
   required?: boolean;
 };
 
+/** Return a copy of `fields` with `required` set on the given keys. */
+export function markRequired<T>(
+  fields: FieldConfig<T>[],
+  required: ReadonlyArray<keyof T>,
+): FieldConfig<T>[] {
+  return fields.map((field) => (required.includes(field.key) ? { ...field, required: true } : field));
+}
+
 /**
  * Grid of {@link InfoBlock}s built from a field config. The raw value is read
  * from `data[key]`; `format` (when given) maps it to the read-mode display
