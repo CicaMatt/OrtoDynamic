@@ -1,14 +1,8 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
-import { formatBirthDate } from '../../../shared/format/format';
+import { formatBirthDate, previewText } from '../../../shared/format/format';
 import { fetchWorkOrders } from '../api/workOrders';
 import type { WorkOrder } from '../types';
-
-/** Trim long free-text cells so the table stays readable; full text lives in the detail view. */
-function preview(value: string): string {
-  const trimmed = value.trim();
-  return trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
-}
 
 /**
  * Every column of `lavorazioni` is shown. The bounded categorical columns
@@ -105,7 +99,7 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     muted: true,
     searchable: false,
     filterable: false,
-    render: preview,
+    render: previewText,
   },
   {
     key: 'technicalNotes',
@@ -113,7 +107,7 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     muted: true,
     searchable: false,
     filterable: false,
-    render: preview,
+    render: previewText,
   },
 ];
 

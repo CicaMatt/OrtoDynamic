@@ -58,3 +58,24 @@ export function EntityPageHeader({
     </header>
   );
 }
+
+export function EntityCreatePageHeader({
+  backLabel,
+  listLabel,
+  title,
+  onBack,
+}: {
+  backLabel: string;
+  listLabel: string;
+  title: string;
+  onBack: () => void;
+}) {
+  return (
+    <EntityPageHeader
+      back={{ label: backLabel, onClick: onBack }}
+      crumbs={[{ label: listLabel, onClick: onBack }, { label: 'Nuovo' }]}
+      title={title}
+      subtitle={<>I campi contrassegnati con * sono obbligatori.</>}
+    />
+  );
+}

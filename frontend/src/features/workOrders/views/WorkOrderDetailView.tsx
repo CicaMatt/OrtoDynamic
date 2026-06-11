@@ -3,20 +3,20 @@ import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import type { FieldConfig, SelectOption } from '../../../shared/entity/DataCard';
+import {
+  FieldSectionList,
+  type FieldSectionConfig,
+} from '../../../shared/entity/FieldSectionCard';
+import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
-import { formatBirthDate } from '../../../shared/format/format';
 import { fetchWorkOrder } from '../api/workOrders';
 import type { WorkOrder } from '../types';
 
 type WorkOrderField = FieldConfig<WorkOrder>;
 
-const sameLabel = (value: string): SelectOption => ({ value, label: value });
-
 // Stored verbatim in their columns — option values must match the database exactly.
-const statusOptions: SelectOption[] = [
+const statusOptions = optionsFromValues([
   'PRONTO PRIMA PROVA',
   'PRONTO SECONDA PROVA',
   'PRONTO TERZA PROVA',
@@ -27,14 +27,14 @@ const statusOptions: SelectOption[] = [
   'INVIATE A LACO PER MODIFICA',
   'IN REVISIONE DOPO CONSEGNA',
   'ANNULLATO',
-].map(sameLabel);
+]);
 
-const trialOptions: SelectOption[] = ['ESTETICO', 'TECNICO'].map(sameLabel);
-const checkOptions: SelectOption[] = ['ESTETICO', 'FUNZIONALE', 'TECNICO'].map(sameLabel);
-const outcomeOptions: SelectOption[] = ['POSITIVO', 'RILAVORAZIONE'].map(sameLabel);
-const yesNoOptions: SelectOption[] = ['SI', 'NO'].map(sameLabel);
-const complaintOptions: SelectOption[] = ['MANUTENZIONE', 'RINNOVO FORNITURA'].map(sameLabel);
-const deviceOptions: SelectOption[] = ['INTERNO', 'ESTERNO'].map(sameLabel);
+const trialOptions = optionsFromValues(['ESTETICO', 'TECNICO']);
+const checkOptions = optionsFromValues(['ESTETICO', 'FUNZIONALE', 'TECNICO']);
+const outcomeOptions = optionsFromValues(['POSITIVO', 'RILAVORAZIONE']);
+const yesNoOptions = optionsFromValues(['SI', 'NO']);
+const complaintOptions = optionsFromValues(['MANUTENZIONE', 'RINNOVO FORNITURA']);
+const deviceOptions = optionsFromValues(['INTERNO', 'ESTERNO']);
 
 const lifecycleFields: WorkOrderField[] = [
   { label: 'ID', key: 'id', readonly: true },
@@ -81,10 +81,13 @@ const interventionFields: WorkOrderField[] = [
 
 const workOrderActions = [{ id: 'edit', icon: 'edit', label: 'Modifica Dati Lavorazione' }];
 
-function displayWorkOrderValue(field: WorkOrderField, raw: string): string {
-  if (field.type === 'date') return formatBirthDate(raw);
-  return raw;
-}
+const workOrderSections: FieldSectionConfig<WorkOrder>[] = [
+  { icon: 'engineering', title: 'Dati Lavorazione', fields: lifecycleFields },
+  { icon: 'link', title: 'Riferimenti', fields: referenceFields },
+  { icon: 'how_to_reg', title: 'Prova e Verifica Cliente', fields: trialFields },
+  { icon: 'build', title: 'Assistenza Tecnica', fields: serviceFields },
+  { icon: 'description', title: 'Intervento e Annotazioni', fields: interventionFields, columns: 1 },
+];
 
 export function WorkOrderDetailView() {
   const { selectedWorkOrderId, navigate } = useNavigation();
@@ -166,62 +169,12 @@ export function WorkOrderDetailView() {
       actionsTitle="Azioni lavorazione"
       actions={actions}
     >
-      <FieldSectionCard
-        icon="engineering"
-        title="Dati Lavorazione"
+      <FieldSectionList
         data={data}
-        fields={lifecycleFields}
+        sections={workOrderSections}
         editing={isEditingWorkOrder}
         onChange={setWorkOrderField}
-        format={displayWorkOrderValue}
       />
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="link"
-          title="Riferimenti"
-          data={data}
-          fields={referenceFields}
-          editing={isEditingWorkOrder}
-          onChange={setWorkOrderField}
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="how_to_reg"
-          title="Prova e Verifica Cliente"
-          data={data}
-          fields={trialFields}
-          editing={isEditingWorkOrder}
-          onChange={setWorkOrderField}
-          format={displayWorkOrderValue}
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="build"
-          title="Assistenza Tecnica"
-          data={data}
-          fields={serviceFields}
-          editing={isEditingWorkOrder}
-          onChange={setWorkOrderField}
-          format={displayWorkOrderValue}
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="description"
-          title="Intervento e Annotazioni"
-          data={data}
-          fields={interventionFields}
-          columns={1}
-          editing={isEditingWorkOrder}
-          onChange={setWorkOrderField}
-        />
-      </div>
     </EntityDetailLayout>
   );
 }

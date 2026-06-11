@@ -2,11 +2,17 @@ import type { ReactNode } from 'react';
 import { FieldValue } from '../ui/FieldValue';
 import { Icon } from '../ui/Icon';
 import { Autocomplete, type AutocompleteOption } from '../ui/Autocomplete';
+import { formatBirthDate, formatGender } from '../format/format';
 
 export type FieldInputType = 'text' | 'date' | 'gender' | 'number' | 'textarea' | 'select' | 'autocomplete';
 
 /** Option for a `select` field; `value` is persisted, `label` is shown. */
 export type SelectOption = { value: string; label: string };
+
+/** Build select options where the stored value and visible label are identical. */
+export function optionsFromValues(values: readonly string[]): SelectOption[] {
+  return values.map((value) => ({ value, label: value }));
+}
 
 /** Runtime config for an `autocomplete` field: its options and an optional select side effect. */
 export type AutocompleteFieldConfig = {
@@ -179,6 +185,12 @@ export type FieldConfig<T> = {
   required?: boolean;
 };
 
+export function formatFieldValue<T>(field: FieldConfig<T>, raw: string): string {
+  if (field.type === 'date') return formatBirthDate(raw);
+  if (field.type === 'gender') return formatGender(raw);
+  return raw;
+}
+
 /** Return a copy of `fields` with `required` set on the given keys. */
 export function markRequired<T>(
   fields: FieldConfig<T>[],
@@ -237,7 +249,7 @@ export function FieldGrid<T extends object>({
           <InfoBlock
             key={String(field.key)}
             label={field.label}
-            value={format ? format(field, raw) : raw}
+            value={format ? format(field, raw) : formatFieldValue(field, raw)}
             editing={canEdit}
             editValue={raw}
             inputType={field.type}

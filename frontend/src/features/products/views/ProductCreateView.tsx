@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
-import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
+import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import { PRODUCT_CREATE_REQUIRED, productCreateFields } from '../components/productFields';
 import type { Product } from '../types';
@@ -25,11 +25,11 @@ export function ProductCreateView() {
   return (
     <EntityDetailLayout
       header={
-        <EntityPageHeader
-          back={{ label: 'Torna ai prodotti', onClick: () => navigate('products') }}
-          crumbs={[{ label: 'Prodotti', onClick: () => navigate('products') }, { label: 'Nuovo' }]}
+        <EntityCreatePageHeader
+          backLabel="Torna ai prodotti"
+          listLabel="Prodotti"
           title="Nuovo Prodotto"
-          subtitle={<>I campi contrassegnati con * sono obbligatori.</>}
+          onBack={() => navigate('products')}
         />
       }
     >

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { fetchClientOrthopedic } from '../api/clients';
 import { ClientPageHeader } from '../components/ClientPageHeader';
+import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import type { FieldConfig } from '../../../shared/entity/DataCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
@@ -94,19 +95,19 @@ export function ClientOrthopedicView() {
   const data = isEditingClient && clientOrthopedicDraft ? clientOrthopedicDraft : fetched;
 
   return (
-    <div className="max-w-[1440px] -mt-1">
-      <ClientPageHeader
-        back={{ label: 'Torna al dettaglio', onClick: () => navigate('client-detail') }}
-        crumbs={[
-          { label: 'Clienti', onClick: () => navigate('clients') },
-          { label: 'Dettaglio', onClick: () => navigate('client-detail') },
-          { label: 'Dati Ortopedici' },
-        ]}
-        name={data.name}
-        surname={data.surname}
-        code={data.code}
-      />
-
+    <EntityDetailLayout
+      header={
+        <ClientPageHeader
+          back={{ label: 'Torna al dettaglio', onClick: () => navigate('client-detail') }}
+          crumbs={[
+            { label: 'Clienti', onClick: () => navigate('clients') },
+            { label: 'Dettaglio', onClick: () => navigate('client-detail') },
+            { label: 'Dati Ortopedici' },
+          ]}
+          client={data}
+        />
+      }
+    >
       <div className="space-y-[28px]">
         <FieldSectionCard
           icon="footprint"
@@ -148,6 +149,6 @@ export function ClientOrthopedicView() {
           onChange={setClientOrthopedicField}
         />
       </div>
-    </div>
+    </EntityDetailLayout>
   );
 }

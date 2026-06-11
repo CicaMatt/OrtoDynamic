@@ -1,14 +1,8 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
-import { formatBirthDate } from '../../../shared/format/format';
+import { formatBirthDate, previewText } from '../../../shared/format/format';
 import { fetchQuotes } from '../api/quotes';
 import type { Quote } from '../types';
-
-/** Trim long free-text cells so the table stays readable; full text lives in the detail view. */
-function preview(value: string): string {
-  const trimmed = value.trim();
-  return trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
-}
 
 /**
  * Every column of `preventivi` is shown. Categorical columns (type, status,
@@ -71,7 +65,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     muted: true,
     searchable: false,
     filterable: false,
-    render: preview,
+    render: previewText,
   },
   {
     key: 'therapeuticProgram',
@@ -79,7 +73,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     muted: true,
     searchable: false,
     filterable: false,
-    render: preview,
+    render: previewText,
   },
   {
     key: 'detailedPrescription',
@@ -87,7 +81,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     muted: true,
     searchable: false,
     filterable: false,
-    render: preview,
+    render: previewText,
   },
   {
     key: 'quote',
@@ -95,16 +89,16 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     muted: true,
     searchable: false,
     filterable: false,
-    render: preview,
+    render: previewText,
   },
-  { key: 'note', label: 'Note', muted: true, searchable: false, filterable: false, render: preview },
+  { key: 'note', label: 'Note', muted: true, searchable: false, filterable: false, render: previewText },
   {
     key: 'privateNote',
     label: 'Note Private',
     muted: true,
     searchable: false,
     filterable: false,
-    render: preview,
+    render: previewText,
   },
   {
     key: 'finalNote',
@@ -112,7 +106,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     muted: true,
     searchable: false,
     filterable: false,
-    render: preview,
+    render: previewText,
   },
 ];
 

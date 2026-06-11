@@ -6,14 +6,16 @@ export function NoteCard({
   value,
   editing,
   onChange,
+  className,
 }: {
   title?: string;
   value: string;
   editing: boolean;
   onChange: (value: string) => void;
+  className?: string;
 }) {
   return (
-    <DataCard icon="sticky_note_2" title={title}>
+    <DataCard icon="sticky_note_2" title={title} className={className}>
       {editing ? (
         <EditInput type="textarea" value={value} onChange={onChange} />
       ) : (

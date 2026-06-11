@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
-import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
+import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import {
   HEALTH_COMPANY_CREATE_REQUIRED,
@@ -35,14 +35,11 @@ export function HealthCompanyCreateView() {
   return (
     <EntityDetailLayout
       header={
-        <EntityPageHeader
-          back={{ label: 'Torna alle aziende sanitarie', onClick: () => navigate('health-companies') }}
-          crumbs={[
-            { label: 'Aziende Sanitarie', onClick: () => navigate('health-companies') },
-            { label: 'Nuovo' },
-          ]}
+        <EntityCreatePageHeader
+          backLabel="Torna alle aziende sanitarie"
+          listLabel="Aziende Sanitarie"
           title="Nuova Azienda Sanitaria"
-          subtitle={<>I campi contrassegnati con * sono obbligatori.</>}
+          onBack={() => navigate('health-companies')}
         />
       }
     >

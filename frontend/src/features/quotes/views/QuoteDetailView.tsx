@@ -3,20 +3,20 @@ import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import type { FieldConfig, SelectOption } from '../../../shared/entity/DataCard';
+import {
+  FieldSectionList,
+  type FieldSectionConfig,
+} from '../../../shared/entity/FieldSectionCard';
+import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
-import { formatBirthDate } from '../../../shared/format/format';
 import { fetchQuote } from '../api/quotes';
 import type { Quote } from '../types';
 
 type QuoteField = FieldConfig<Quote>;
 
-const sameLabel = (value: string): SelectOption => ({ value, label: value });
-
 // Stored verbatim in the `stato` column — values must match the database exactly.
-const statusOptions: SelectOption[] = [
+const statusOptions = optionsFromValues([
   'IN BOZZA',
   'INSERITO',
   'IN LAVORAZIONE',
@@ -29,10 +29,10 @@ const statusOptions: SelectOption[] = [
   'SOSPESO',
   'ANNULLATO',
   'RIFIUTATO',
-].map(sameLabel);
+]);
 
-const typeOptions: SelectOption[] = ['Asl', 'Privato', 'Inail'].map(sameLabel);
-const yesNoOptions: SelectOption[] = ['Si', 'No'].map(sameLabel);
+const typeOptions = optionsFromValues(['Asl', 'Privato', 'Inail']);
+const yesNoOptions = optionsFromValues(['Si', 'No']);
 
 const identityFields: QuoteField[] = [
   { label: 'ID', key: 'id', readonly: true },
@@ -83,10 +83,15 @@ const noteFields: QuoteField[] = [
 
 const quoteActions = [{ id: 'edit', icon: 'edit', label: 'Modifica Dati Preventivo' }];
 
-function displayQuoteValue(field: QuoteField, raw: string): string {
-  if (field.type === 'date') return formatBirthDate(raw);
-  return raw;
-}
+const quoteSections: FieldSectionConfig<Quote>[] = [
+  { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields },
+  { icon: 'group', title: 'Riferimenti', fields: referenceFields },
+  { icon: 'clinical_notes', title: 'Dati Clinici', fields: clinicalFields, columns: 1 },
+  { icon: 'fact_check', title: 'Autorizzazione e Scadenze', fields: authorizationFields },
+  { icon: 'receipt_long', title: 'Fornitura e Fatturazione', fields: supplyFields },
+  { icon: 'description', title: 'Dettaglio Preventivo', fields: quoteTextFields, columns: 1 },
+  { icon: 'sticky_note_2', title: 'Note', fields: noteFields, columns: 1 },
+];
 
 export function QuoteDetailView() {
   const { selectedQuoteId, navigate } = useNavigation();
@@ -163,85 +168,12 @@ export function QuoteDetailView() {
       actionsTitle="Azioni preventivo"
       actions={actions}
     >
-      <FieldSectionCard
-        icon="request_quote"
-        title="Dati Preventivo"
+      <FieldSectionList
         data={data}
-        fields={identityFields}
+        sections={quoteSections}
         editing={isEditingQuote}
         onChange={setQuoteField}
-        format={displayQuoteValue}
       />
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="group"
-          title="Riferimenti"
-          data={data}
-          fields={referenceFields}
-          editing={isEditingQuote}
-          onChange={setQuoteField}
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="clinical_notes"
-          title="Dati Clinici"
-          data={data}
-          fields={clinicalFields}
-          columns={1}
-          editing={isEditingQuote}
-          onChange={setQuoteField}
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="fact_check"
-          title="Autorizzazione e Scadenze"
-          data={data}
-          fields={authorizationFields}
-          editing={isEditingQuote}
-          onChange={setQuoteField}
-          format={displayQuoteValue}
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="receipt_long"
-          title="Fornitura e Fatturazione"
-          data={data}
-          fields={supplyFields}
-          editing={isEditingQuote}
-          onChange={setQuoteField}
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="description"
-          title="Dettaglio Preventivo"
-          data={data}
-          fields={quoteTextFields}
-          columns={1}
-          editing={isEditingQuote}
-          onChange={setQuoteField}
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <FieldSectionCard
-          icon="sticky_note_2"
-          title="Note"
-          data={data}
-          fields={noteFields}
-          columns={1}
-          editing={isEditingQuote}
-          onChange={setQuoteField}
-        />
-      </div>
     </EntityDetailLayout>
   );
 }

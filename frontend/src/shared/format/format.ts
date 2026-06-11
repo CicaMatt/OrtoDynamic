@@ -17,3 +17,10 @@ export function formatGender(value: string): string {
   if (value === 'F') return 'Femminile';
   return value;
 }
+
+/** Trim long table cells while keeping the full value available in detail views. */
+export function previewText(value: string): string {
+  const maxLength = 60;
+  const trimmed = value.trim();
+  return trimmed.length > maxLength ? `${trimmed.slice(0, maxLength)}…` : trimmed;
+}

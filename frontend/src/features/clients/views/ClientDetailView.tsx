@@ -2,18 +2,11 @@ import { useEffect } from 'react';
 import { fetchClient } from '../api/clients';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { ClientPageHeader } from '../components/ClientPageHeader';
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import { NoteCard } from '../../../shared/entity/NoteCard';
+import { ClientDataSections } from '../components/ClientDataSections';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { useApiData } from '../../../shared/hooks/useApiData';
-import {
-  addressFields,
-  contactFields,
-  displayClientValue,
-  personalFields,
-} from '../components/clientFields';
 import { useClientMunicipalityAutocomplete } from '../components/useClientMunicipalityAutocomplete';
 
 const clientActions = [
@@ -80,56 +73,18 @@ export function ClientDetailView() {
             { label: 'Clienti', onClick: () => navigate('clients') },
             { label: 'Dettaglio' },
           ]}
-          name={data.name}
-          surname={data.surname}
-          code={data.code}
+          client={data}
         />
       }
       actionsTitle="Azioni cliente"
       actions={actions}
     >
-      <FieldSectionCard
-        icon="person"
-        title="Dati Anagrafici"
+      <ClientDataSections
         data={data}
-        fields={personalFields}
         editing={isEditingClient}
         onChange={setClientField}
-        format={displayClientValue}
         autocompleteFields={municipalityFields}
       />
-
-      <div className="grid grid-cols-2 gap-[28px] mt-[28px]">
-        <FieldSectionCard
-          icon="home_pin"
-          title="Residenza"
-          data={data}
-          fields={addressFields}
-          columns={2}
-          editing={isEditingClient}
-          onChange={setClientField}
-          autocompleteFields={municipalityFields}
-          className="min-h-[300px]"
-        />
-        <FieldSectionCard
-          icon="contact_phone"
-          title="Contatti e Distretto"
-          data={data}
-          fields={contactFields}
-          columns={2}
-          editing={isEditingClient}
-          onChange={setClientField}
-          className="min-h-[300px]"
-        />
-      </div>
-
-      <div className="mt-[28px]">
-        <NoteCard
-          value={data.note}
-          editing={isEditingClient}
-          onChange={(value) => setClientField('note', value)}
-        />
-      </div>
     </EntityDetailLayout>
   );
 }

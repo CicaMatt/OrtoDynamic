@@ -92,13 +92,12 @@ export function DoctorDetailView() {
         onChange={setDoctorField}
       />
 
-      <div className="mt-[28px]">
-        <NoteCard
-          value={data.note}
-          editing={isEditingDoctor}
-          onChange={(value) => setDoctorField('note', value)}
-        />
-      </div>
+      <NoteCard
+        value={data.note}
+        editing={isEditingDoctor}
+        onChange={(value) => setDoctorField('note', value)}
+        className="mt-[28px]"
+      />
     </EntityDetailLayout>
   );
 }
