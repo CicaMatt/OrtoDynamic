@@ -1,4 +1,9 @@
-import { DataCard, FieldGrid, type FieldConfig } from './DataCard';
+import {
+  DataCard,
+  FieldGrid,
+  type AutocompleteFieldConfig,
+  type FieldConfig,
+} from './DataCard';
 
 export function FieldSectionCard<T extends object>({
   icon,
@@ -10,6 +15,7 @@ export function FieldSectionCard<T extends object>({
   onChange,
   format,
   invalidKeys,
+  autocompleteFields,
   className,
 }: {
   icon: string;
@@ -21,6 +27,7 @@ export function FieldSectionCard<T extends object>({
   onChange: (key: keyof T, value: string) => void;
   format?: (field: FieldConfig<T>, raw: string) => string;
   invalidKeys?: ReadonlyArray<keyof T>;
+  autocompleteFields?: Partial<Record<keyof T, AutocompleteFieldConfig>>;
   className?: string;
 }) {
   return (
@@ -33,6 +40,7 @@ export function FieldSectionCard<T extends object>({
         onChange={onChange}
         format={format}
         invalidKeys={invalidKeys}
+        autocompleteFields={autocompleteFields}
       />
     </DataCard>
   );

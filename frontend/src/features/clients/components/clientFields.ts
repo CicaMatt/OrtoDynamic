@@ -10,16 +10,17 @@ export const personalFields: ClientField[] = [
   { label: 'Cognome', key: 'surname' },
   { label: 'Codice fiscale', key: 'fiscalCode' },
   { label: 'Sesso', key: 'gender', type: 'gender' },
-  { label: 'Comune Nascita', key: 'birthMunicipality' },
+  { label: 'Comune Nascita', key: 'birthMunicipality', type: 'autocomplete' },
   { label: 'Data nascita', key: 'birthDate', type: 'date' },
 ];
 
 export const addressFields: ClientField[] = [
   { label: 'Indirizzo', key: 'address' },
-  { label: 'Citta', key: 'city' },
-  { label: 'Provincia', key: 'province' },
-  { label: 'CAP', key: 'postalCode' },
-  { label: 'Nazione', key: 'country' },
+  { label: 'Citta', key: 'city', type: 'autocomplete' },
+  // Locked: these are filled automatically from the selected Città, not typed.
+  { label: 'Provincia', key: 'province', readonly: true },
+  { label: 'CAP', key: 'postalCode', readonly: true },
+  { label: 'Nazione', key: 'country', readonly: true },
 ];
 
 export const contactFields: ClientField[] = [

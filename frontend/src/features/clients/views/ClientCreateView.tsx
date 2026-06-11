@@ -13,6 +13,7 @@ import {
   markRequired,
   personalFields,
 } from '../components/clientFields';
+import { useClientMunicipalityAutocomplete } from '../components/useClientMunicipalityAutocomplete';
 import type { Client } from '../types';
 
 const personalCreateFields = markRequired(personalFields, CLIENT_CREATE_REQUIRED);
@@ -29,6 +30,8 @@ export function ClientCreateView() {
   useEffect(() => {
     if (!isCreatingClient) startClientCreate(CLIENT_CREATE_REQUIRED);
   }, [isCreatingClient, startClientCreate]);
+
+  const municipalityFields = useClientMunicipalityAutocomplete(setClientField, true);
 
   if (!isCreatingClient || !clientDraft) return null;
 
@@ -54,6 +57,7 @@ export function ClientCreateView() {
         onChange={setClientField}
         format={displayClientValue}
         invalidKeys={invalidKeys}
+        autocompleteFields={municipalityFields}
       />
 
       <div className="grid grid-cols-2 gap-[28px] mt-[28px]">
@@ -66,6 +70,7 @@ export function ClientCreateView() {
           editing
           onChange={setClientField}
           invalidKeys={invalidKeys}
+          autocompleteFields={municipalityFields}
           className="min-h-[300px]"
         />
         <FieldSectionCard

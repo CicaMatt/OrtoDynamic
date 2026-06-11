@@ -1,11 +1,19 @@
 import type { ReactNode } from 'react';
 import { FieldValue } from '../ui/FieldValue';
 import { Icon } from '../ui/Icon';
+import { Autocomplete, type AutocompleteOption } from '../ui/Autocomplete';
 
-export type FieldInputType = 'text' | 'date' | 'gender' | 'number' | 'textarea' | 'select';
+export type FieldInputType = 'text' | 'date' | 'gender' | 'number' | 'textarea' | 'select' | 'autocomplete';
 
 /** Option for a `select` field; `value` is persisted, `label` is shown. */
 export type SelectOption = { value: string; label: string };
+
+/** Runtime config for an `autocomplete` field: its options and an optional select side effect. */
+export type AutocompleteFieldConfig = {
+  options: ReadonlyArray<AutocompleteOption>;
+  /** Called when an option is picked — used to fill related fields. */
+  onSelect?: (option: AutocompleteOption) => void;
+};
 
 const baseInputClass =
   'w-full rounded-[6px] border bg-white px-[11px] py-[8px] font-body-md text-body-md text-[#171a20] focus:outline-none focus:ring-1';
@@ -113,6 +121,8 @@ type InfoBlockProps = {
   required?: boolean;
   /** Highlight the field as failing validation. */
   invalid?: boolean;
+  /** Custom edit-mode control (e.g. an autocomplete) replacing the default input. */
+  control?: ReactNode;
   onChange?: (value: string) => void;
 };
 
@@ -127,6 +137,7 @@ export function InfoBlock({
   inputOptions,
   required = false,
   invalid = false,
+  control,
   onChange,
 }: InfoBlockProps) {
   return (
@@ -136,14 +147,16 @@ export function InfoBlock({
         {required && <span className="text-error"> *</span>}
       </dt>
       <dd className="mt-[8px]">
-        {editing && onChange ? (
-          <EditInput
-            type={inputType}
-            value={editValue ?? value}
-            options={inputOptions}
-            invalid={invalid}
-            onChange={onChange}
-          />
+        {editing && (control || onChange) ? (
+          control ?? (
+            <EditInput
+              type={inputType}
+              value={editValue ?? value}
+              options={inputOptions}
+              invalid={invalid}
+              onChange={onChange!}
+            />
+          )
         ) : (
           <span className={`font-body-md text-body-md text-[#171a20] ${strong ? 'font-bold' : 'font-medium'}`}>
             <FieldValue value={value} />
@@ -179,6 +192,7 @@ export function FieldGrid<T extends object>({
   onChange,
   format,
   invalidKeys,
+  autocompleteFields,
 }: {
   data: T;
   fields: FieldConfig<T>[];
@@ -188,6 +202,8 @@ export function FieldGrid<T extends object>({
   format?: (field: FieldConfig<T>, raw: string) => string;
   /** Field keys currently failing validation (highlighted in edit mode). */
   invalidKeys?: ReadonlyArray<keyof T>;
+  /** Runtime config for `autocomplete` fields, keyed by field key. */
+  autocompleteFields?: Partial<Record<keyof T, AutocompleteFieldConfig>>;
 }) {
   const columnsClass = columns === 1 ? 'grid-cols-1' : columns === 2 ? 'grid-cols-2' : 'grid-cols-3';
   return (
@@ -195,6 +211,20 @@ export function FieldGrid<T extends object>({
       {fields.map((field) => {
         const raw = String(data[field.key] ?? '');
         const canEdit = editing && !field.readonly;
+        const invalid = canEdit && (invalidKeys?.includes(field.key) ?? false);
+        const autocomplete = field.type === 'autocomplete' ? autocompleteFields?.[field.key] : undefined;
+        const control =
+          canEdit && autocomplete ? (
+            <Autocomplete
+              value={raw}
+              options={autocomplete.options}
+              invalid={invalid}
+              onSelect={(option) => {
+                onChange(field.key, option.value);
+                autocomplete.onSelect?.(option);
+              }}
+            />
+          ) : undefined;
         return (
           <InfoBlock
             key={String(field.key)}
@@ -205,7 +235,8 @@ export function FieldGrid<T extends object>({
             inputType={field.type}
             inputOptions={field.options}
             required={field.required}
-            invalid={canEdit && (invalidKeys?.includes(field.key) ?? false)}
+            invalid={invalid}
+            control={control}
             onChange={canEdit ? (value) => onChange(field.key, value) : undefined}
           />
         );

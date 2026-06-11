@@ -14,6 +14,7 @@ import {
   displayClientValue,
   personalFields,
 } from '../components/clientFields';
+import { useClientMunicipalityAutocomplete } from '../components/useClientMunicipalityAutocomplete';
 
 const clientActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Cliente' },
@@ -45,6 +46,8 @@ export function ClientDetailView() {
   useEffect(() => {
     if (isEditingClient && client) seedClient(client);
   }, [isEditingClient, client, seedClient]);
+
+  const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditingClient);
 
   if (loading) {
     return (
@@ -93,6 +96,7 @@ export function ClientDetailView() {
         editing={isEditingClient}
         onChange={setClientField}
         format={displayClientValue}
+        autocompleteFields={municipalityFields}
       />
 
       <div className="grid grid-cols-2 gap-[28px] mt-[28px]">
@@ -104,6 +108,7 @@ export function ClientDetailView() {
           columns={2}
           editing={isEditingClient}
           onChange={setClientField}
+          autocompleteFields={municipalityFields}
           className="min-h-[300px]"
         />
         <FieldSectionCard

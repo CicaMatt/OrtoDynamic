@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(npm run *)",
-      "Bash(.venv/bin/python -c ' *)"
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(mysql -uroot -proot -h127.0.0.1 -P3306 ORTODYNAMIC -e \"SHOW TABLES LIKE '%omun%';\")",
+      "Bash(mysql -uroot -proot -h127.0.0.1 -P3306 ORTODYNAMIC -e \"DESCRIBE comuni;\")",
+      "Bash(mysql -uroot -proot -h127.0.0.1 -P3306 ORTODYNAMIC -e \"SELECT COUNT\\(*\\) total FROM comuni;\")",
+      "Bash(mysql -uroot -proot -h127.0.0.1 -P3306 ORTODYNAMIC --vertical -e \"SELECT * FROM comuni LIMIT 3;\")",
+      "Bash(mysql -uroot -proot -h127.0.0.1 -P3306 ORTODYNAMIC -e ' *)",
+      "Bash(mysql -uroot -proot -h127.0.0.1 -P3306 ORTODYNAMIC -e \"SELECT Comune, Provincia, CAP FROM comuni WHERE Comune IN \\(SELECT Comune FROM comuni GROUP BY Comune HAVING COUNT\\(*\\)>1\\) ORDER BY Comune LIMIT 12;\")"
     ]
   }
 }
