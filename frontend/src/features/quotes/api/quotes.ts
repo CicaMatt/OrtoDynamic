@@ -1,5 +1,5 @@
 import { apiGet, apiPatch } from '../../../shared/api/http';
-import type { Quote } from '../types';
+import type { Quote, QuoteItem } from '../types';
 
 export type QuoteUpdate = Record<string, string | number | null>;
 
@@ -9,6 +9,10 @@ export function fetchQuotes(): Promise<Quote[]> {
 
 export function fetchQuote(id: string): Promise<Quote> {
   return apiGet<Quote>(`/quotes/${id}/`);
+}
+
+export function fetchQuoteItems(quoteId: string): Promise<QuoteItem[]> {
+  return apiGet<QuoteItem[]>(`/quotes/${quoteId}/items/`);
 }
 
 export function updateQuote(id: string, changes: QuoteUpdate): Promise<unknown> {

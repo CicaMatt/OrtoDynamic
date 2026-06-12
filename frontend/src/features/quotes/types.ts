@@ -45,3 +45,17 @@ export type Quote = {
   privateNote: string;
   finalNote: string;
 };
+
+/**
+ * Quote line item mirrored from the API (`item_preventivi`), linked to its
+ * parent quote on the backend by `id_preventivo`. All-strings like {@link Quote}.
+ * `productId` is the raw `codice_nomenclatore` reference (a `nomenclatore.id`).
+ */
+export type QuoteItem = {
+  id: string;
+  productId: string;
+  quantity: string;
+  price: string;
+  amount: string;
+  discount: string;
+};

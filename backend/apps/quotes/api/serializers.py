@@ -61,6 +61,21 @@ class QuoteSerializer(NullToEmptyMixin):
     finalNote = serializers.CharField(source="note_finali")
 
 
+class QuoteItemSerializer(NullToEmptyMixin):
+    """
+    Read-only line item shown in the quote detail's items box. Exposes only the
+    columns the view renders; `productId` is the raw `codice_nomenclatore`
+    reference (a `nomenclatore.id`). Values follow the all-strings contract.
+    """
+
+    id = serializers.CharField()
+    productId = serializers.CharField(source="codice_nomenclatore")
+    quantity = serializers.CharField(source="quantita")
+    price = serializers.CharField(source="prezzo")
+    amount = serializers.CharField(source="importo")
+    discount = serializers.CharField(source="sconto")
+
+
 class QuoteUpdateSerializer(UpdateFieldsSerializer):
     """
     Writable serializer for editing a quote. Every field is optional so PATCH

@@ -60,3 +60,26 @@ class WorkOrder(UnmanagedModel):
 
     def __str__(self) -> str:
         return f"Lavorazione {self.pk}"
+
+
+class WorkOrderItem(UnmanagedModel):
+    """
+    Bridge row linking a work order to a quote line item — maps the existing
+    `item_lavorazioni` table.
+
+    Only the columns needed to resolve that link are mapped: `id_lavorazione`
+    references `lavorazioni.id` (the parent work order) and `id_item_preventivi`
+    references `item_preventivi.id` (the quote line item rendered in the detail
+    view). Both are plain integer columns, mirroring the rest of the mapped
+    schema, which declares no database-level foreign keys.
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    id_lavorazione = models.BigIntegerField()
+    id_item_preventivi = models.BigIntegerField(null=True, blank=True)
+
+    class Meta(UnmanagedModel.Meta):
+        db_table = "item_lavorazioni"
+
+    def __str__(self) -> str:
+        return str(self.pk)

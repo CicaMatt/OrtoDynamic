@@ -43,3 +43,18 @@ export type WorkOrder = {
   interventionDescription: string;
   technicalNotes: string;
 };
+
+/**
+ * A quote line item shown for a work order. The backend reaches these
+ * `item_preventivi` rows by joining through `item_lavorazioni`, so the shape
+ * matches the quote's own line items. All-strings like {@link WorkOrder};
+ * `productId` is the raw `codice_nomenclatore` reference.
+ */
+export type WorkOrderItem = {
+  id: string;
+  productId: string;
+  quantity: string;
+  price: string;
+  amount: string;
+  discount: string;
+};

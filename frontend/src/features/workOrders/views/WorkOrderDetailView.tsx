@@ -12,6 +12,7 @@ import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchWorkOrder } from '../api/workOrders';
 import type { WorkOrder } from '../types';
+import { WorkOrderItemsCard } from './WorkOrderItemsCard';
 
 type WorkOrderField = FieldConfig<WorkOrder>;
 
@@ -169,12 +170,15 @@ export function WorkOrderDetailView() {
       actionsTitle="Azioni lavorazione"
       actions={actions}
     >
-      <FieldSectionList
-        data={data}
-        sections={workOrderSections}
-        editing={isEditingWorkOrder}
-        onChange={setWorkOrderField}
-      />
+      <div className="space-y-[28px]">
+        <FieldSectionList
+          data={data}
+          sections={workOrderSections}
+          editing={isEditingWorkOrder}
+          onChange={setWorkOrderField}
+        />
+        <WorkOrderItemsCard workOrderId={data.id} />
+      </div>
     </EntityDetailLayout>
   );
 }

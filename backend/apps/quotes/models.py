@@ -60,3 +60,39 @@ class Quote(UnmanagedModel):
 
     def __str__(self) -> str:
         return self.numero_preventivo or str(self.pk)
+
+
+class QuoteItem(UnmanagedModel):
+    """
+    Line item of a quote — maps the existing `item_preventivi` table.
+
+    Like `Quote`, the table is legacy-owned, so the model is unmanaged. The links
+    are kept as plain integer columns, mirroring the rest of the mapped schema
+    which declares no database-level foreign keys: `id_preventivo` references
+    `preventivi.id` (the parent quote) and `codice_nomenclatore` references
+    `nomenclatore.id` (the product).
+    """
+
+    id = models.BigAutoField(primary_key=True)
+
+    # --- Links ---
+    id_preventivo = models.BigIntegerField(null=True, blank=True)
+    codice_nomenclatore = models.BigIntegerField(null=True, blank=True)
+
+    # --- Line values ---
+    quantita = models.FloatField(null=True, blank=True)
+    prezzo = models.FloatField(null=True, blank=True)
+    importo = models.FloatField(null=True, blank=True)
+    sconto = models.FloatField(null=True, blank=True)
+
+    # --- Status & bookkeeping ---
+    stato_item = models.CharField(max_length=100, null=True, blank=True)
+    data_ricezione_autorizzazione = models.DateField(null=True, blank=True)
+    entry_by = models.CharField(max_length=100, null=True, blank=True)
+    produzione = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta(UnmanagedModel.Meta):
+        db_table = "item_preventivi"
+
+    def __str__(self) -> str:
+        return str(self.pk)

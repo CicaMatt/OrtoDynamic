@@ -12,6 +12,7 @@ import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchQuote } from '../api/quotes';
 import type { Quote } from '../types';
+import { QuoteItemsCard } from './QuoteItemsCard';
 
 type QuoteField = FieldConfig<Quote>;
 
@@ -168,12 +169,15 @@ export function QuoteDetailView() {
       actionsTitle="Azioni preventivo"
       actions={actions}
     >
-      <FieldSectionList
-        data={data}
-        sections={quoteSections}
-        editing={isEditingQuote}
-        onChange={setQuoteField}
-      />
+      <div className="space-y-[28px]">
+        <FieldSectionList
+          data={data}
+          sections={quoteSections}
+          editing={isEditingQuote}
+          onChange={setQuoteField}
+        />
+        <QuoteItemsCard quoteId={data.id} />
+      </div>
     </EntityDetailLayout>
   );
 }
