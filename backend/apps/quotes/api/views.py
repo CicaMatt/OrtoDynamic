@@ -1,12 +1,22 @@
 """Thin endpoints for the Quote resource."""
 
-from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListAPIView
+from apps.common.api.views import (
+    ReadUpdateDetailAPIView,
+    UnpaginatedListAPIView,
+    UnpaginatedListCreateAPIView,
+)
 from apps.quotes.models import Quote, QuoteItem
-from .serializers import QuoteItemSerializer, QuoteSerializer, QuoteUpdateSerializer
+from .serializers import (
+    QuoteCreateSerializer,
+    QuoteItemSerializer,
+    QuoteSerializer,
+    QuoteUpdateSerializer,
+)
 
 
-class QuoteListView(UnpaginatedListAPIView):
+class QuoteListView(UnpaginatedListCreateAPIView):
     serializer_class = QuoteSerializer
+    create_serializer_class = QuoteCreateSerializer
     queryset = Quote.objects.order_by("-data_preventivo", "-id")
 
 

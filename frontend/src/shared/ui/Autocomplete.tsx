@@ -21,12 +21,15 @@ export function Autocomplete({
   onSelect,
   invalid = false,
   placeholder = 'Cerca…',
+  emptyLabel = 'Nessun risultato.',
 }: {
   value: string;
   options: ReadonlyArray<AutocompleteOption>;
   onSelect: (option: AutocompleteOption) => void;
   invalid?: boolean;
   placeholder?: string;
+  /** Message shown when the query matches no option. */
+  emptyLabel?: string;
 }) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
@@ -116,7 +119,7 @@ export function Autocomplete({
         <ul className="absolute z-20 mt-1 max-h-[260px] w-full overflow-auto rounded-[6px] border border-[#c9cdd4] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
           {results.length === 0 ? (
             <li className="px-[11px] py-[8px] font-body-sm text-body-sm text-[#737780]">
-              Nessun comune trovato.
+              {emptyLabel}
             </li>
           ) : (
             results.map((option, index) => (

@@ -9,11 +9,13 @@ plain strings, keeping the frontend's all-strings contract.
 from rest_framework import serializers
 
 from apps.common.api.serializers import (
+    CreatableSerializerMixin,
     NullToEmptyMixin,
     UpdateFieldsSerializer,
     nullable_text,
     optional_text,
 )
+from apps.quotes.models import Quote
 
 
 class QuoteSerializer(NullToEmptyMixin):
@@ -123,3 +125,28 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
     note = nullable_text()
     privateNote = nullable_text("note_private")
     finalNote = nullable_text("note_finali")
+
+
+class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
+    """
+    Create a quote, reusing the update serializer's writable fields.
+
+    Two rules are enforced server-side and are not client-controllable: the
+    `status` field is dropped so it cannot be supplied, and every new quote is
+    forced to start as INSERITO. The database assigns the id; required-field
+    enforcement lives in the frontend form, so the remaining fields stay optional
+    here (consistent with the other create serializers).
+    """
+
+    create_model = Quote
+    read_serializer_class = QuoteSerializer
+
+    # New quotes always start in this state; the column is never client-set.
+    INITIAL_STATUS = "INSERITO"
+
+    # Drop the inherited writable status field so it cannot be supplied on create.
+    status = None
+
+    def create(self, validated_data):
+        validated_data["stato"] = self.INITIAL_STATUS
+        return super().create(validated_data)

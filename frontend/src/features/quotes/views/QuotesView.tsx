@@ -111,7 +111,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
 ];
 
 export function QuotesView() {
-  const { openQuoteDetail } = useNavigation();
+  const { openQuoteDetail, openQuoteCreate } = useNavigation();
 
   return (
     <EntityListView
@@ -120,6 +120,7 @@ export function QuotesView() {
       fetchItems={fetchQuotes}
       rowKey={(quote) => quote.id}
       onRowClick={(quote) => openQuoteDetail(quote.id)}
+      onCreate={openQuoteCreate}
       loadingLabel="Caricamento preventivi..."
       emptyLabel="Nessun preventivo trovato."
     />

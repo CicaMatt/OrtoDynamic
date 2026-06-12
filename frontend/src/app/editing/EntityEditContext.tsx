@@ -7,7 +7,7 @@ import {
   type HealthCompanyUpdate,
 } from '../../features/healthCompanies/api/healthCompanies';
 import { createProduct, updateProduct, type ProductUpdate } from '../../features/products/api/products';
-import { updateQuote, type QuoteUpdate } from '../../features/quotes/api/quotes';
+import { createQuote, updateQuote, type QuoteUpdate } from '../../features/quotes/api/quotes';
 import { updateWorkOrder, type WorkOrderUpdate } from '../../features/workOrders/api/workOrders';
 import type { Client, ClientOrthopedic } from '../../features/clients/types';
 import type { Doctor } from '../../features/doctors/types';
@@ -101,6 +101,7 @@ type EntityEditValue = {
   startProductEdit: (id: string) => void;
   startProductCreate: (requiredKeys: ReadonlyArray<keyof Product>) => void;
   startQuoteEdit: (id: string) => void;
+  startQuoteCreate: (requiredKeys: ReadonlyArray<keyof Quote>) => void;
   startWorkOrderEdit: (id: string) => void;
   seedClient: (client: Client) => void;
   seedClientOrthopedic: (ortho: ClientOrthopedic) => void;
@@ -167,6 +168,18 @@ function makeEmptyHealthCompany(): HealthCompany {
 /** A blank product used to seed the creation form. */
 function makeEmptyProduct(): Product {
   return { id: '', code: '', description: '', price: '', year: '' };
+}
+
+/** A blank quote used to seed the creation form (status is server-assigned). */
+function makeEmptyQuote(): Quote {
+  return {
+    id: '', clientId: '', doctorId: '', quoteNumber: '', quoteType: '', status: '',
+    creationDate: '', quoteDate: '', total: '', entryBy: '', diagnosis: '',
+    therapeuticProgram: '', detailedPrescription: '', authorizationNumber: '',
+    acceptanceDate: '', authorizationReceiptDate: '', expiryDays: '', maxExpiry: '',
+    measurementsOk: '', commissionsPaid: '', orderNumber: '', model: '', measurements: '',
+    invoiceNumber: '', quote: '', note: '', privateNote: '', finalNote: '',
+  };
 }
 
 /** Shared client conversions: blank birth date → null, doctor id → number/null. */
@@ -330,6 +343,20 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     [reset],
   );
 
+  const startQuoteCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof Quote>) => {
+      reset();
+      const empty = makeEmptyQuote();
+      setQuoteDraft(empty);
+      setQuoteOriginal(empty);
+      setRequiredFields(requiredKeys.map(String));
+      setMode('create');
+      setEditTarget({ type: 'quote', id: '' });
+      setEditing(true);
+    },
+    [reset],
+  );
+
   const startWorkOrderEdit = useCallback(
     (id: string) => {
       reset();
@@ -400,6 +427,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
 
   const setQuoteField = useCallback((key: keyof Quote, value: string) => {
     setQuoteDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
   }, []);
 
   const setWorkOrderField = useCallback((key: keyof WorkOrder, value: string) => {
@@ -456,7 +484,9 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
               ? healthCompanyDraft
               : editTarget.type === 'product'
                 ? productDraft
-                : null
+                : editTarget.type === 'quote'
+                  ? quoteDraft
+                  : null
       ) as Record<string, unknown> | null;
 
       const missing = requiredFields.filter((key) => !String(draft?.[key] ?? '').trim());
@@ -491,6 +521,9 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
           const created = await createProduct(
             normalizeProductPayload(buildCreatePayload(productDraft, EDITABLE_PRODUCT_KEYS) as ProductUpdate),
           );
+          createdId = created.id;
+        } else if (editTarget.type === 'quote') {
+          const created = await createQuote(buildQuoteCreatePayload(quoteDraft));
           createdId = created.id;
         } else {
           setSaveError('Creazione non supportata per questa entità.');
@@ -556,6 +589,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     doctorDraft,
     healthCompanyDraft,
     productDraft,
+    quoteDraft,
     requiredFields,
     clientChanges,
     clientOrthopedicChanges,
@@ -592,6 +626,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     startProductEdit,
     startProductCreate,
     startQuoteEdit,
+    startQuoteCreate,
     startWorkOrderEdit,
     seedClient,
     seedClientOrthopedic,
@@ -690,6 +725,18 @@ function buildQuotePayload(quoteChanges: Record<string, unknown>): QuoteUpdate {
     payload.total = payload.total === '' ? null : Number(payload.total);
   }
   return payload;
+}
+
+/**
+ * Full create payload for a new quote: every editable field except `status`,
+ * which the server assigns (INSERITO) and the client never sets. Blank
+ * dates/numbers become null and FK ids become numbers, reusing the edit
+ * normalization.
+ */
+function buildQuoteCreatePayload(draft: Quote | null): QuoteUpdate {
+  const full = buildCreatePayload(draft, EDITABLE_QUOTE_KEYS);
+  delete full.status;
+  return buildQuotePayload(full);
 }
 
 const WORK_ORDER_DATE_KEYS = [

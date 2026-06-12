@@ -30,9 +30,10 @@ export function useClientMunicipalityAutocomplete(
 
   return useMemo(
     () => ({
-      birthMunicipality: { options },
+      birthMunicipality: { options, emptyLabel: 'Nessun comune trovato.' },
       city: {
         options,
+        emptyLabel: 'Nessun comune trovato.',
         onSelect: (option) => {
           setField('province', option.meta?.province ?? '');
           setField('postalCode', option.meta?.cap ?? '');

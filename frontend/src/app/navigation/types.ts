@@ -18,4 +18,5 @@ export type View =
   | 'product-detail'
   | 'product-create'
   | 'quote-detail'
+  | 'quote-create'
   | 'work-order-detail';

@@ -17,6 +17,7 @@ import { ProductCreateView } from '../../features/products/views/ProductCreateVi
 import { ProductsView } from '../../features/products/views/ProductsView';
 import { QuotesView } from '../../features/quotes/views/QuotesView';
 import { QuoteDetailView } from '../../features/quotes/views/QuoteDetailView';
+import { QuoteCreateView } from '../../features/quotes/views/QuoteCreateView';
 import { WorkOrdersView } from '../../features/workOrders/views/WorkOrdersView';
 import { WorkOrderDetailView } from '../../features/workOrders/views/WorkOrderDetailView';
 import { PlaceholderView } from '../../features/placeholders/PlaceholderView';
@@ -43,6 +44,7 @@ const viewComponents = {
   'product-detail': ProductDetailView,
   'product-create': ProductCreateView,
   'quote-detail': QuoteDetailView,
+  'quote-create': QuoteCreateView,
   'work-order-detail': WorkOrderDetailView,
 } as const;
 

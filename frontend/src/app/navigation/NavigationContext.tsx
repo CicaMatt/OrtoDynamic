@@ -20,6 +20,7 @@ type NavigationValue = {
   openProductDetail: (id: string) => void;
   openProductCreate: () => void;
   openQuoteDetail: (id: string) => void;
+  openQuoteCreate: () => void;
   openWorkOrderDetail: (id: string) => void;
   /** Open an entity's detail view by kind — used after a create completes. */
   openEntityDetail: (type: EntityKind, id: string) => void;
@@ -42,6 +43,7 @@ const CREATE_VIEW: Partial<Record<EntityKind, View>> = {
   doctor: 'doctor-create',
   healthCompany: 'health-company-create',
   product: 'product-create',
+  quote: 'quote-create',
 };
 
 /** The list view for each entity kind. */
@@ -189,6 +191,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     guardedApply({ view: 'quote-detail', quoteId: id });
   };
 
+  const openQuoteCreate = () => {
+    guardedApply({ view: 'quote-create' });
+  };
+
   const openWorkOrderDetail = (id: string) => {
     guardedApply({ view: 'work-order-detail', workOrderId: id });
   };
@@ -240,6 +246,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         openProductDetail,
         openProductCreate,
         openQuoteDetail,
+        openQuoteCreate,
         openWorkOrderDetail,
         openEntityDetail,
         goToEntityList,

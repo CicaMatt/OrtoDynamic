@@ -19,6 +19,8 @@ export type AutocompleteFieldConfig = {
   options: ReadonlyArray<AutocompleteOption>;
   /** Called when an option is picked — used to fill related fields. */
   onSelect?: (option: AutocompleteOption) => void;
+  /** Message shown when the query matches no option. */
+  emptyLabel?: string;
 };
 
 const baseInputClass =
@@ -239,6 +241,7 @@ export function FieldGrid<T extends object>({
               value={raw}
               options={autocomplete.options}
               invalid={invalid}
+              emptyLabel={autocomplete.emptyLabel}
               onSelect={(option) => {
                 onChange(field.key, option.value);
                 autocomplete.onSelect?.(option);
