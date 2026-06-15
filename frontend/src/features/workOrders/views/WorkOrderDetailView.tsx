@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
@@ -13,23 +13,11 @@ import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchWorkOrder } from '../api/workOrders';
 import type { WorkOrder } from '../types';
 import { WorkOrderItemsCard } from './WorkOrderItemsCard';
+import { WorkOrderStatusDialog } from './WorkOrderStatusDialog';
 
 type WorkOrderField = FieldConfig<WorkOrder>;
 
 // Stored verbatim in their columns — option values must match the database exactly.
-const statusOptions = optionsFromValues([
-  'PRONTO PRIMA PROVA',
-  'PRONTO SECONDA PROVA',
-  'PRONTO TERZA PROVA',
-  'IN LAVORAZIONE',
-  'IN FINITURA',
-  'LAVORATO PARZIALE',
-  'LAVORATO',
-  'INVIATE A LACO PER MODIFICA',
-  'IN REVISIONE DOPO CONSEGNA',
-  'ANNULLATO',
-]);
-
 const trialOptions = optionsFromValues(['ESTETICO', 'TECNICO']);
 const checkOptions = optionsFromValues(['ESTETICO', 'FUNZIONALE', 'TECNICO']);
 const outcomeOptions = optionsFromValues(['POSITIVO', 'RILAVORAZIONE']);
@@ -37,9 +25,10 @@ const yesNoOptions = optionsFromValues(['SI', 'NO']);
 const complaintOptions = optionsFromValues(['MANUTENZIONE', 'RINNOVO FORNITURA']);
 const deviceOptions = optionsFromValues(['INTERNO', 'ESTERNO']);
 
+// `Stato` is read-only here: it changes only via the "Cambia Stato" action.
 const lifecycleFields: WorkOrderField[] = [
   { label: 'ID', key: 'id', readonly: true },
-  { label: 'Stato', key: 'status', type: 'select', options: statusOptions },
+  { label: 'Stato', key: 'status', readonly: true },
   { label: 'Data Creazione', key: 'creationDate', type: 'date' },
   { label: 'Data Fine Lavorazione', key: 'completionDate', type: 'date' },
   { label: 'Data Consegna', key: 'deliveryDate', type: 'date' },
@@ -73,21 +62,15 @@ const serviceFields: WorkOrderField[] = [
   { label: 'Data Esito Collaudo', key: 'testOutcomeDate', type: 'date' },
   { label: 'Firma Medico Assistenza', key: 'serviceDoctorSignature' },
   { label: 'Firma Tecnico', key: 'technicianSignature' },
-];
-
-const interventionFields: WorkOrderField[] = [
   { label: 'Descrizione Intervento', key: 'interventionDescription', type: 'textarea' },
   { label: 'Annotazioni Tecniche Assistenza', key: 'technicalNotes', type: 'textarea' },
 ];
-
-const workOrderActions = [{ id: 'edit', icon: 'edit', label: 'Modifica Dati Lavorazione' }];
 
 const workOrderSections: FieldSectionConfig<WorkOrder>[] = [
   { icon: 'engineering', title: 'Dati Lavorazione', fields: lifecycleFields },
   { icon: 'link', title: 'Riferimenti', fields: referenceFields },
   { icon: 'how_to_reg', title: 'Prova e Verifica Cliente', fields: trialFields },
   { icon: 'build', title: 'Assistenza Tecnica', fields: serviceFields },
-  { icon: 'description', title: 'Intervento e Annotazioni', fields: interventionFields, columns: 1 },
 ];
 
 export function WorkOrderDetailView() {
@@ -105,12 +88,16 @@ export function WorkOrderDetailView() {
   const isEditingWorkOrder =
     editing && editTarget?.type === 'workOrder' && editTarget.id === selectedWorkOrderId;
 
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  // Bumped after a status change to refetch the work order with its new state.
+  const [reloadKey, setReloadKey] = useState(0);
+
   const { data: workOrder, loading, error } = useApiData(
     () =>
       selectedWorkOrderId
         ? fetchWorkOrder(selectedWorkOrderId)
         : Promise.reject(new Error('Nessuna lavorazione selezionata.')),
-    [selectedWorkOrderId, dataVersion],
+    [selectedWorkOrderId, dataVersion, reloadKey],
   );
 
   useEffect(() => {
@@ -138,47 +125,68 @@ export function WorkOrderDetailView() {
 
   const data = isEditingWorkOrder && workOrderDraft ? workOrderDraft : workOrder;
   const title = `Lavorazione ${data.id}`;
-  const actions = workOrderActions.map((action) => ({
-    ...action,
-    active: isEditingWorkOrder,
-    onClick: !isEditingWorkOrder ? () => startWorkOrderEdit(data.id) : undefined,
-  }));
+  const actions = [
+    {
+      id: 'edit',
+      icon: 'edit',
+      label: 'Modifica Dati Lavorazione',
+      active: isEditingWorkOrder,
+      onClick: !isEditingWorkOrder ? () => startWorkOrderEdit(data.id) : undefined,
+    },
+    {
+      id: 'status',
+      icon: 'sync_alt',
+      label: 'Cambia Stato',
+      onClick: !isEditingWorkOrder ? () => setStatusDialogOpen(true) : undefined,
+    },
+  ];
 
   return (
-    <EntityDetailLayout
-      header={
-        <EntityPageHeader
-          back={{ label: 'Torna indietro', onClick: () => navigate('work-orders') }}
-          crumbs={[
-            { label: 'Lavorazioni', onClick: () => navigate('work-orders') },
-            { label: 'Dettaglio' },
-          ]}
-          title={title}
-          subtitle={
-            <>
-              ID: <span className="font-semibold text-[#343942]">{data.id}</span>
-              {data.status && (
-                <>
-                  {' · Stato: '}
-                  <span className="font-semibold text-[#343942]">{data.status}</span>
-                </>
-              )}
-            </>
-          }
+    <>
+      <EntityDetailLayout
+        header={
+          <EntityPageHeader
+            back={{ label: 'Torna indietro', onClick: () => navigate('work-orders') }}
+            crumbs={[
+              { label: 'Lavorazioni', onClick: () => navigate('work-orders') },
+              { label: 'Dettaglio' },
+            ]}
+            title={title}
+            subtitle={
+              <>
+                ID: <span className="font-semibold text-[#343942]">{data.id}</span>
+                {data.status && (
+                  <>
+                    {' · Stato: '}
+                    <span className="font-semibold text-[#343942]">{data.status}</span>
+                  </>
+                )}
+              </>
+            }
+          />
+        }
+        actionsTitle="Azioni lavorazione"
+        actions={actions}
+      >
+        <div className="space-y-[28px]">
+          <FieldSectionList
+            data={data}
+            sections={workOrderSections}
+            editing={isEditingWorkOrder}
+            onChange={setWorkOrderField}
+          />
+          <WorkOrderItemsCard workOrderId={data.id} />
+        </div>
+      </EntityDetailLayout>
+
+      {statusDialogOpen && (
+        <WorkOrderStatusDialog
+          workOrderId={data.id}
+          currentStatus={data.status}
+          onClose={() => setStatusDialogOpen(false)}
+          onChanged={() => setReloadKey((key) => key + 1)}
         />
-      }
-      actionsTitle="Azioni lavorazione"
-      actions={actions}
-    >
-      <div className="space-y-[28px]">
-        <FieldSectionList
-          data={data}
-          sections={workOrderSections}
-          editing={isEditingWorkOrder}
-          onChange={setWorkOrderField}
-        />
-        <WorkOrderItemsCard workOrderId={data.id} />
-      </div>
-    </EntityDetailLayout>
+      )}
+    </>
   );
 }

@@ -1,9 +1,22 @@
 import type { ReactNode } from 'react';
-import { DataCard } from './DataCard';
+import { DataCard, EditInput, optionsFromValues } from './DataCard';
 import { FieldValue } from '../ui/FieldValue';
 
-/** A column in a {@link DetailTableCard}: which key to read and its header label. */
-export type DetailTableColumn<T> = { key: keyof T; label: string };
+/** A column in a {@link DetailTableCard}. */
+export type DetailTableColumn<T> = {
+  key: keyof T;
+  label: string;
+  /** Map the raw value to its display string (e.g. date formatting). */
+  render?: (value: string) => string;
+  /** When set and the card is editing, the cell is a select over these values. */
+  editOptions?: ReadonlyArray<string>;
+  /** When true and the card is editing, the cell is a date input. */
+  editDate?: boolean;
+  /** Gate an editable cell per-row; when it returns false the cell is read-only. */
+  editableWhen?: (item: T) => boolean;
+  /** Highlight an editable cell as failing validation. */
+  invalidWhen?: (item: T) => boolean;
+};
 
 /**
  * Read-only table embedded in a detail view as a {@link DataCard}. Presentational
@@ -21,6 +34,8 @@ export function DetailTableCard<T extends object>({
   rowKey,
   loadingLabel,
   emptyLabel,
+  editing = false,
+  onCellChange,
 }: {
   icon: string;
   title: string;
@@ -31,6 +46,9 @@ export function DetailTableCard<T extends object>({
   rowKey: (item: T) => string;
   loadingLabel: string;
   emptyLabel: string;
+  /** When true, columns with `editOptions` render an editable select. */
+  editing?: boolean;
+  onCellChange?: (item: T, key: keyof T, value: string) => void;
 }) {
   return (
     <DataCard icon={icon} title={title}>
@@ -57,6 +75,8 @@ export function DetailTableCard<T extends object>({
               error={error}
               loadingLabel={loadingLabel}
               emptyLabel={emptyLabel}
+              editing={editing}
+              onCellChange={onCellChange}
             />
           </tbody>
         </table>
@@ -73,6 +93,8 @@ function DetailTableBody<T extends object>({
   error,
   loadingLabel,
   emptyLabel,
+  editing,
+  onCellChange,
 }: {
   items: T[];
   columns: ReadonlyArray<DetailTableColumn<T>>;
@@ -81,6 +103,8 @@ function DetailTableBody<T extends object>({
   error: string | null;
   loadingLabel: string;
   emptyLabel: string;
+  editing: boolean;
+  onCellChange?: (item: T, key: keyof T, value: string) => void;
 }) {
   if (loading) return <MessageRow columnCount={columns.length}>{loadingLabel}</MessageRow>;
   if (error) {
@@ -96,11 +120,29 @@ function DetailTableBody<T extends object>({
     <>
       {items.map((item) => (
         <tr key={rowKey(item)} className="border-b border-surface-variant last:border-0">
-          {columns.map((column) => (
-            <td key={String(column.key)} className="py-3 px-4 whitespace-nowrap">
-              <FieldValue value={String(item[column.key] ?? '')} />
-            </td>
-          ))}
+          {columns.map((column) => {
+            const raw = String(item[column.key] ?? '');
+            const cellEditable =
+              editing &&
+              (column.editOptions || column.editDate) &&
+              onCellChange &&
+              (column.editableWhen?.(item) ?? true);
+            return (
+              <td key={String(column.key)} className="py-3 px-4 whitespace-nowrap">
+                {cellEditable ? (
+                  <EditInput
+                    type={column.editOptions ? 'select' : 'date'}
+                    value={raw}
+                    options={column.editOptions ? optionsFromValues(column.editOptions) : undefined}
+                    invalid={column.invalidWhen?.(item) ?? false}
+                    onChange={(value) => onCellChange!(item, column.key, value)}
+                  />
+                ) : (
+                  <FieldValue value={column.render ? column.render(raw) : raw} />
+                )}
+              </td>
+            );
+          })}
         </tr>
       ))}
     </>

@@ -45,10 +45,10 @@ export type WorkOrder = {
 };
 
 /**
- * A quote line item shown for a work order. The backend reaches these
- * `item_preventivi` rows by joining through `item_lavorazioni`, so the shape
- * matches the quote's own line items. All-strings like {@link WorkOrder};
- * `productId` is the raw `codice_nomenclatore` reference.
+ * A work order line (`item_lavorazioni`). `id` is the line's own id (the PATCH
+ * target). The product/amount fields are joined from the linked quote line
+ * (`item_preventivi`); `status`, `production` and the dates are the line's own.
+ * All-strings like {@link WorkOrder}; `productId` is the raw `codice_nomenclatore`.
  */
 export type WorkOrderItem = {
   id: string;
@@ -57,4 +57,10 @@ export type WorkOrderItem = {
   price: string;
   amount: string;
   discount: string;
+  status: string;
+  production: string;
+  cancellationDate: string;
+  orderDate: string;
+  partialDeliveryDate: string;
+  deliveryDate: string;
 };

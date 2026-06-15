@@ -47,6 +47,15 @@ export type Quote = {
 };
 
 /**
+ * Allowed status transitions for a quote, returned by the transitions endpoint.
+ * `available` lists the states the quote may move to next, per `stato_check`.
+ */
+export type QuoteStatusTransitions = {
+  current: string;
+  available: string[];
+};
+
+/**
  * Quote line item mirrored from the API (`item_preventivi`), linked to its
  * parent quote on the backend by `id_preventivo`. All-strings like {@link Quote}.
  * `productId` is the raw `codice_nomenclatore` reference (a `nomenclatore.id`).

@@ -13,7 +13,6 @@ from apps.common.api.serializers import (
     NullToEmptyMixin,
     UpdateFieldsSerializer,
     nullable_text,
-    optional_text,
 )
 from apps.quotes.models import Quote
 
@@ -90,9 +89,10 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
     doctorId = serializers.IntegerField(source="id_medico", required=False, allow_null=True)
 
     # Quote identity
+    # `status` is intentionally not writable here: it changes only through the
+    # guarded transition endpoint, which enforces the `stato_check` rules.
     quoteNumber = nullable_text("numero_preventivo")
     quoteType = nullable_text("tipologia_preventivo")
-    status = optional_text("stato")
     creationDate = serializers.DateField(source="data_creazione", required=False, allow_null=True)
     quoteDate = serializers.DateField(source="data_preventivo", required=False, allow_null=True)
     total = serializers.FloatField(source="totale", required=False, allow_null=True)
@@ -131,11 +131,10 @@ class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
     """
     Create a quote, reusing the update serializer's writable fields.
 
-    Two rules are enforced server-side and are not client-controllable: the
-    `status` field is dropped so it cannot be supplied, and every new quote is
-    forced to start as INSERITO. The database assigns the id; required-field
-    enforcement lives in the frontend form, so the remaining fields stay optional
-    here (consistent with the other create serializers).
+    Status is not client-controllable: `QuoteUpdateSerializer` already omits it,
+    and every new quote is forced to start as INSERITO here. The database assigns
+    the id; required-field enforcement lives in the frontend form, so the
+    remaining fields stay optional (consistent with the other create serializers).
     """
 
     create_model = Quote
@@ -144,9 +143,12 @@ class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
     # New quotes always start in this state; the column is never client-set.
     INITIAL_STATUS = "INSERITO"
 
-    # Drop the inherited writable status field so it cannot be supplied on create.
-    status = None
-
     def create(self, validated_data):
         validated_data["stato"] = self.INITIAL_STATUS
         return super().create(validated_data)
+
+
+class QuoteStatusRequestSerializer(serializers.Serializer):
+    """Validates the body of a status-change request (the target state name)."""
+
+    status = serializers.CharField()

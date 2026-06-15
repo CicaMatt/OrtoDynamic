@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
@@ -13,34 +13,21 @@ import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchQuote } from '../api/quotes';
 import type { Quote } from '../types';
 import { QuoteItemsCard } from './QuoteItemsCard';
+import { QuoteStatusDialog } from './QuoteStatusDialog';
 
 type QuoteField = FieldConfig<Quote>;
-
-// Stored verbatim in the `stato` column — values must match the database exactly.
-const statusOptions = optionsFromValues([
-  'IN BOZZA',
-  'INSERITO',
-  'IN LAVORAZIONE',
-  'IN LAVORAZIONE SENZA AUTORIZZAZIONE',
-  'AUTORIZZATO',
-  'INVIATO',
-  'CONSEGNATO',
-  'FATTURATO',
-  'RISCOSSO',
-  'SOSPESO',
-  'ANNULLATO',
-  'RIFIUTATO',
-]);
 
 const typeOptions = optionsFromValues(['Asl', 'Privato', 'Inail']);
 const yesNoOptions = optionsFromValues(['Si', 'No']);
 
+// `Stato` is read-only here: it changes only via the guarded "Cambia Stato"
+// action, which follows the `stato_check` transition rules.
 const identityFields: QuoteField[] = [
   { label: 'ID', key: 'id', readonly: true },
   { label: 'Nº Preventivo', key: 'quoteNumber' },
-  { label: 'Stato', key: 'status', type: 'select', options: statusOptions },
-  { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
   { label: 'Data Creazione', key: 'creationDate', type: 'date' },
+  { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
+  { label: 'Stato', key: 'status', readonly: true },
   { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
   { label: 'Totale', key: 'total', type: 'number' },
 ];
@@ -66,12 +53,12 @@ const authorizationFields: QuoteField[] = [
 ];
 
 const supplyFields: QuoteField[] = [
-  { label: 'Misure OK', key: 'measurementsOk', type: 'select', options: yesNoOptions },
-  { label: 'Provvigioni Pagate', key: 'commissionsPaid', type: 'select', options: yesNoOptions },
   { label: 'Nº Ordine', key: 'orderNumber' },
+  { label: 'Nº Fattura', key: 'invoiceNumber' },
+  { label: 'Provvigioni Pagate', key: 'commissionsPaid', type: 'select', options: yesNoOptions },
+  { label: 'Misure OK', key: 'measurementsOk', type: 'select', options: yesNoOptions },
   { label: 'Modello', key: 'model' },
   { label: 'Misure', key: 'measurements' },
-  { label: 'Nº Fattura', key: 'invoiceNumber' },
 ];
 
 const quoteTextFields: QuoteField[] = [{ label: 'Preventivo', key: 'quote', type: 'textarea' }];
@@ -81,8 +68,6 @@ const noteFields: QuoteField[] = [
   { label: 'Note Private', key: 'privateNote', type: 'textarea' },
   { label: 'Note Finali', key: 'finalNote', type: 'textarea' },
 ];
-
-const quoteActions = [{ id: 'edit', icon: 'edit', label: 'Modifica Dati Preventivo' }];
 
 const quoteSections: FieldSectionConfig<Quote>[] = [
   { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields },
@@ -108,12 +93,16 @@ export function QuoteDetailView() {
 
   const isEditingQuote = editing && editTarget?.type === 'quote' && editTarget.id === selectedQuoteId;
 
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  // Bumped after a status change to refetch the quote with its new state.
+  const [reloadKey, setReloadKey] = useState(0);
+
   const { data: quote, loading, error } = useApiData(
     () =>
       selectedQuoteId
         ? fetchQuote(selectedQuoteId)
         : Promise.reject(new Error('Nessun preventivo selezionato.')),
-    [selectedQuoteId, dataVersion],
+    [selectedQuoteId, dataVersion, reloadKey],
   );
 
   useEffect(() => {
@@ -137,47 +126,68 @@ export function QuoteDetailView() {
 
   const data = isEditingQuote && quoteDraft ? quoteDraft : quote;
   const title = data.quoteNumber ? `Preventivo Nº ${data.quoteNumber}` : `Preventivo ${data.id}`;
-  const actions = quoteActions.map((action) => ({
-    ...action,
-    active: isEditingQuote,
-    onClick: !isEditingQuote ? () => startQuoteEdit(data.id) : undefined,
-  }));
+  const actions = [
+    {
+      id: 'edit',
+      icon: 'edit',
+      label: 'Modifica Dati Preventivo',
+      active: isEditingQuote,
+      onClick: !isEditingQuote ? () => startQuoteEdit(data.id) : undefined,
+    },
+    {
+      id: 'status',
+      icon: 'sync_alt',
+      label: 'Cambia Stato',
+      onClick: !isEditingQuote ? () => setStatusDialogOpen(true) : undefined,
+    },
+  ];
 
   return (
-    <EntityDetailLayout
-      header={
-        <EntityPageHeader
-          back={{ label: 'Torna indietro', onClick: () => navigate('quotes') }}
-          crumbs={[
-            { label: 'Preventivi', onClick: () => navigate('quotes') },
-            { label: 'Dettaglio' },
-          ]}
-          title={title}
-          subtitle={
-            <>
-              ID: <span className="font-semibold text-[#343942]">{data.id}</span>
-              {data.status && (
-                <>
-                  {' · Stato: '}
-                  <span className="font-semibold text-[#343942]">{data.status}</span>
-                </>
-              )}
-            </>
-          }
+    <>
+      <EntityDetailLayout
+        header={
+          <EntityPageHeader
+            back={{ label: 'Torna indietro', onClick: () => navigate('quotes') }}
+            crumbs={[
+              { label: 'Preventivi', onClick: () => navigate('quotes') },
+              { label: 'Dettaglio' },
+            ]}
+            title={title}
+            subtitle={
+              <>
+                ID: <span className="font-semibold text-[#343942]">{data.id}</span>
+                {data.status && (
+                  <>
+                    {' · Stato: '}
+                    <span className="font-semibold text-[#343942]">{data.status}</span>
+                  </>
+                )}
+              </>
+            }
+          />
+        }
+        actionsTitle="Azioni preventivo"
+        actions={actions}
+      >
+        <div className="space-y-[28px]">
+          <FieldSectionList
+            data={data}
+            sections={quoteSections}
+            editing={isEditingQuote}
+            onChange={setQuoteField}
+          />
+          <QuoteItemsCard quoteId={data.id} />
+        </div>
+      </EntityDetailLayout>
+
+      {statusDialogOpen && (
+        <QuoteStatusDialog
+          quoteId={data.id}
+          currentStatus={data.status}
+          onClose={() => setStatusDialogOpen(false)}
+          onChanged={() => setReloadKey((key) => key + 1)}
         />
-      }
-      actionsTitle="Azioni preventivo"
-      actions={actions}
-    >
-      <div className="space-y-[28px]">
-        <FieldSectionList
-          data={data}
-          sections={quoteSections}
-          editing={isEditingQuote}
-          onChange={setQuoteField}
-        />
-        <QuoteItemsCard quoteId={data.id} />
-      </div>
-    </EntityDetailLayout>
+      )}
+    </>
   );
 }

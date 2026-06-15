@@ -13,6 +13,10 @@ from apps.common.models import UnmanagedModel
 
 
 class Quote(UnmanagedModel):
+    # Key identifying this domain's rows in the shared `stato`/`stato_check`
+    # workflow tables (see apps.statuses).
+    STATUS_TABLE = "PREVENTIVI"
+
     id = models.BigAutoField(primary_key=True)
 
     # --- Links ---

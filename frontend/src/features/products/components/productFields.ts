@@ -7,9 +7,9 @@ export type ProductField = FieldConfig<Product>;
 export const productFields: ProductField[] = [
   { label: 'ID', key: 'id', readonly: true },
   { label: 'Codice', key: 'code' },
-  { label: 'Descrizione', key: 'description', type: 'textarea' },
   { label: 'Prezzo', key: 'price', type: 'number' },
   { label: 'Anno', key: 'year' },
+  { label: 'Descrizione', key: 'description', type: 'textarea' },
 ];
 
 /** Fields required by the creation form (DB enforces Codice/Descrizione/Prezzo NOT NULL). */

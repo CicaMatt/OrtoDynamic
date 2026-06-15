@@ -6,9 +6,9 @@ import type { Product } from '../types';
 const productColumns: ReadonlyArray<EntityColumn<Product>> = [
   { key: 'id', label: 'ID', primary: true },
   { key: 'code', label: 'Codice' },
-  { key: 'description', label: 'Descrizione' },
   { key: 'price', label: 'Prezzo', muted: true },
   { key: 'year', label: 'Anno', muted: true },
+  { key: 'description', label: 'Descrizione' },
 ];
 
 export function ProductsView() {

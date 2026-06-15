@@ -1,10 +1,17 @@
 """Thin endpoints for the WorkOrder resource."""
 
+from rest_framework import generics
+
 from apps.common.api.views import ReadUpdateDetailAPIView, UnpaginatedListAPIView
-from apps.quotes.api.serializers import QuoteItemSerializer
 from apps.quotes.models import QuoteItem
 from apps.work_orders.models import WorkOrder, WorkOrderItem
-from .serializers import WorkOrderSerializer, WorkOrderUpdateSerializer
+from .serializers import (
+    WorkOrderItemSerializer,
+    WorkOrderItemUpdateSerializer,
+    WorkOrderSerializer,
+    WorkOrderStatusUpdateSerializer,
+    WorkOrderUpdateSerializer,
+)
 
 
 class WorkOrderListView(UnpaginatedListAPIView):
@@ -20,19 +27,40 @@ class WorkOrderDetailView(ReadUpdateDetailAPIView):
 
 class WorkOrderItemListView(UnpaginatedListAPIView):
     """
-    Quote line items linked to a work order through `item_lavorazioni`.
+    The work order's lines (`item_lavorazioni`), each joined to its quote line
+    (`item_preventivi`) for the product/amount columns.
 
-    Resolves the two-hop relationship: `lavorazioni.id` →
-    `item_lavorazioni.id_lavorazione`, then each bridge row's
-    `id_item_preventivi` → `item_preventivi.id`. The resolved `item_preventivi`
-    rows are rendered with the shared `QuoteItemSerializer`, so the work order's
-    items box matches the quote's.
+    `lavorazioni.id` → `item_lavorazioni.id_lavorazione` gives the lines; each
+    line's `id_item_preventivi` → `item_preventivi.id` supplies the joined data,
+    attached as `quote_item` to avoid per-row queries.
     """
 
-    serializer_class = QuoteItemSerializer
+    serializer_class = WorkOrderItemSerializer
 
     def get_queryset(self):
-        item_ids = WorkOrderItem.objects.filter(
-            id_lavorazione=self.kwargs["pk"], id_item_preventivi__isnull=False
-        ).values_list("id_item_preventivi", flat=True)
-        return QuoteItem.objects.filter(id__in=item_ids).order_by("id")
+        items = list(
+            WorkOrderItem.objects.filter(id_lavorazione=self.kwargs["pk"]).order_by("id")
+        )
+        quote_ids = {item.id_item_preventivi for item in items if item.id_item_preventivi}
+        quote_map = {quote.id: quote for quote in QuoteItem.objects.filter(id__in=quote_ids)}
+        for item in items:
+            item.quote_item = quote_map.get(item.id_item_preventivi)
+        return items
+
+
+class WorkOrderStatusUpdateView(generics.UpdateAPIView):
+    """Set a work order's status — a free choice among the fixed states."""
+
+    queryset = WorkOrder.objects.all()
+    serializer_class = WorkOrderStatusUpdateSerializer
+
+
+class WorkOrderItemUpdateView(generics.UpdateAPIView):
+    """Edit a single work order line (its status / production)."""
+
+    serializer_class = WorkOrderItemUpdateSerializer
+    lookup_url_kwarg = "item_id"
+
+    def get_queryset(self):
+        # Scope to the parent work order so an id from another can't be edited.
+        return WorkOrderItem.objects.filter(id_lavorazione=self.kwargs["pk"])

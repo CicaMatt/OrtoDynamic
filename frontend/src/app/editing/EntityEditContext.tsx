@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { createClient, updateClient, type ClientUpdate } from '../../features/clients/api/clients';
 import { createDoctor, updateDoctor, type DoctorUpdate } from '../../features/doctors/api/doctors';
 import {
@@ -42,16 +50,20 @@ const EDITABLE_PRODUCT_KEYS = [
   'code', 'description', 'price', 'year',
 ] as const satisfies readonly (keyof Product)[];
 
+// `status` is intentionally excluded: it changes only through the guarded
+// transition endpoint, never as a free-form field edit or on create.
 const EDITABLE_QUOTE_KEYS = [
-  'clientId', 'doctorId', 'quoteNumber', 'quoteType', 'status', 'creationDate', 'quoteDate',
+  'clientId', 'doctorId', 'quoteNumber', 'quoteType', 'creationDate', 'quoteDate',
   'total', 'entryBy', 'diagnosis', 'therapeuticProgram', 'detailedPrescription',
   'authorizationNumber', 'acceptanceDate', 'authorizationReceiptDate', 'expiryDays', 'maxExpiry',
   'measurementsOk', 'commissionsPaid', 'orderNumber', 'model', 'measurements', 'invoiceNumber',
   'quote', 'note', 'privateNote', 'finalNote',
 ] as const satisfies readonly (keyof Quote)[];
 
+// `status` is intentionally excluded: it changes only through the status
+// endpoint (the "Cambia Stato" action), never as a free-form field edit.
 const EDITABLE_WORK_ORDER_KEYS = [
-  'quoteId', 'clientId', 'status', 'creationDate', 'completionDate', 'deliveryDate',
+  'quoteId', 'clientId', 'creationDate', 'completionDate', 'deliveryDate',
   'cancellationDate', 'maxExpiry', 'clientTrial', 'clientTrialOutcome', 'clientTrialDate',
   'clientCheck', 'clientCheckOutcome', 'clientCheckDate', 'doctorSignature', 'technicalService',
   'serviceStatus', 'complaintReason', 'device', 'warranty', 'serviceDeliveryDate', 'testOutcome',
@@ -119,6 +131,13 @@ type EntityEditValue = {
   setWorkOrderField: (key: keyof WorkOrder, value: string) => void;
   cancel: () => void;
   save: () => Promise<SaveResult>;
+  /**
+   * Register an extra persistence step run as part of the next save (e.g. a
+   * collection sub-editor like the work order items). Returns an unregister fn.
+   */
+  registerSaveHook: (hook: () => Promise<void>) => () => void;
+  /** Report that a sub-editor has unsaved changes, so the edit counts as dirty. */
+  markExtraDirty: (dirty: boolean) => void;
 };
 
 const EntityEditContext = createContext<EntityEditValue | null>(null);
@@ -214,6 +233,18 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
+  // Sub-editors (e.g. work order items) that persist as part of the next save.
+  const saveHooksRef = useRef<Set<() => Promise<void>>>(new Set());
+  const [extraDirty, setExtraDirty] = useState(false);
+
+  const registerSaveHook = useCallback((hook: () => Promise<void>) => {
+    saveHooksRef.current.add(hook);
+    return () => {
+      saveHooksRef.current.delete(hook);
+    };
+  }, []);
+
+  const markExtraDirty = useCallback((dirty: boolean) => setExtraDirty(dirty), []);
 
   const reset = useCallback(() => {
     setClientDraft(null);
@@ -234,6 +265,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setRequiredFields([]);
     setInvalidFields([]);
     setSaveError(null);
+    setExtraDirty(false);
   }, []);
 
   const endSession = useCallback(() => {
@@ -463,6 +495,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     [workOrderDraft, workOrderOriginal],
   );
   const isDirty =
+    extraDirty ||
     Object.keys(clientChanges).length > 0 ||
     Object.keys(clientOrthopedicChanges).length > 0 ||
     Object.keys(doctorChanges).length > 0 ||
@@ -549,29 +582,37 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
       quoteChanges,
       workOrderChanges,
     });
-    if (Object.keys(payload).length === 0) {
+    const hasFieldChanges = Object.keys(payload).length > 0;
+    // Nothing changed (neither fields nor a sub-editor): just close the session.
+    if (!hasFieldChanges && !extraDirty) {
       endSession();
       return { ok: true };
     }
-    if (editTarget.type === 'client') {
+    if (hasFieldChanges && editTarget.type === 'client') {
       normalizeClientPayload(payload as ClientUpdate);
     }
 
     setSaving(true);
     setSaveError(null);
     try {
-      if (editTarget.type === 'client') {
-        await updateClient(editTarget.id, payload as ClientUpdate);
-      } else if (editTarget.type === 'doctor') {
-        await updateDoctor(editTarget.id, payload as DoctorUpdate);
-      } else if (editTarget.type === 'healthCompany') {
-        await updateHealthCompany(editTarget.id, payload as HealthCompanyUpdate);
-      } else if (editTarget.type === 'product') {
-        await updateProduct(editTarget.id, payload as ProductUpdate);
-      } else if (editTarget.type === 'quote') {
-        await updateQuote(editTarget.id, payload as QuoteUpdate);
-      } else {
-        await updateWorkOrder(editTarget.id, payload as WorkOrderUpdate);
+      if (hasFieldChanges) {
+        if (editTarget.type === 'client') {
+          await updateClient(editTarget.id, payload as ClientUpdate);
+        } else if (editTarget.type === 'doctor') {
+          await updateDoctor(editTarget.id, payload as DoctorUpdate);
+        } else if (editTarget.type === 'healthCompany') {
+          await updateHealthCompany(editTarget.id, payload as HealthCompanyUpdate);
+        } else if (editTarget.type === 'product') {
+          await updateProduct(editTarget.id, payload as ProductUpdate);
+        } else if (editTarget.type === 'quote') {
+          await updateQuote(editTarget.id, payload as QuoteUpdate);
+        } else {
+          await updateWorkOrder(editTarget.id, payload as WorkOrderUpdate);
+        }
+      }
+      // Persist any registered sub-editors (e.g. work order item edits).
+      for (const hook of saveHooksRef.current) {
+        await hook();
       }
       endSession();
       setDataVersion((v) => v + 1);
@@ -598,6 +639,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     productChanges,
     quoteChanges,
     workOrderChanges,
+    extraDirty,
     endSession,
   ]);
 
@@ -644,6 +686,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setWorkOrderField,
     cancel: endSession,
     save,
+    registerSaveHook,
+    markExtraDirty,
   };
 
   return <EntityEditContext.Provider value={value}>{children}</EntityEditContext.Provider>;
@@ -728,15 +772,12 @@ function buildQuotePayload(quoteChanges: Record<string, unknown>): QuoteUpdate {
 }
 
 /**
- * Full create payload for a new quote: every editable field except `status`,
- * which the server assigns (INSERITO) and the client never sets. Blank
- * dates/numbers become null and FK ids become numbers, reusing the edit
- * normalization.
+ * Full create payload for a new quote. `status` is not an editable field — the
+ * server assigns it (INSERITO) — so it is simply absent. Blank dates/numbers
+ * become null and FK ids become numbers, reusing the edit normalization.
  */
 function buildQuoteCreatePayload(draft: Quote | null): QuoteUpdate {
-  const full = buildCreatePayload(draft, EDITABLE_QUOTE_KEYS);
-  delete full.status;
-  return buildQuotePayload(full);
+  return buildQuotePayload(buildCreatePayload(draft, EDITABLE_QUOTE_KEYS));
 }
 
 const WORK_ORDER_DATE_KEYS = [

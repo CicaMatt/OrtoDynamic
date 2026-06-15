@@ -13,6 +13,22 @@ from apps.common.models import UnmanagedModel
 
 
 class WorkOrder(UnmanagedModel):
+    # The states a work order may hold. Freely selectable, with no transition
+    # rules between them (unlike quotes, which are DB-driven via apps.statuses).
+    STATUSES = (
+        "IN LAVORAZIONE",
+        "IN FINITURA",
+        "LAVORATO",
+        "LAVORATO PARZIALE",
+        "ANNULLATO",
+        "DA CONSEGNARE",
+        "PRONTO PRIMA PROVA",
+        "PRONTO SECONDA PROVA",
+        "PRONTO TERZA PROVA",
+        "IN REVISIONE DOPO CONSEGNA",
+        "INVIATE A LACO PER MODIFICA",
+    )
+
     id = models.BigAutoField(primary_key=True)
 
     # --- Links ---
@@ -64,19 +80,32 @@ class WorkOrder(UnmanagedModel):
 
 class WorkOrderItem(UnmanagedModel):
     """
-    Bridge row linking a work order to a quote line item — maps the existing
-    `item_lavorazioni` table.
+    A work order line — maps the existing `item_lavorazioni` table.
 
-    Only the columns needed to resolve that link are mapped: `id_lavorazione`
-    references `lavorazioni.id` (the parent work order) and `id_item_preventivi`
-    references `item_preventivi.id` (the quote line item rendered in the detail
-    view). Both are plain integer columns, mirroring the rest of the mapped
-    schema, which declares no database-level foreign keys.
+    Links are plain integer columns, mirroring the rest of the mapped schema:
+    `id_lavorazione` references `lavorazioni.id` (the parent work order) and
+    `id_item_preventivi` references `item_preventivi.id` (the quote line whose
+    product/amount data is shown alongside this line). The remaining mapped
+    columns are this line's own lifecycle state and dates.
     """
 
+    # Item-level states, freely selectable (independent of the work order's set).
+    STATUSES = ("IN LAVORAZIONE", "ORDINATO", "PRONTO", "CONSEGNATO", "ANNULLATO")
+    PRODUCTIONS = ("ESTERNA", "INTERNA")
+
     id = models.BigAutoField(primary_key=True)
+
+    # --- Links ---
     id_lavorazione = models.BigIntegerField()
     id_item_preventivi = models.BigIntegerField(null=True, blank=True)
+
+    # --- Lifecycle ---
+    stato = models.CharField(max_length=100, null=True, blank=True)
+    produzione = models.CharField(max_length=200, null=True, blank=True)
+    data_annullamento = models.DateField(null=True, blank=True)
+    data_ordine = models.DateField(null=True, blank=True)
+    data_consegna_parziale = models.DateField(null=True, blank=True)
+    data_consegna = models.DateField(null=True, blank=True)
 
     class Meta(UnmanagedModel.Meta):
         db_table = "item_lavorazioni"
