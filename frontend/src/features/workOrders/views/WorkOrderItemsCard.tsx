@@ -12,6 +12,12 @@ import type { WorkOrderItem } from '../types';
 const ITEM_STATUSES = ['IN LAVORAZIONE', 'ORDINATO', 'PRONTO', 'CONSEGNATO', 'ANNULLATO'];
 const ITEM_PRODUCTIONS = ['ESTERNA', 'INTERNA'];
 
+// The backend stores the line status as a numeric code; map it to its label for display.
+const STATUS_CODE_LABELS: Record<string, string> = {
+  '5': 'IN LAVORAZIONE',
+};
+const renderStatus = (value: string) => STATUS_CODE_LABELS[value] ?? value;
+
 // Statuses that gate the two conditional dates, and the date keys to null-blank.
 const CANCELLED = 'ANNULLATO';
 const DELIVERED = 'CONSEGNATO';
@@ -30,7 +36,7 @@ const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
   { key: 'price', label: 'Prezzo' },
   { key: 'amount', label: 'Importo' },
   { key: 'discount', label: 'Sconto' },
-  { key: 'status', label: 'Stato', editOptions: ITEM_STATUSES },
+  { key: 'status', label: 'Stato', render: renderStatus, editOptions: ITEM_STATUSES },
   { key: 'production', label: 'Produzione', editOptions: ITEM_PRODUCTIONS },
   {
     key: 'cancellationDate',

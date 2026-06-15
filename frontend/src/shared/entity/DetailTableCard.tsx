@@ -54,7 +54,7 @@ export function DetailTableCard<T extends object>({
     <DataCard icon={icon} title={title}>
       <div className="overflow-x-auto">
         <table className="w-full text-left font-body-md text-body-md">
-          <thead className="font-label-caps text-label-caps text-on-surface-variant border-b border-outline-variant/50">
+          <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>
               {columns.map((column) => (
                 <th
