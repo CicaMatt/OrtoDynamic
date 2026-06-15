@@ -4,6 +4,9 @@ djangorestframework>=3.15,<3.16
 django-cors-headers>=4.3
 django-environ>=0.11
 
+# Verifies the legacy `tb_users` bcrypt password hashes (PHP `$2y$` format).
+bcrypt>=4.0
+
 # Database driver for the existing MySQL database.
 # PyMySQL is a pure-Python driver (no system libraries to build), installed as
 # the MySQLdb interface via the shim in config/__init__.py. For maximum

@@ -1,4 +1,6 @@
 import { Icon } from '../../shared/ui/Icon';
+import { useAuth } from '../../features/auth/AuthContext';
+import type { AuthUser } from '../../features/auth/types';
 import { useNavigation } from '../navigation/NavigationContext';
 import type { View } from '../navigation/types';
 
@@ -28,11 +30,12 @@ const mainNav: NavEntry[] = [
 
 export function SideNavBar() {
   const { view, navigate } = useNavigation();
+  const { user, logout } = useAuth();
 
   return (
     <nav className="fixed left-0 top-0 h-full w-sidebar-width bg-primary-container flex flex-col border-r border-outline-variant/10 z-50">
       <BrandHeader />
-      <UserBanner name="Raffaele Pepe" role="Amministratore" initials="RP" />
+      <UserBanner user={user} />
       <ul className="flex flex-col gap-2 flex-grow">
         {mainNav.map((item) => (
           <NavItem
@@ -44,7 +47,7 @@ export function SideNavBar() {
           />
         ))}
       </ul>
-      <SideNavFooter />
+      <SideNavFooter onLogout={logout} />
     </nav>
   );
 }
@@ -57,15 +60,27 @@ function BrandHeader() {
   );
 }
 
-function UserBanner({ name, role, initials }: { name: string; role: string; initials: string }) {
+/** First letters of the first two words, or the first two characters of a single word. */
+function initialsOf(text: string): string {
+  const parts = text.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return text.trim().slice(0, 2).toUpperCase();
+}
+
+function UserBanner({ user }: { user: AuthUser | null }) {
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+  const primary = fullName || user?.username || '';
+  const secondary = fullName ? `@${user?.username}` : user?.email || '';
+  const initials = primary ? initialsOf(primary) : '';
+
   return (
     <div className="px-6 py-5 flex items-center gap-4 border-b border-on-primary-fixed-variant mb-5">
       <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-on-secondary font-headline-md text-headline-md">
         {initials}
       </div>
-      <div>
-        <p className="text-[15px] leading-6 text-on-primary font-bold">{name}</p>
-        <p className="font-body-sm text-body-sm text-on-primary-container">{role}</p>
+      <div className="min-w-0">
+        <p className="text-[15px] leading-6 text-on-primary font-bold truncate">{primary}</p>
+        <p className="font-body-sm text-body-sm text-on-primary-container truncate">{secondary}</p>
       </div>
     </div>
   );
@@ -95,20 +110,21 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
   );
 }
 
-function SideNavFooter() {
+function SideNavFooter({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="mt-auto pb-4">
       <ul className="flex flex-col gap-2">
-        <FooterItem icon="settings" label="Impostazioni" />
+        <FooterItem icon="logout" label="Logout" onClick={onLogout} />
       </ul>
     </div>
   );
 }
 
-function FooterItem({ icon, label }: { icon: string; label: string }) {
+function FooterItem({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
   return (
     <li>
       <button
+        onClick={onClick}
         className="flex items-center gap-3 text-left text-[15px] leading-6 font-medium text-[#9fafbf] hover:text-white mx-2 px-4 py-2.5 rounded-lg hover:bg-on-primary-fixed-variant/50 transition-colors duration-200"
         style={{ width: 'calc(100% - 1rem)' }}
       >

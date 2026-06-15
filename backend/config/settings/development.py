@@ -12,3 +12,9 @@ ALLOWED_HOSTS = env.list(
 CORS_ALLOWED_ORIGINS = env.list(
     "DJANGO_CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"]
 )
+
+# Trust the Vite dev origin for CSRF on cross-origin unsafe requests (login,
+# logout, and the existing create/update endpoints once they require auth).
+CSRF_TRUSTED_ORIGINS = env.list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS", default=["http://localhost:5173"]
+)

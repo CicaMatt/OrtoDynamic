@@ -41,6 +41,7 @@ THIRD_PARTY_APPS = [
 # Add domain apps here as the database areas are mapped (e.g. "apps.clients").
 LOCAL_APPS = [
     "apps.common",
+    "apps.accounts",
     "apps.clients",
     "apps.doctors",
     "apps.health_companies",
@@ -128,8 +129,31 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    # Cookie-based session auth (CSRF-protected). Every endpoint requires an
+    # authenticated user by default; views that must stay open (login, session
+    # bootstrap) opt out with an explicit `AllowAny`.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.accounts.api.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
 }
+
+# --- Authentication & sessions ----------------------------------------------
+# Credentials are checked against the legacy `tb_users` table by a custom backend;
+# Django's default ModelBackend (which queries the absent `auth_user` table) is
+# removed. The application owns no Django tables, so sessions live in a signed,
+# tamper-proof cookie rather than a `django_session` table.
+AUTHENTICATION_BACKENDS = ["apps.accounts.backends.LegacyUserBackend"]
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+
+# The React frontend is served from its own origin, so the browser must be
+# allowed to send the session/CSRF cookies cross-origin, and that origin must be
+# trusted for CSRF on unsafe requests. Both are env-driven (see CORS below).
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 # --- CORS -------------------------------------------------------------------
 # The React dev server / deployed frontend origins are env-driven.
