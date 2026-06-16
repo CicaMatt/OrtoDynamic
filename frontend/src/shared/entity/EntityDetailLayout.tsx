@@ -20,7 +20,7 @@ export function EntityDetailLayout({
       {hasActions ? (
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-[28px] items-start">
           <main className="min-w-0">{children}</main>
-          <aside className="xl:border-l xl:border-[#dde1e7] xl:pl-[28px]">
+          <aside className="border-t border-[#dde1e7] pt-[28px] xl:border-t-0 xl:pt-0 xl:border-l xl:pl-[28px]">
             <DetailActionsCard title={actionsTitle ?? ''} actions={actions} />
           </aside>
         </div>
