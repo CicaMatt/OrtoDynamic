@@ -15,6 +15,7 @@ from apps.common.api.serializers import (
     nullable_text,
 )
 from apps.quotes.models import Quote
+from apps.quotes.services import create_quote_item
 
 
 class QuoteSerializer(NullToEmptyMixin):
@@ -66,15 +67,43 @@ class QuoteItemSerializer(NullToEmptyMixin):
     """
     Read-only line item shown in the quote detail's items box. Exposes only the
     columns the view renders; `productId` is the raw `codice_nomenclatore`
-    reference (a `nomenclatore.id`). Values follow the all-strings contract.
+    reference (a `nomenclatore.id`) and `productDescription` is that product's
+    `descrizione`, read from the row attached by the view (absent for a product
+    that no longer exists). Values follow the all-strings contract.
     """
 
     id = serializers.CharField()
     productId = serializers.CharField(source="codice_nomenclatore")
+    productDescription = serializers.SerializerMethodField()
     quantity = serializers.CharField(source="quantita")
     price = serializers.CharField(source="prezzo")
     amount = serializers.CharField(source="importo")
     discount = serializers.CharField(source="sconto")
+
+    def get_productDescription(self, item):
+        product = getattr(item, "product", None)
+        return product.descrizione if product is not None else None
+
+
+class QuoteItemCreateSerializer(serializers.Serializer):
+    """
+    Create a line item for a quote. Only the client-controlled inputs are
+    accepted: the product reference (required) plus the line's quantity and
+    discount. `prezzo` and `importo` are derived from the product by
+    `create_quote_item`, and the parent `id_preventivo` is injected by the view —
+    none of the three is trusted from the client. The created row is rendered back
+    with `QuoteItemSerializer` for the all-strings contract.
+    """
+
+    productId = serializers.IntegerField(source="product_id")
+    quantity = serializers.FloatField(allow_null=True, default=None, min_value=0)
+    discount = serializers.FloatField(allow_null=True, default=None)
+
+    def create(self, validated_data):
+        return create_quote_item(**validated_data)
+
+    def to_representation(self, instance):
+        return QuoteItemSerializer(instance).data
 
 
 class QuoteUpdateSerializer(UpdateFieldsSerializer):

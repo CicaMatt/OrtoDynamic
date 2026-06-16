@@ -63,8 +63,23 @@ export type QuoteStatusTransitions = {
 export type QuoteItem = {
   id: string;
   productId: string;
+  /** The product's `descrizione`, joined from `nomenclatore` for display. */
+  productDescription: string;
   quantity: string;
   price: string;
   amount: string;
   discount: string;
+};
+
+/**
+ * Payload to create a {@link QuoteItem}. Only the client-controlled inputs are
+ * sent: `productId` (the chosen `nomenclatore.id`, required) plus the optional
+ * `quantity` and `discount` (`null` when left blank). `price` and `amount` are
+ * derived from the product by the backend, and the parent `id_preventivo` is set
+ * from the URL — none of them are sent here.
+ */
+export type QuoteItemCreate = {
+  productId: number;
+  quantity: number | null;
+  discount: number | null;
 };

@@ -7,6 +7,11 @@ export function fetchProducts(): Promise<Product[]> {
   return apiGet<Product[]>('/products/');
 }
 
+/** Type-ahead lookup: products whose id (or code) matches `query`, capped by the API. */
+export function searchProducts(query: string): Promise<Product[]> {
+  return apiGet<Product[]>(`/products/search/?q=${encodeURIComponent(query)}`);
+}
+
 export function fetchProduct(id: string): Promise<Product> {
   return apiGet<Product>(`/products/${id}/`);
 }

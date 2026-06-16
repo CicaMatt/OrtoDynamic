@@ -5,14 +5,15 @@ from rest_framework.response import Response
 
 from apps.common.api.views import (
     ReadUpdateDetailAPIView,
-    UnpaginatedListAPIView,
     UnpaginatedListCreateAPIView,
 )
+from apps.products.models import Product
 from apps.quotes.models import Quote, QuoteItem
 from apps.quotes.services import change_quote_status
 from apps.statuses.services import allowed_target_states
 from .serializers import (
     QuoteCreateSerializer,
+    QuoteItemCreateSerializer,
     QuoteItemSerializer,
     QuoteSerializer,
     QuoteStatusRequestSerializer,
@@ -32,13 +33,40 @@ class QuoteDetailView(ReadUpdateDetailAPIView):
     queryset = Quote.objects.all()
 
 
-class QuoteItemListView(UnpaginatedListAPIView):
-    """Line items belonging to one quote, keyed by `item_preventivi.id_preventivo`."""
+class QuoteItemListView(UnpaginatedListCreateAPIView):
+    """
+    Line items belonging to one quote, keyed by `item_preventivi.id_preventivo`.
+
+    GET lists the quote's lines; POST creates one. The parent link is taken from
+    the URL, so a created line is always attached to the quote in the route.
+    """
 
     serializer_class = QuoteItemSerializer
+    create_serializer_class = QuoteItemCreateSerializer
 
     def get_queryset(self):
-        return QuoteItem.objects.filter(id_preventivo=self.kwargs["pk"]).order_by("id")
+        items = list(
+            QuoteItem.objects.filter(id_preventivo=self.kwargs["pk"]).order_by("id")
+        )
+        # Attach each line's product in one query so the serializer can render the
+        # description without a per-row lookup (a missing product stays None).
+        product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
+        products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
+        for item in items:
+            item.product = products.get(item.codice_nomenclatore)
+        return items
+
+    def perform_create(self, serializer):
+        serializer.save(quote_id=self.kwargs["pk"])
+
+
+class QuoteItemDeleteView(generics.DestroyAPIView):
+    """Delete a single line, scoped to its quote so a foreign id can't be removed."""
+
+    lookup_url_kwarg = "item_id"
+
+    def get_queryset(self):
+        return QuoteItem.objects.filter(id_preventivo=self.kwargs["pk"])
 
 
 class QuoteStatusTransitionsView(generics.RetrieveAPIView):

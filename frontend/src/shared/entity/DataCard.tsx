@@ -34,6 +34,7 @@ export function EditInput({
   value,
   options,
   invalid = false,
+  min,
   onChange,
 }: {
   type?: FieldInputType;
@@ -42,6 +43,8 @@ export function EditInput({
   options?: ReadonlyArray<SelectOption>;
   /** Highlight the control as failing validation. */
   invalid?: boolean;
+  /** Minimum value for the `number` type; ignored otherwise. */
+  min?: number;
   onChange: (value: string) => void;
 }) {
   const inputClass = `${baseInputClass} ${invalid ? invalidBorderClass : validBorderClass}`;
@@ -78,7 +81,13 @@ export function EditInput({
   }
   const htmlType = type === 'date' ? 'date' : type === 'number' ? 'number' : 'text';
   return (
-    <input type={htmlType} value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} />
+    <input
+      type={htmlType}
+      value={value}
+      min={type === 'number' ? min : undefined}
+      onChange={(e) => onChange(e.target.value)}
+      className={inputClass}
+    />
   );
 }
 
@@ -96,17 +105,23 @@ export function SectionTitle({ icon, title }: { icon: string; title: string }) {
 export function DataCard({
   icon,
   title,
+  action,
   className = '',
   children,
 }: {
   icon: string;
   title: string;
+  /** Optional control shown at the top-right of the header, aligned with the title. */
+  action?: ReactNode;
   className?: string;
   children: ReactNode;
 }) {
   return (
     <section className={`rounded-[8px] border border-[#c9cdd4] bg-white px-[29px] py-[28px] ${className}`}>
-      <SectionTitle icon={icon} title={title} />
+      <div className="flex items-center justify-between gap-[16px]">
+        <SectionTitle icon={icon} title={title} />
+        {action}
+      </div>
       <div className="h-px bg-[#dde1e7] mt-[11px] mb-[20px]" />
       {children}
     </section>

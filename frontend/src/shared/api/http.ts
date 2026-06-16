@@ -15,7 +15,7 @@ function readCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-type Method = 'GET' | 'POST' | 'PATCH';
+type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 /**
  * Core request: sends the session cookie (`credentials: 'include'`), attaches the
@@ -70,6 +70,11 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
 /** PATCH a JSON body to the API. */
 export function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return request<T>('PATCH', path, body);
+}
+
+/** DELETE a resource; resolves with nothing on the backend's 204 response. */
+export function apiDelete(path: string): Promise<void> {
+  return request<void>('DELETE', path);
 }
 
 async function extractErrorMessage(response: Response): Promise<string> {
