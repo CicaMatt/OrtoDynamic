@@ -28,27 +28,55 @@ const mainNav: NavEntry[] = [
   { view: 'employees', icon: 'badge', label: 'Gestione Dipendenti', matches: ['employees'] },
 ];
 
-export function SideNavBar() {
+/**
+ * Permanent navigation rail on large viewports; an off-canvas drawer below `lg`,
+ * shown when `open` and dismissed via the backdrop or after a navigation.
+ */
+export function SideNavBar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { view, navigate } = useNavigation();
   const { user, logout } = useAuth();
 
+  // Selecting a destination (or logging out) also dismisses the mobile drawer.
+  const handleNavigate = (next: View) => {
+    navigate(next);
+    onClose();
+  };
+
+  const handleLogout = () => {
+    logout();
+    onClose();
+  };
+
   return (
-    <nav className="fixed left-0 top-0 h-full w-sidebar-width bg-primary-container flex flex-col border-r border-outline-variant/10 z-50">
-      <BrandHeader />
-      <UserBanner user={user} />
-      <ul className="flex flex-col gap-2 flex-grow">
-        {mainNav.map((item) => (
-          <NavItem
-            key={item.view}
-            icon={item.icon}
-            label={item.label}
-            active={item.matches.includes(view)}
-            onClick={() => navigate(item.view)}
-          />
-        ))}
-      </ul>
-      <SideNavFooter onLogout={logout} />
-    </nav>
+    <>
+      <div
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 lg:hidden ${
+          open ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <nav
+        className={`fixed left-0 top-0 h-full w-sidebar-width bg-primary-container flex flex-col border-r border-outline-variant/10 z-50 transition-transform duration-300 lg:translate-x-0 ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <BrandHeader />
+        <UserBanner user={user} />
+        <ul className="flex flex-col gap-2 flex-grow">
+          {mainNav.map((item) => (
+            <NavItem
+              key={item.view}
+              icon={item.icon}
+              label={item.label}
+              active={item.matches.includes(view)}
+              onClick={() => handleNavigate(item.view)}
+            />
+          ))}
+        </ul>
+        <SideNavFooter onLogout={handleLogout} />
+      </nav>
+    </>
   );
 }
 

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useNavigation } from '../navigation/NavigationContext';
+import { Icon } from '../../shared/ui/Icon';
 import { SideNavBar } from './SideNavBar';
 import { EditActionBar } from './EditActionBar';
 import { UnsavedChangesDialog } from './UnsavedChangesDialog';
@@ -51,15 +53,36 @@ const viewComponents = {
 export function AppLayout() {
   const { view } = useNavigation();
   const ActiveView = viewComponents[view];
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="bg-background text-on-background min-h-screen flex">
-      <SideNavBar />
-      <main className="ml-sidebar-width w-[calc(100%-theme(spacing.sidebar-width))] min-h-screen p-container-padding">
-        <ActiveView />
-      </main>
+    <div className="bg-background text-on-background min-h-screen">
+      <SideNavBar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <div className="lg:ml-sidebar-width">
+        <MobileTopBar onOpenNav={() => setMobileNavOpen(true)} />
+        <main className="min-h-screen p-container-padding">
+          <ActiveView />
+        </main>
+      </div>
       <EditActionBar />
       <UnsavedChangesDialog />
+    </div>
+  );
+}
+
+/** Compact top bar shown only below `lg`, exposing the navigation drawer toggle. */
+function MobileTopBar({ onOpenNav }: { onOpenNav: () => void }) {
+  return (
+    <div className="lg:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-outline-variant/20 bg-primary-container px-4 py-3">
+      <button
+        type="button"
+        onClick={onOpenNav}
+        aria-label="Apri menu di navigazione"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-on-primary hover:bg-on-primary-fixed-variant/50 transition-colors"
+      >
+        <Icon name="menu" className="text-[26px]" />
+      </button>
+      <span className="font-headline-md text-headline-md font-bold text-on-primary">OrtoDynamic</span>
     </div>
   );
 }

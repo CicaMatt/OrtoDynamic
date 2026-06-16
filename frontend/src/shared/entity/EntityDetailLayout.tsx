@@ -18,14 +18,14 @@ export function EntityDetailLayout({
     <div className="max-w-[1440px] -mt-1">
       {header}
       {hasActions ? (
-        <div className="grid grid-cols-[minmax(0,1fr)_380px] gap-[28px] items-start">
-          <main>{children}</main>
-          <aside className="border-l border-[#dde1e7] pl-[28px]">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-[28px] items-start">
+          <main className="min-w-0">{children}</main>
+          <aside className="xl:border-l xl:border-[#dde1e7] xl:pl-[28px]">
             <DetailActionsCard title={actionsTitle ?? ''} actions={actions} />
           </aside>
         </div>
       ) : (
-        <main>{children}</main>
+        <main className="min-w-0">{children}</main>
       )}
     </div>
   );

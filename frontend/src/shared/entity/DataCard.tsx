@@ -227,7 +227,12 @@ export function FieldGrid<T extends object>({
   /** Runtime config for `autocomplete` fields, keyed by field key. */
   autocompleteFields?: Partial<Record<keyof T, AutocompleteFieldConfig>>;
 }) {
-  const columnsClass = columns === 1 ? 'grid-cols-1' : columns === 2 ? 'grid-cols-2' : 'grid-cols-3';
+  const columnsClass =
+    columns === 1
+      ? 'grid-cols-1'
+      : columns === 2
+        ? 'grid-cols-1 sm:grid-cols-2'
+        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
   return (
     <div className={`grid ${columnsClass} gap-x-[36px] gap-y-[24px]`}>
       {fields.map((field) => {

@@ -118,7 +118,7 @@ export function ClientOrthopedicView() {
           onChange={setClientOrthopedicField}
         />
 
-        <div className="grid grid-cols-2 gap-[28px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[28px]">
           <FieldSectionCard
             icon="straighten"
             title="Tutore e Armatura"

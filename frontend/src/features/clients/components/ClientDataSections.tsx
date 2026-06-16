@@ -39,7 +39,7 @@ export function ClientDataSections({
         autocompleteFields={autocompleteFields}
       />
 
-      <div className="grid grid-cols-2 gap-[28px] mt-[28px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[28px] mt-[28px]">
         <FieldSectionCard
           icon="home_pin"
           title="Residenza"
