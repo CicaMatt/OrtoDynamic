@@ -18,6 +18,7 @@ from .serializers import (
     QuoteCreateSerializer,
     QuoteItemCreateSerializer,
     QuoteItemSerializer,
+    QuoteItemUpdateSerializer,
     QuoteSerializer,
     QuoteStatusRequestSerializer,
     QuoteUpdateSerializer,
@@ -84,9 +85,14 @@ class QuoteItemListView(UnpaginatedListCreateAPIView):
         serializer.save(quote_id=self.kwargs["pk"])
 
 
-class QuoteItemDeleteView(generics.DestroyAPIView):
-    """Delete a single line, scoped to its quote so a foreign id can't be removed."""
+class QuoteItemDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
+    """
+    Edit or delete a single line, scoped to its quote so a foreign id can't be
+    touched. PATCH updates the line's quantity/discount (recomputing its amount);
+    DELETE removes its `item_preventivi` row.
+    """
 
+    serializer_class = QuoteItemUpdateSerializer
     lookup_url_kwarg = "item_id"
 
     def get_queryset(self):

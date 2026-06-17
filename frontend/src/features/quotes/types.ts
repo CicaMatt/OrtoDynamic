@@ -75,11 +75,27 @@ export type QuoteItem = {
 };
 
 /**
+ * Editable draft of a line item. `productId`/`description`/`price` are filled
+ * together from the chosen product (so the code and product fields always agree),
+ * while `quantity` and `discount` are typed; `price` is shown read-only and the
+ * importo is derived from it. Drives both the inline "Nuovo" row and the create
+ * form's pending-items list. All-strings, like the form values it backs.
+ */
+export type QuoteItemDraft = {
+  productId: string;
+  description: string;
+  price: string;
+  quantity: string;
+  discount: string;
+};
+
+/**
  * Payload to create a {@link QuoteItem}. Only the client-controlled inputs are
  * sent: `productId` (the chosen `nomenclatore.id`, required) plus the optional
  * `quantity` and `discount` (`null` when left blank). `price` and `amount` are
  * derived from the product by the backend, and the parent `id_preventivo` is set
- * from the URL — none of them are sent here.
+ * from the URL (existing quote) or assigned on create (new quote) — none of them
+ * are sent here.
  */
 export type QuoteItemCreate = {
   productId: number;

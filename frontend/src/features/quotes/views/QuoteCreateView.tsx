@@ -8,6 +8,7 @@ import { FieldSectionList } from '../../../shared/entity/FieldSectionCard';
 import { Autocomplete } from '../../../shared/ui/Autocomplete';
 import { QUOTE_CREATE_REQUIRED, quoteCreateSections } from '../components/quoteCreateFields';
 import { useClientOptions } from '../components/useClientOptions';
+import { QuoteItemsDraftCard } from './QuoteItemsDraftCard';
 import type { Quote } from '../types';
 
 export function QuoteCreateView() {
@@ -84,6 +85,8 @@ export function QuoteCreateView() {
           onChange={setQuoteField}
           invalidKeys={invalidKeys}
         />
+
+        <QuoteItemsDraftCard />
       </div>
     </EntityDetailLayout>
   );

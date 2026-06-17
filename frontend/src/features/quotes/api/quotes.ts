@@ -3,6 +3,12 @@ import type { Quote, QuoteItem, QuoteItemCreate, QuoteStatusTransitions } from '
 
 export type QuoteUpdate = Record<string, string | number | null>;
 
+/** Create payload: the quote fields plus any initial line items, sent in one request. */
+export type QuoteCreatePayload = QuoteUpdate & { items?: QuoteItemCreate[] };
+
+/** The editable money inputs of a line item; `null` clears the value. */
+export type QuoteItemUpdate = { quantity: number | null; discount: number | null };
+
 export function fetchQuotes(): Promise<Quote[]> {
   return apiGet<Quote[]>('/quotes/');
 }
@@ -18,6 +24,15 @@ export function fetchQuoteItems(quoteId: string): Promise<QuoteItem[]> {
 /** Create a line item under a quote; the API attaches it via the quote in the URL. */
 export function createQuoteItem(quoteId: string, values: QuoteItemCreate): Promise<QuoteItem> {
   return apiPost<QuoteItem>(`/quotes/${quoteId}/items/`, values);
+}
+
+/** Update a line item's quantity/discount; the API recomputes its amount. */
+export function updateQuoteItem(
+  quoteId: string,
+  itemId: string,
+  changes: QuoteItemUpdate,
+): Promise<QuoteItem> {
+  return apiPatch<QuoteItem>(`/quotes/${quoteId}/items/${itemId}/`, changes);
 }
 
 /** Delete one of a quote's line items, removing its `item_preventivi` row. */
@@ -39,7 +54,7 @@ export function updateQuote(id: string, changes: QuoteUpdate): Promise<unknown> 
   return apiPatch(`/quotes/${id}/`, changes);
 }
 
-/** Create a new quote; the API returns the created record (with its new id). */
-export function createQuote(values: QuoteUpdate): Promise<Quote> {
+/** Create a new quote (optionally with its initial line items); the API returns the record. */
+export function createQuote(values: QuoteCreatePayload): Promise<Quote> {
   return apiPost<Quote>('/quotes/', values);
 }

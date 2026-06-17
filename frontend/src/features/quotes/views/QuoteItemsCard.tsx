@@ -1,26 +1,29 @@
 import { useState } from 'react';
-import { DataCard, EditInput } from '../../../shared/entity/DataCard';
+import { DataCard } from '../../../shared/entity/DataCard';
 import { FieldValue } from '../../../shared/ui/FieldValue';
-import { Icon } from '../../../shared/ui/Icon';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import type { Product } from '../../products/types';
-import { createQuoteItem, deleteQuoteItem, fetchQuoteItems } from '../api/quotes';
-import type { QuoteItem } from '../types';
-import { ProductSearchField } from '../components/ProductSearchField';
-
-/**
- * Editable draft of a new line. `productId`/`description`/`price` are filled
- * together from the chosen product (so the code and product fields always agree),
- * while `quantity` and `discount` are typed; `price` is shown read-only and the
- * importo is derived from it.
- */
-type ItemDraft = {
-  productId: string;
-  description: string;
-  price: string;
-  quantity: string;
-  discount: string;
-};
+import {
+  createQuoteItem,
+  deleteQuoteItem,
+  fetchQuoteItems,
+  updateQuoteItem,
+} from '../api/quotes';
+import type { QuoteItem, QuoteItemDraft } from '../types';
+import {
+  IconButton,
+  ItemDraftRow,
+  ItemEditRow,
+  MessageRow,
+  NewItemButton,
+} from '../components/QuoteItemRow';
+import {
+  discountError,
+  draftFromItem,
+  EMPTY_ITEM_DRAFT,
+  ITEM_COLUMN_COUNT,
+  toNullableNumber,
+} from '../components/quoteItemMath';
 
 /**
  * Read-mode columns in display order; the value is read straight off the item.
@@ -36,37 +39,17 @@ const READ_COLUMNS: ReadonlyArray<{ key: keyof QuoteItem; label: string; wrap?: 
   { key: 'discount', label: 'Sconto' },
 ];
 
-const EMPTY_DRAFT: ItemDraft = { productId: '', description: '', price: '', quantity: '', discount: '' };
-
-// One column per read column plus the trailing actions column.
-const COLUMN_COUNT = READ_COLUMNS.length + 1;
-
-/** Parse an amount input into the number the API expects, or `null` when blank. */
-function toNullableNumber(raw: string): number | null {
-  const trimmed = raw.trim();
-  if (trimmed === '') return null;
-  const value = Number(trimmed);
-  return Number.isFinite(value) ? value : null;
-}
-
-/** Live preview of importo (prezzo × quantità); blank until both are known. */
-function previewAmount(price: string, quantity: string): string {
-  const unitPrice = Number(price);
-  const count = Number(quantity);
-  if (price.trim() === '' || quantity.trim() === '' || !Number.isFinite(unitPrice) || !Number.isFinite(count)) {
-    return '';
-  }
-  return String(Math.round(unitPrice * count * 100) / 100);
-}
+/** State of the one line being edited inline: its id plus the working draft. */
+type EditState = { id: string; draft: QuoteItemDraft };
 
 /**
- * A quote's line items (`item_preventivi`), with inline add and delete. "Nuovo"
- * opens an empty draft row: the product is picked from the live `nomenclatore`
- * lookup — by code or by description, each kept in sync with the other — and only
- * quantity and discount are typed, since prezzo (the product's price) and importo
- * (prezzo × quantità) are derived by the backend. Confirming creates the row
- * under this quote; each existing row can be removed via its trash icon.
- * Mutations refetch the list so the table always reflects the server.
+ * A quote's line items (`item_preventivi`), with inline add, edit, and delete.
+ * "Nuovo" opens an empty draft row: the product is picked from the live
+ * `nomenclatore` lookup — by code or by description — and only quantity and
+ * discount are typed, since prezzo and importo are derived by the backend.
+ * Editing a row reopens its quantity/discount for the same recompute (sconto
+ * being a 1–100 discount applied to the importo). Each mutation persists
+ * immediately and refetches the list so the table always reflects the server.
  */
 export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
   const [reloadKey, setReloadKey] = useState(0);
@@ -75,40 +58,74 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
     [quoteId, reloadKey],
   );
 
-  const [draft, setDraft] = useState<ItemDraft | null>(null);
+  const [addDraft, setAddDraft] = useState<QuoteItemDraft | null>(null);
+  const [edit, setEdit] = useState<EditState | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const items = data ?? [];
   const busy = submitting || deletingId !== null;
-  const canAdd = !loading && !error && draft === null && !busy;
+  // Only one inline operation (add / edit / delete) at a time.
+  const idle = addDraft === null && edit === null && !busy;
+  const canAdd = !loading && !error && idle;
 
-  const setField = (key: keyof ItemDraft, value: string) =>
-    setDraft((current) => (current ? { ...current, [key]: value } : current));
+  const setAddField = (key: keyof QuoteItemDraft, value: string) =>
+    setAddDraft((current) => (current ? { ...current, [key]: value } : current));
 
   // Picking from either the code or the product field fills both, plus the price.
   const selectProduct = (product: Product) =>
-    setDraft((current) =>
+    setAddDraft((current) =>
       current
         ? { ...current, productId: product.id, description: product.description, price: product.price }
         : current,
     );
 
-  const confirmDraft = async () => {
-    if (!draft || draft.productId.trim() === '') return;
+  const setEditField = (key: keyof QuoteItemDraft, value: string) =>
+    setEdit((current) => (current ? { ...current, draft: { ...current.draft, [key]: value } } : current));
+
+  const confirmAdd = async () => {
+    if (!addDraft || addDraft.productId.trim() === '') return;
+    const invalid = discountError(addDraft.discount);
+    if (invalid) {
+      setActionError(invalid);
+      return;
+    }
     setSubmitting(true);
     setActionError(null);
     try {
       await createQuoteItem(quoteId, {
-        productId: Number(draft.productId),
-        quantity: toNullableNumber(draft.quantity),
-        discount: toNullableNumber(draft.discount),
+        productId: Number(addDraft.productId),
+        quantity: toNullableNumber(addDraft.quantity),
+        discount: toNullableNumber(addDraft.discount),
       });
-      setDraft(null);
+      setAddDraft(null);
       setReloadKey((key) => key + 1);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Creazione articolo non riuscita.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const confirmEdit = async () => {
+    if (!edit) return;
+    const invalid = discountError(edit.draft.discount);
+    if (invalid) {
+      setActionError(invalid);
+      return;
+    }
+    setSubmitting(true);
+    setActionError(null);
+    try {
+      await updateQuoteItem(quoteId, edit.id, {
+        quantity: toNullableNumber(edit.draft.quantity),
+        discount: toNullableNumber(edit.draft.discount),
+      });
+      setEdit(null);
+      setReloadKey((key) => key + 1);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Modifica articolo non riuscita.');
     } finally {
       setSubmitting(false);
     }
@@ -133,7 +150,7 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
       icon="inventory_2"
       title="Articoli Preventivo"
       action={
-        <NewItemButton disabled={!canAdd} onClick={() => setDraft({ ...EMPTY_DRAFT })} />
+        <NewItemButton disabled={!canAdd} onClick={() => setAddDraft({ ...EMPTY_ITEM_DRAFT })} />
       }
     >
       <div className="overflow-x-auto">
@@ -155,31 +172,45 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
           </thead>
           <tbody>
             {loading ? (
-              <MessageRow>Caricamento articoli...</MessageRow>
+              <MessageRow colSpan={ITEM_COLUMN_COUNT}>Caricamento articoli...</MessageRow>
             ) : error ? (
-              <MessageRow tone="error">{error}</MessageRow>
+              <MessageRow colSpan={ITEM_COLUMN_COUNT} tone="error">{error}</MessageRow>
             ) : (
               <>
-                {items.length === 0 && draft === null && (
-                  <MessageRow>Nessun articolo per questo preventivo.</MessageRow>
+                {items.length === 0 && addDraft === null && (
+                  <MessageRow colSpan={ITEM_COLUMN_COUNT}>
+                    Nessun articolo per questo preventivo.
+                  </MessageRow>
                 )}
-                {items.map((item) => (
-                  <ReadRow
-                    key={item.id}
-                    item={item}
-                    onDelete={() => removeItem(item.id)}
-                    deleting={deletingId === item.id}
-                    disabled={busy}
-                  />
-                ))}
-                {draft && (
-                  <DraftRow
-                    draft={draft}
+                {items.map((item) =>
+                  edit?.id === item.id ? (
+                    <ItemEditRow
+                      key={item.id}
+                      draft={edit.draft}
+                      submitting={submitting}
+                      onField={setEditField}
+                      onConfirm={confirmEdit}
+                      onCancel={() => setEdit(null)}
+                    />
+                  ) : (
+                    <ReadRow
+                      key={item.id}
+                      item={item}
+                      onEdit={() => setEdit({ id: item.id, draft: draftFromItem(item) })}
+                      onDelete={() => removeItem(item.id)}
+                      deleting={deletingId === item.id}
+                      disabled={!idle}
+                    />
+                  ),
+                )}
+                {addDraft && (
+                  <ItemDraftRow
+                    draft={addDraft}
                     submitting={submitting}
-                    onField={setField}
+                    onField={setAddField}
                     onProductSelect={selectProduct}
-                    onConfirm={confirmDraft}
-                    onCancel={() => setDraft(null)}
+                    onConfirm={confirmAdd}
+                    onCancel={() => setAddDraft(null)}
                   />
                 )}
               </>
@@ -195,11 +226,13 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
 
 function ReadRow({
   item,
+  onEdit,
   onDelete,
   deleting,
   disabled,
 }: {
   item: QuoteItem;
+  onEdit: () => void;
   onDelete: () => void;
   deleting: boolean;
   disabled: boolean;
@@ -221,161 +254,24 @@ function ReadRow({
         </td>
       ))}
       <td className="py-3 px-4 text-right">
-        <IconButton
-          icon="delete"
-          title="Elimina articolo"
-          tone="danger"
-          onClick={onDelete}
-          disabled={disabled}
-          busy={deleting}
-        />
-      </td>
-    </tr>
-  );
-}
-
-function DraftRow({
-  draft,
-  submitting,
-  onField,
-  onProductSelect,
-  onConfirm,
-  onCancel,
-}: {
-  draft: ItemDraft;
-  submitting: boolean;
-  onField: (key: keyof ItemDraft, value: string) => void;
-  onProductSelect: (product: Product) => void;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const canConfirm = draft.productId.trim() !== '' && !submitting;
-  // Quantity cannot be negative; ignore any minus-signed input.
-  const handleQuantity = (value: string) => {
-    if (!value.startsWith('-')) onField('quantity', value);
-  };
-  return (
-    <tr className="border-b border-surface-variant last:border-0 bg-secondary/5">
-      <td className="py-3 px-4 align-top min-w-[200px]">
-        <ProductSearchField
-          value={draft.productId}
-          inputMode="numeric"
-          placeholder="Cerca codice…"
-          onSelect={onProductSelect}
-        />
-      </td>
-      <td className="py-3 px-4 align-top min-w-[260px]">
-        <ProductSearchField
-          value={draft.description}
-          placeholder="Cerca prodotto…"
-          inputValueOf={(product) => product.description}
-          onSelect={onProductSelect}
-        />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <EditInput type="number" min={0} value={draft.quantity} onChange={handleQuantity} />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <DerivedValue value={draft.price} />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <DerivedValue value={previewAmount(draft.price, draft.quantity)} />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <EditInput
-          type="number"
-          value={draft.discount}
-          onChange={(value) => onField('discount', value)}
-        />
-      </td>
-      <td className="py-3 px-4 align-top text-right">
         <div className="flex items-center justify-end gap-[4px]">
           <IconButton
-            icon="close"
-            title="Annulla"
-            tone="danger"
-            onClick={onCancel}
-            disabled={submitting}
+            icon="edit"
+            title="Modifica articolo"
+            tone="neutral"
+            onClick={onEdit}
+            disabled={disabled}
           />
           <IconButton
-            icon="check"
-            title="Conferma"
-            tone="confirm"
-            onClick={onConfirm}
-            disabled={!canConfirm}
-            busy={submitting}
+            icon="delete"
+            title="Elimina articolo"
+            tone="danger"
+            onClick={onDelete}
+            disabled={disabled}
+            busy={deleting}
           />
         </div>
       </td>
     </tr>
-  );
-}
-
-/** Read-only, derived cell (prezzo/importo) shown muted to mark it non-editable. */
-function DerivedValue({ value }: { value: string }) {
-  return (
-    <span className="font-body-md text-body-md text-[#737780]">
-      <FieldValue value={value} />
-    </span>
-  );
-}
-
-function MessageRow({ tone = 'muted', children }: { tone?: 'muted' | 'error'; children: string }) {
-  const toneClass = tone === 'error' ? 'text-error' : 'text-on-surface-variant';
-  return (
-    <tr>
-      <td colSpan={COLUMN_COUNT} className={`py-6 px-4 text-center ${toneClass}`}>
-        {children}
-      </td>
-    </tr>
-  );
-}
-
-function NewItemButton({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="inline-flex items-center gap-[6px] rounded-[6px] border border-[#c9cdd4] px-[12px] py-[6px] font-body-sm text-body-sm font-medium text-secondary transition-colors hover:bg-secondary/5 disabled:opacity-40 disabled:cursor-not-allowed"
-    >
-      <Icon name="add" className="text-[18px]" />
-      Nuovo
-    </button>
-  );
-}
-
-const TONE_CLASS = {
-  neutral: 'text-[#737780] hover:text-[#171a20] hover:bg-black/5',
-  confirm: 'text-[#1a7f37] hover:bg-[#1a7f37]/10',
-  danger: 'text-[#737780] hover:text-error hover:bg-error/10',
-} as const;
-
-function IconButton({
-  icon,
-  title,
-  tone,
-  onClick,
-  disabled = false,
-  busy = false,
-}: {
-  icon: string;
-  title: string;
-  tone: keyof typeof TONE_CLASS;
-  onClick: () => void;
-  disabled?: boolean;
-  busy?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      onClick={onClick}
-      disabled={disabled || busy}
-      className={`inline-flex h-[32px] w-[32px] items-center justify-center rounded-[6px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${TONE_CLASS[tone]}`}
-    >
-      <Icon name={busy ? 'progress_activity' : icon} className={`text-[20px] ${busy ? 'animate-spin' : ''}`} />
-    </button>
   );
 }

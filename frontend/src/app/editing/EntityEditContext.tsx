@@ -15,13 +15,19 @@ import {
   type HealthCompanyUpdate,
 } from '../../features/healthCompanies/api/healthCompanies';
 import { createProduct, updateProduct, type ProductUpdate } from '../../features/products/api/products';
-import { createQuote, updateQuote, type QuoteUpdate } from '../../features/quotes/api/quotes';
+import {
+  createQuote,
+  updateQuote,
+  type QuoteCreatePayload,
+  type QuoteUpdate,
+} from '../../features/quotes/api/quotes';
+import { toNullableNumber } from '../../features/quotes/components/quoteItemMath';
 import { updateWorkOrder, type WorkOrderUpdate } from '../../features/workOrders/api/workOrders';
 import type { Client, ClientOrthopedic } from '../../features/clients/types';
 import type { Doctor } from '../../features/doctors/types';
 import type { HealthCompany } from '../../features/healthCompanies/types';
 import type { Product } from '../../features/products/types';
-import type { Quote } from '../../features/quotes/types';
+import type { Quote, QuoteItemDraft } from '../../features/quotes/types';
 import type { WorkOrder } from '../../features/workOrders/types';
 
 const EDITABLE_CLIENT_KEYS = [
@@ -103,6 +109,8 @@ type EntityEditValue = {
   healthCompanyDraft: HealthCompany | null;
   productDraft: Product | null;
   quoteDraft: Quote | null;
+  /** Pending line items for a quote being created (empty otherwise). */
+  quoteItemDrafts: QuoteItemDraft[];
   workOrderDraft: WorkOrder | null;
   startClientEdit: (code: string) => void;
   startClientCreate: (requiredKeys: ReadonlyArray<keyof Client>) => void;
@@ -128,6 +136,10 @@ type EntityEditValue = {
   setHealthCompanyField: (key: keyof HealthCompany, value: string) => void;
   setProductField: (key: keyof Product, value: string) => void;
   setQuoteField: (key: keyof Quote, value: string) => void;
+  /** Append a pending line item to the quote being created. */
+  addQuoteItemDraft: (draft: QuoteItemDraft) => void;
+  /** Remove a pending line item (by position) from the quote being created. */
+  removeQuoteItemDraft: (index: number) => void;
   setWorkOrderField: (key: keyof WorkOrder, value: string) => void;
   cancel: () => void;
   save: () => Promise<SaveResult>;
@@ -228,6 +240,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
   const [productOriginal, setProductOriginal] = useState<Product | null>(null);
   const [quoteDraft, setQuoteDraft] = useState<Quote | null>(null);
   const [quoteOriginal, setQuoteOriginal] = useState<Quote | null>(null);
+  const [quoteItemDrafts, setQuoteItemDrafts] = useState<QuoteItemDraft[]>([]);
   const [workOrderDraft, setWorkOrderDraft] = useState<WorkOrder | null>(null);
   const [workOrderOriginal, setWorkOrderOriginal] = useState<WorkOrder | null>(null);
   const [saving, setSaving] = useState(false);
@@ -259,6 +272,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setProductOriginal(null);
     setQuoteDraft(null);
     setQuoteOriginal(null);
+    setQuoteItemDrafts([]);
     setWorkOrderDraft(null);
     setWorkOrderOriginal(null);
     setMode('edit');
@@ -462,6 +476,14 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
   }, []);
 
+  const addQuoteItemDraft = useCallback((draft: QuoteItemDraft) => {
+    setQuoteItemDrafts((prev) => [...prev, draft]);
+  }, []);
+
+  const removeQuoteItemDraft = useCallback((index: number) => {
+    setQuoteItemDrafts((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const setWorkOrderField = useCallback((key: keyof WorkOrder, value: string) => {
     setWorkOrderDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }, []);
@@ -502,6 +524,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     Object.keys(healthCompanyChanges).length > 0 ||
     Object.keys(productChanges).length > 0 ||
     Object.keys(quoteChanges).length > 0 ||
+    quoteItemDrafts.length > 0 ||
     Object.keys(workOrderChanges).length > 0;
 
   const save = useCallback(async (): Promise<SaveResult> => {
@@ -556,7 +579,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
           );
           createdId = created.id;
         } else if (editTarget.type === 'quote') {
-          const created = await createQuote(buildQuoteCreatePayload(quoteDraft));
+          const created = await createQuote(buildQuoteCreatePayload(quoteDraft, quoteItemDrafts));
           createdId = created.id;
         } else {
           setSaveError('Creazione non supportata per questa entità.');
@@ -631,6 +654,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     healthCompanyDraft,
     productDraft,
     quoteDraft,
+    quoteItemDrafts,
     requiredFields,
     clientChanges,
     clientOrthopedicChanges,
@@ -658,6 +682,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     healthCompanyDraft,
     productDraft,
     quoteDraft,
+    quoteItemDrafts,
     workOrderDraft,
     startClientEdit,
     startClientCreate,
@@ -683,6 +708,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setHealthCompanyField,
     setProductField,
     setQuoteField,
+    addQuoteItemDraft,
+    removeQuoteItemDraft,
     setWorkOrderField,
     cancel: endSession,
     save,
@@ -772,12 +799,28 @@ function buildQuotePayload(quoteChanges: Record<string, unknown>): QuoteUpdate {
 }
 
 /**
- * Full create payload for a new quote. `status` is not an editable field — the
- * server assigns it (INSERITO) — so it is simply absent. Blank dates/numbers
- * become null and FK ids become numbers, reusing the edit normalization.
+ * Full create payload for a new quote, plus any pending line items. `status` is
+ * not an editable field — the server assigns it (INSERITO) — so it is simply
+ * absent. Blank dates/numbers become null and FK ids become numbers, reusing the
+ * edit normalization. Items carry only the client-controlled inputs (the product
+ * and the typed quantity/discount); prezzo and importo are derived server-side.
+ * The `items` key is omitted when there are none, so quotes without lines send
+ * exactly as before.
  */
-function buildQuoteCreatePayload(draft: Quote | null): QuoteUpdate {
-  return buildQuotePayload(buildCreatePayload(draft, EDITABLE_QUOTE_KEYS));
+function buildQuoteCreatePayload(
+  draft: Quote | null,
+  itemDrafts: QuoteItemDraft[],
+): QuoteCreatePayload {
+  const payload: QuoteCreatePayload = buildQuotePayload(buildCreatePayload(draft, EDITABLE_QUOTE_KEYS));
+  const items = itemDrafts
+    .filter((item) => item.productId.trim() !== '')
+    .map((item) => ({
+      productId: Number(item.productId),
+      quantity: toNullableNumber(item.quantity),
+      discount: toNullableNumber(item.discount),
+    }));
+  if (items.length > 0) payload.items = items;
+  return payload;
 }
 
 const WORK_ORDER_DATE_KEYS = [

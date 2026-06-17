@@ -6,6 +6,7 @@ detail views expose the full column set, so a single read serializer serves
 both; `NullToEmptyMixin` renders SQL NULLs as empty strings and dates/numbers as
 plain strings, keeping the frontend's all-strings contract.
 """
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.common.api.serializers import (
@@ -16,7 +17,7 @@ from apps.common.api.serializers import (
     person_display_name,
 )
 from apps.quotes.models import Quote
-from apps.quotes.services import create_quote_item
+from apps.quotes.services import create_quote_item, update_quote_item
 
 
 class QuoteSerializer(NullToEmptyMixin):
@@ -101,18 +102,43 @@ class QuoteItemCreateSerializer(serializers.Serializer):
     """
     Create a line item for a quote. Only the client-controlled inputs are
     accepted: the product reference (required) plus the line's quantity and
-    discount. `prezzo` and `importo` are derived from the product by
-    `create_quote_item`, and the parent `id_preventivo` is injected by the view —
-    none of the three is trusted from the client. The created row is rendered back
-    with `QuoteItemSerializer` for the all-strings contract.
+    discount (a 1–100 percentage, or null for none). `prezzo` and `importo` are
+    derived from the product by `create_quote_item`, and the parent
+    `id_preventivo` is injected by the caller — none of the three is trusted from
+    the client. Used both standalone (the items endpoint) and nested under
+    `QuoteCreateSerializer`. The created row is rendered back with
+    `QuoteItemSerializer` for the all-strings contract.
     """
 
     productId = serializers.IntegerField(source="product_id")
     quantity = serializers.FloatField(allow_null=True, default=None, min_value=0)
-    discount = serializers.FloatField(allow_null=True, default=None)
+    discount = serializers.FloatField(allow_null=True, default=None, min_value=1, max_value=100)
 
     def create(self, validated_data):
         return create_quote_item(**validated_data)
+
+    def to_representation(self, instance):
+        return QuoteItemSerializer(instance).data
+
+
+class QuoteItemUpdateSerializer(serializers.Serializer):
+    """
+    Edit an existing line's quantity and discount. The product and its `prezzo`
+    are fixed, and `importo` is recomputed by `update_quote_item`, so none of
+    those is accepted here. Both inputs are optional for PATCH; an omitted field
+    keeps the line's current value. `discount` is a 1–100 percentage (or null to
+    clear it). The updated row is rendered with `QuoteItemSerializer`.
+    """
+
+    quantity = serializers.FloatField(source="quantita", required=False, allow_null=True, min_value=0)
+    discount = serializers.FloatField(
+        source="sconto", required=False, allow_null=True, min_value=1, max_value=100
+    )
+
+    def update(self, instance, validated_data):
+        quantity = validated_data.get("quantita", instance.quantita)
+        discount = validated_data.get("sconto", instance.sconto)
+        return update_quote_item(quote_item=instance, quantity=quantity, discount=discount)
 
     def to_representation(self, instance):
         return QuoteItemSerializer(instance).data
@@ -170,12 +196,15 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
 
 class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
     """
-    Create a quote, reusing the update serializer's writable fields.
+    Create a quote, reusing the update serializer's writable fields, optionally
+    with its initial line items in the same request.
 
     Status is not client-controllable: `QuoteUpdateSerializer` already omits it,
     and every new quote is forced to start as INSERITO here. The database assigns
     the id; required-field enforcement lives in the frontend form, so the
     remaining fields stay optional (consistent with the other create serializers).
+    The quote and its `items` are inserted in one transaction, so a failure on any
+    line rolls back the whole create rather than leaving a quote with no lines.
     """
 
     create_model = Quote
@@ -184,9 +213,18 @@ class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
     # New quotes always start in this state; the column is never client-set.
     INITIAL_STATUS = "INSERITO"
 
+    # Optional line items, created together with the quote. Write-only: the
+    # response renders the quote alone (the detail view loads its items).
+    items = QuoteItemCreateSerializer(many=True, required=False, write_only=True)
+
     def create(self, validated_data):
+        items_data = validated_data.pop("items", [])
         validated_data["stato"] = self.INITIAL_STATUS
-        return super().create(validated_data)
+        with transaction.atomic():
+            quote = super().create(validated_data)
+            for item_data in items_data:
+                create_quote_item(quote_id=quote.id, **item_data)
+        return quote
 
 
 class QuoteStatusRequestSerializer(serializers.Serializer):
