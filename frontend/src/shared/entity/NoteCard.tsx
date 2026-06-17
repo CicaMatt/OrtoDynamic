@@ -19,7 +19,7 @@ export function NoteCard({
       {editing ? (
         <EditInput type="textarea" value={value} onChange={onChange} />
       ) : (
-        <p className="font-body-md text-body-md text-[#171a20] whitespace-pre-line">
+        <p className="font-body-md text-body-md text-on-surface whitespace-pre-line">
           <FieldValue value={value} />
         </p>
       )}

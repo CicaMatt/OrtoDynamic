@@ -25,7 +25,7 @@ export function ClientPageHeader({
       title={`${client.name} ${client.surname}`.trim()}
       subtitle={
         <>
-          Codice: <span className="font-semibold text-[#343942]">{client.code}</span>
+          Codice: <span className="font-semibold text-on-surface">{client.code}</span>
         </>
       }
       rightSlot={<ClientDataSwitchButton />}
@@ -46,7 +46,7 @@ function ClientDataSwitchButton() {
     <button
       type="button"
       onClick={() => navigate(target)}
-      className="inline-flex items-center gap-[8px] h-[40px] rounded-[6px] bg-secondary px-[16px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-container transition-colors"
+      className="inline-flex items-center gap-[8px] h-[40px] rounded-[6px] bg-secondary px-[16px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover transition-colors"
     >
       <Icon name={icon} className="text-[20px]" />
       {editing ? 'Modifica' : 'Visualizza'} {subject}

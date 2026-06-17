@@ -168,11 +168,11 @@ export function QuoteDetailView() {
             title={title}
             subtitle={
               <>
-                ID: <span className="font-semibold text-[#343942]">{data.id}</span>
+                ID: <span className="font-semibold text-on-surface">{data.id}</span>
                 {data.status && (
                   <>
                     {' · Stato: '}
-                    <span className="font-semibold text-[#343942]">{data.status}</span>
+                    <span className="font-semibold text-on-surface">{data.status}</span>
                   </>
                 )}
               </>

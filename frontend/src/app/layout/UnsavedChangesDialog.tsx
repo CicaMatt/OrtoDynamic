@@ -31,7 +31,7 @@ export function UnsavedChangesDialog() {
           <button
             onClick={() => keepAndContinue()}
             disabled={saving}
-            className="h-[40px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-container disabled:opacity-50"
+            className="h-[40px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
           >
             {saving ? 'Salvataggio…' : 'Mantieni modifiche'}
           </button>

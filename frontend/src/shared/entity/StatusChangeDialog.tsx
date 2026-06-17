@@ -59,7 +59,7 @@ export function StatusChangeDialog({
       >
         <h3 className="font-headline-md text-headline-md font-bold text-black">{title}</h3>
         <p className="mt-[10px] font-body-md text-body-md text-on-surface-variant">
-          Stato attuale: <span className="font-semibold text-[#343942]">{currentStatus || '—'}</span>
+          Stato attuale: <span className="font-semibold text-on-surface">{currentStatus || '—'}</span>
         </p>
 
         <div className="mt-[20px]">
@@ -77,7 +77,7 @@ export function StatusChangeDialog({
                   type="button"
                   disabled={submitting}
                   onClick={() => apply(target)}
-                  className="flex w-full items-center justify-between rounded-[6px] border border-outline-variant px-[16px] py-[12px] text-left font-body-md text-body-md text-[#171a20] hover:bg-[#f4f6f9] disabled:opacity-50"
+                  className="flex w-full items-center justify-between rounded-[6px] border border-outline-variant px-[16px] py-[12px] text-left font-body-md text-body-md text-on-surface hover:bg-surface-container-low disabled:opacity-50"
                 >
                   {target}
                   <Icon name="arrow_forward" className="text-[18px] text-secondary" />

@@ -3,8 +3,8 @@ import { searchProducts } from '../../products/api/products';
 import type { Product } from '../../products/types';
 
 const baseInputClass =
-  'w-full rounded-[6px] border bg-white px-[11px] py-[8px] font-body-md text-body-md text-[#171a20] focus:outline-none focus:ring-1';
-const validBorderClass = 'border-[#c9cdd4] focus:border-secondary focus:ring-secondary';
+  'w-full rounded-[6px] border bg-white px-[11px] py-[8px] font-body-md text-body-md text-on-surface focus:outline-none focus:ring-1';
+const validBorderClass = 'border-outline-variant focus:border-secondary focus:ring-secondary';
 const invalidBorderClass = 'border-error focus:border-error focus:ring-error';
 
 // Wait for the user to pause typing before hitting the API, so each keystroke
@@ -151,13 +151,13 @@ export function ProductSearchField({
         className={inputClass}
       />
       {showDropdown && (
-        <ul className="absolute z-20 mt-1 max-h-[260px] w-full overflow-auto rounded-[6px] border border-[#c9cdd4] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+        <ul className="absolute z-20 mt-1 max-h-[260px] w-full overflow-auto rounded-[6px] border border-outline-variant bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
           {loading ? (
-            <li className="px-[11px] py-[8px] font-body-sm text-body-sm text-[#737780]">Ricerca…</li>
+            <li className="px-[11px] py-[8px] font-body-sm text-body-sm text-outline">Ricerca…</li>
           ) : error ? (
             <li className="px-[11px] py-[8px] font-body-sm text-body-sm text-error">{error}</li>
           ) : results.length === 0 ? (
-            <li className="px-[11px] py-[8px] font-body-sm text-body-sm text-[#737780]">
+            <li className="px-[11px] py-[8px] font-body-sm text-body-sm text-outline">
               Nessun risultato.
             </li>
           ) : (
@@ -173,7 +173,7 @@ export function ProductSearchField({
                   className={`block w-full px-[11px] py-[7px] text-left font-body-md text-body-md ${
                     index === activeIndex
                       ? 'bg-secondary/10 text-secondary'
-                      : 'text-[#171a20] hover:bg-[#f4f6f9]'
+                      : 'text-on-surface hover:bg-surface-container-low'
                   }`}
                 >
                   {describe(product)}

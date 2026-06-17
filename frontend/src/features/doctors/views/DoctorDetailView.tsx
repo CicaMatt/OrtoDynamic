@@ -75,7 +75,7 @@ export function DoctorDetailView() {
           title={title}
           subtitle={
             <>
-              ID Medico: <span className="font-semibold text-[#343942]">{data.id}</span>
+              ID Medico: <span className="font-semibold text-on-surface">{data.id}</span>
             </>
           }
         />

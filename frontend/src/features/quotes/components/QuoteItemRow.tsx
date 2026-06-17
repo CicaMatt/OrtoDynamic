@@ -9,16 +9,16 @@ import { isAcceptableDiscountInput, previewAmount } from './quoteItemMath';
 /** Read-only, derived cell (prezzo/importo) shown muted to mark it non-editable. */
 export function DerivedValue({ value }: { value: string }) {
   return (
-    <span className="font-body-md text-body-md text-[#737780]">
+    <span className="font-body-md text-body-md text-outline">
       <FieldValue value={value} />
     </span>
   );
 }
 
 const TONE_CLASS = {
-  neutral: 'text-[#737780] hover:text-[#171a20] hover:bg-black/5',
+  neutral: 'text-outline hover:text-on-surface hover:bg-black/5',
   confirm: 'text-[#1a7f37] hover:bg-[#1a7f37]/10',
-  danger: 'text-[#737780] hover:text-error hover:bg-error/10',
+  danger: 'text-outline hover:text-error hover:bg-error/10',
 } as const;
 
 export function IconButton({

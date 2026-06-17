@@ -24,8 +24,8 @@ export type AutocompleteFieldConfig = {
 };
 
 const baseInputClass =
-  'w-full rounded-[6px] border bg-white px-[11px] py-[8px] font-body-md text-body-md text-[#171a20] focus:outline-none focus:ring-1';
-const validBorderClass = 'border-[#c9cdd4] focus:border-secondary focus:ring-secondary';
+  'w-full rounded-[6px] border bg-white px-[11px] py-[8px] font-body-md text-body-md text-on-surface focus:outline-none focus:ring-1';
+const validBorderClass = 'border-outline-variant focus:border-secondary focus:ring-secondary';
 const invalidBorderClass = 'border-error focus:border-error focus:ring-error';
 
 /** Input control used when a field is in edit mode. */
@@ -95,7 +95,7 @@ export function EditInput({
 export function SectionTitle({ icon, title }: { icon: string; title: string }) {
   return (
     <div className="flex items-center gap-[13px]">
-      <Icon name={icon} className="text-[28px] text-[#005eb8]" />
+      <Icon name={icon} className="text-[28px] text-secondary" />
       <h3 className="font-headline-md text-headline-md font-bold text-black">{title}</h3>
     </div>
   );
@@ -117,12 +117,12 @@ export function DataCard({
   children: ReactNode;
 }) {
   return (
-    <section className={`rounded-[8px] border border-[#c9cdd4] bg-white px-[29px] py-[28px] ${className}`}>
+    <section className={`rounded-[8px] border border-outline-variant bg-white px-[29px] py-[28px] ${className}`}>
       <div className="flex items-center justify-between gap-[16px]">
         <SectionTitle icon={icon} title={title} />
         {action}
       </div>
-      <div className="h-px bg-[#dde1e7] mt-[11px] mb-[20px]" />
+      <div className="h-px bg-surface-variant mt-[11px] mb-[20px]" />
       {children}
     </section>
   );
@@ -168,7 +168,7 @@ export function InfoBlock({
 }: InfoBlockProps) {
   return (
     <div>
-      <dt className="font-label-caps text-label-caps font-bold uppercase text-[#737780]">
+      <dt className="font-label-caps text-label-caps font-bold uppercase text-outline">
         {label}
         {required && <span className="text-error"> *</span>}
       </dt>
@@ -184,7 +184,7 @@ export function InfoBlock({
             />
           )
         ) : (
-          <span className={`font-body-md text-body-md text-[#171a20] ${strong ? 'font-bold' : 'font-medium'}`}>
+          <span className={`font-body-md text-body-md text-on-surface ${strong ? 'font-bold' : 'font-medium'}`}>
             {valueNode ?? <FieldValue value={value} />}
           </span>
         )}

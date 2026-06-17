@@ -2,9 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { useAuth } from '../AuthContext';
 
 const inputClass =
-  'w-full rounded-[6px] border border-[#c9cdd4] bg-white px-[12px] py-[10px] font-body-md text-body-md text-[#171a20] focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary';
+  'w-full rounded-[6px] border border-outline-variant bg-white px-[12px] py-[10px] font-body-md text-body-md text-on-surface focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary';
 const labelClass =
-  'mb-[6px] block font-label-caps text-label-caps font-bold uppercase text-[#737780]';
+  'mb-[6px] block font-label-caps text-label-caps font-bold uppercase text-outline';
 
 /** Full-screen, centered sign-in card shown whenever there is no active session. */
 export function LoginView() {
@@ -70,7 +70,7 @@ export function LoginView() {
           <button
             type="submit"
             disabled={submitting || !username || !password}
-            className="h-[44px] w-full rounded-[6px] bg-secondary font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-container disabled:opacity-50"
+            className="h-[44px] w-full rounded-[6px] bg-secondary font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
           >
             {submitting ? 'Accesso in corso…' : 'Accedi'}
           </button>

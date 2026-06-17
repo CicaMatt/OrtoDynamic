@@ -126,7 +126,7 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
     'flex items-center gap-3 text-left mx-2 py-2.5 text-[15px] leading-6 font-medium rounded-lg hover:bg-on-primary-fixed-variant/50 transition-colors duration-200';
   const tone = active
     ? 'text-on-primary bg-on-primary-fixed-variant'
-    : 'text-[#9fafbf] hover:text-white';
+    : 'text-on-primary-container hover:text-white';
 
   return (
     <li>
@@ -153,7 +153,7 @@ function FooterItem({ icon, label, onClick }: { icon: string; label: string; onC
     <li>
       <button
         onClick={onClick}
-        className="flex items-center gap-3 text-left text-[15px] leading-6 font-medium text-[#9fafbf] hover:text-white mx-2 px-4 py-2.5 rounded-lg hover:bg-on-primary-fixed-variant/50 transition-colors duration-200"
+        className="flex items-center gap-3 text-left text-[15px] leading-6 font-medium text-on-primary-container hover:text-white mx-2 px-4 py-2.5 rounded-lg hover:bg-on-primary-fixed-variant/50 transition-colors duration-200"
         style={{ width: 'calc(100% - 1rem)' }}
       >
         <Icon name={icon} className="text-[22px]" />
