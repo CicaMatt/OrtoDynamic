@@ -37,8 +37,3 @@ def allowed_target_states(table, current_state):
     )
     allowed = {target for target in targets if target in rank}
     return sorted(allowed, key=rank.__getitem__)
-
-
-def is_transition_allowed(table, current_state, target_state):
-    """Whether `current_state` → `target_state` is permitted for `table`."""
-    return target_state in allowed_target_states(table, current_state)

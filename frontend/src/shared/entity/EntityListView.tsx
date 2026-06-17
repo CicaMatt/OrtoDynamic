@@ -1,9 +1,11 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { FieldValue } from '../ui/FieldValue';
 import { Pagination } from '../ui/Pagination';
-import { ViewToolbar, type ToolbarFilters } from '../ui/ViewToolbar';
+import { ViewToolbar } from '../ui/ViewToolbar';
 import { useApiData } from '../hooks/useApiData';
 import { usePagination } from '../hooks/usePagination';
+import { useTableSearchFilter, type SearchFilterColumn } from '../hooks/useTableSearchFilter';
+import { TableMessageRow } from './TableMessageRow';
 
 export type EntityColumn<T> = {
   key: keyof T;
@@ -39,34 +41,32 @@ export function EntityListView<T extends object>({
   emptyLabel,
   onCreate,
 }: EntityListViewProps<T>) {
-  const [searchValue, setSearchValue] = useState('');
-  const [activeFilters, setActiveFilters] = useState<ToolbarFilters>({});
   const { data, loading, error } = useApiData(() => fetchItems(), []);
-
   const items = useMemo(() => data ?? [], [data]);
-  const searchableColumns = useMemo(
-    () => columns.filter((column) => column.searchable !== false),
-    [columns],
-  );
-  const filterableColumns = useMemo(
-    () => columns.filter((column) => column.filterable !== false),
-    [columns],
-  );
 
-  const filterOptions = useMemo(
+  // Adapt the list's column config to the search/filter hook's accessor shape,
+  // so a single implementation drives search and filtering across every table.
+  const searchFilterColumns = useMemo<SearchFilterColumn<T>[]>(
     () =>
-      filterableColumns.map((column) => ({
+      columns.map((column) => ({
         key: String(column.key),
         label: column.label,
-        options: getUniqueValues(items.map((item) => String(item[column.key] ?? ''))),
+        getValue: (item) => String(item[column.key] ?? ''),
+        searchable: column.searchable,
+        filterable: column.filterable,
       })),
-    [filterableColumns, items],
+    [columns],
   );
 
-  const filteredItems = useMemo(
-    () => filterItems(items, searchableColumns, filterableColumns, searchValue, activeFilters),
-    [items, searchableColumns, filterableColumns, searchValue, activeFilters],
-  );
+  const {
+    searchValue,
+    setSearchValue,
+    activeFilters,
+    setFilter,
+    clearFilters,
+    filterOptions,
+    filteredItems,
+  } = useTableSearchFilter(items, searchFilterColumns);
 
   const { pageItems, page, totalPages, totalItems, rangeStart, rangeEnd, setPage } =
     usePagination(filteredItems);
@@ -81,8 +81,8 @@ export function EntityListView<T extends object>({
           onCreate={onCreate}
           filters={filterOptions}
           activeFilters={activeFilters}
-          onFilterChange={(key, value) => setActiveFilters((current) => ({ ...current, [key]: value }))}
-          onClearFilters={() => setActiveFilters({})}
+          onFilterChange={setFilter}
+          onClearFilters={clearFilters}
         />
       </header>
 
@@ -146,15 +146,16 @@ function EntityTableBody<T extends object>({
   loadingLabel: string;
   emptyLabel: string;
 }) {
-  if (loading) return <MessageRow columnCount={columns.length}>{loadingLabel}</MessageRow>;
+  if (loading) return <TableMessageRow columnCount={columns.length}>{loadingLabel}</TableMessageRow>;
   if (error) {
     return (
-      <MessageRow columnCount={columns.length} tone="error">
+      <TableMessageRow columnCount={columns.length} tone="error">
         {error}
-      </MessageRow>
+      </TableMessageRow>
     );
   }
-  if (items.length === 0) return <MessageRow columnCount={columns.length}>{emptyLabel}</MessageRow>;
+  if (items.length === 0)
+    return <TableMessageRow columnCount={columns.length}>{emptyLabel}</TableMessageRow>;
 
   return (
     <>
@@ -162,25 +163,6 @@ function EntityTableBody<T extends object>({
         <EntityRow key={rowKey(item)} item={item} columns={columns} onClick={() => onRowClick(item)} />
       ))}
     </>
-  );
-}
-
-function MessageRow({
-  columnCount,
-  tone = 'muted',
-  children,
-}: {
-  columnCount: number;
-  tone?: 'muted' | 'error';
-  children: ReactNode;
-}) {
-  const toneClass = tone === 'error' ? 'text-error' : 'text-on-surface-variant';
-  return (
-    <tr>
-      <td colSpan={columnCount} className={`p-6 text-center ${toneClass}`}>
-        {children}
-      </td>
-    </tr>
   );
 }
 
@@ -219,34 +201,4 @@ function cellClassName<T>(column: EntityColumn<T>): string {
   if (column.primary) return `${base} text-primary font-medium hover:underline`;
   if (column.muted) return `${base} text-on-surface-variant`;
   return base;
-}
-
-function filterItems<T extends object>(
-  items: T[],
-  searchableColumns: ReadonlyArray<EntityColumn<T>>,
-  filterableColumns: ReadonlyArray<EntityColumn<T>>,
-  searchValue: string,
-  activeFilters: ToolbarFilters,
-) {
-  const searchTerm = normalize(searchValue);
-
-  return items.filter((item) => {
-    const matchesSearch =
-      searchTerm.length === 0 ||
-      searchableColumns.some((column) => normalize(String(item[column.key] ?? '')).includes(searchTerm));
-    const matchesFilters = filterableColumns.every((column) => {
-      const activeValue = activeFilters[String(column.key)];
-      return !activeValue || String(item[column.key] ?? '') === activeValue;
-    });
-
-    return matchesSearch && matchesFilters;
-  });
-}
-
-function getUniqueValues(values: string[]) {
-  return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, 'it'));
-}
-
-function normalize(value: string) {
-  return value.trim().toLowerCase();
 }

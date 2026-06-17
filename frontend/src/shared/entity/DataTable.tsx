@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { FieldValue } from '../ui/FieldValue';
+import { TableMessageRow } from './TableMessageRow';
 
 /** A read-only table column: its header label and a plain-text cell accessor. */
 export type DataColumn<T> = {
@@ -45,13 +45,13 @@ export function DataTable<T>({
         </thead>
         <tbody>
           {loading ? (
-            <MessageRow columnCount={columns.length}>{loadingLabel}</MessageRow>
+            <TableMessageRow columnCount={columns.length}>{loadingLabel}</TableMessageRow>
           ) : error ? (
-            <MessageRow columnCount={columns.length} tone="error">
+            <TableMessageRow columnCount={columns.length} tone="error">
               {error}
-            </MessageRow>
+            </TableMessageRow>
           ) : rows.length === 0 ? (
-            <MessageRow columnCount={columns.length}>{emptyLabel}</MessageRow>
+            <TableMessageRow columnCount={columns.length}>{emptyLabel}</TableMessageRow>
           ) : (
             rows.map((row) => (
               <tr key={rowKey(row)} className="border-b border-surface-variant h-row-height">
@@ -66,24 +66,5 @@ export function DataTable<T>({
         </tbody>
       </table>
     </div>
-  );
-}
-
-function MessageRow({
-  columnCount,
-  tone = 'muted',
-  children,
-}: {
-  columnCount: number;
-  tone?: 'muted' | 'error';
-  children: ReactNode;
-}) {
-  const toneClass = tone === 'error' ? 'text-error' : 'text-on-surface-variant';
-  return (
-    <tr>
-      <td colSpan={columnCount} className={`p-6 text-center ${toneClass}`}>
-        {children}
-      </td>
-    </tr>
   );
 }
