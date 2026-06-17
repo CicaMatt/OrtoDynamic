@@ -23,6 +23,7 @@ import { QuoteCreateView } from '../../features/quotes/views/QuoteCreateView';
 import { WorkOrdersView } from '../../features/workOrders/views/WorkOrdersView';
 import { WorkOrderDetailView } from '../../features/workOrders/views/WorkOrderDetailView';
 import { ConfigurationsView } from '../../features/configurations/views/ConfigurationsView';
+import { EmployeesView } from '../../features/employees/views/EmployeesView';
 import { PlaceholderView } from '../../features/placeholders/PlaceholderView';
 
 const placeholder = (title: string) => () => <PlaceholderView title={title} />;
@@ -35,7 +36,7 @@ const viewComponents = {
   products: ProductsView,
   quotes: QuotesView,
   settings: ConfigurationsView,
-  employees: placeholder('Gestione Dipendenti'),
+  employees: EmployeesView,
   'work-orders': WorkOrdersView,
   'client-detail': ClientDetailView,
   'client-orthopedic': ClientOrthopedicView,

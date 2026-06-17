@@ -14,6 +14,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import User
+from apps.common.api.views import UnpaginatedListAPIView
 from apps.common.exceptions import ServiceError
 
 from .serializers import LoginSerializer, UserSerializer
@@ -64,3 +66,15 @@ class SessionView(APIView):
     def get(self, request):
         user = request.user if request.user.is_authenticated else None
         return Response({"user": UserSerializer(user).data if user else None})
+
+
+class EmployeeListView(UnpaginatedListAPIView):
+    """Read-only list of employee accounts from `tb_users`, ordered by username.
+
+    Reuses `UserSerializer` while the management view exposes the same fields as
+    the auth profile (username, email, names); it gains its own serializer once
+    the two contracts diverge.
+    """
+
+    serializer_class = UserSerializer
+    queryset = User.objects.all().order_by("username")
