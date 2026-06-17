@@ -32,6 +32,17 @@ def nullable_text(source=None):
     return optional_text(source, allow_null=True)
 
 
+def person_display_name(person):
+    """
+    Display name "Nome Cognome" for a person-like row (client/doctor), or "" when
+    the reference is absent. Single source of the convention used wherever the API
+    surfaces a linked person by name rather than id.
+    """
+    if person is None:
+        return ""
+    return f"{person.nome or ''} {person.cognome or ''}".strip()
+
+
 class UpdateFieldsSerializer(serializers.Serializer):
     """Serializer base that persists only the PATCH fields that changed."""
 

@@ -12,6 +12,7 @@ from apps.common.api.serializers import (
     NullToEmptyMixin,
     UpdateFieldsSerializer,
     nullable_text,
+    person_display_name,
 )
 from apps.work_orders.models import WorkOrder, WorkOrderItem
 
@@ -24,6 +25,10 @@ class WorkOrderSerializer(NullToEmptyMixin):
     # Links
     quoteId = serializers.CharField(source="id_preventivo")
     clientId = serializers.CharField(source="id_cliente")
+    # Display name for the linked client, resolved from the object the view
+    # attaches (empty when the reference is unset or the row is gone). The frontend
+    # shows this in place of the raw id, revealing the id on hover.
+    clientName = serializers.SerializerMethodField()
 
     # Lifecycle
     status = serializers.CharField(source="stato")
@@ -57,6 +62,9 @@ class WorkOrderSerializer(NullToEmptyMixin):
     # Free text
     interventionDescription = serializers.CharField(source="descrizione_intervento")
     technicalNotes = serializers.CharField(source="annotazioni_tecniche_assistenza")
+
+    def get_clientName(self, work_order):
+        return person_display_name(getattr(work_order, "client", None))
 
 
 class WorkOrderUpdateSerializer(UpdateFieldsSerializer):

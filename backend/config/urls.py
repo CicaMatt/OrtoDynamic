@@ -17,6 +17,7 @@ api_v1_patterns = [
     path("quotes/", include("apps.quotes.api.urls")),
     path("work-orders/", include("apps.work_orders.api.urls")),
     path("municipalities/", include("apps.municipalities.api.urls")),
+    path("statuses/", include("apps.statuses.api.urls")),
 ]
 
 urlpatterns = [

@@ -9,6 +9,8 @@ export type WorkOrder = {
   // Links
   quoteId: string;
   clientId: string;
+  /** Display name for the linked client, resolved by the API (read-only). */
+  clientName: string;
 
   // Lifecycle
   status: string;

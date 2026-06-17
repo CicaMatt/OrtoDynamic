@@ -13,6 +13,7 @@ from apps.common.api.serializers import (
     NullToEmptyMixin,
     UpdateFieldsSerializer,
     nullable_text,
+    person_display_name,
 )
 from apps.quotes.models import Quote
 from apps.quotes.services import create_quote_item
@@ -26,6 +27,11 @@ class QuoteSerializer(NullToEmptyMixin):
     # Links
     clientId = serializers.CharField(source="id_cliente")
     doctorId = serializers.CharField(source="id_medico")
+    # Display names for the linked client/doctor, resolved from the objects the
+    # view attaches in bulk (empty when the reference is unset or the row is gone).
+    # The frontend shows these in place of the raw ids, revealing the id on hover.
+    clientName = serializers.SerializerMethodField()
+    doctorName = serializers.SerializerMethodField()
 
     # Quote identity
     quoteNumber = serializers.CharField(source="numero_preventivo")
@@ -61,6 +67,12 @@ class QuoteSerializer(NullToEmptyMixin):
     note = serializers.CharField()
     privateNote = serializers.CharField(source="note_private")
     finalNote = serializers.CharField(source="note_finali")
+
+    def get_clientName(self, quote):
+        return person_display_name(getattr(quote, "client", None))
+
+    def get_doctorName(self, quote):
+        return person_display_name(getattr(quote, "doctor", None))
 
 
 class QuoteItemSerializer(NullToEmptyMixin):

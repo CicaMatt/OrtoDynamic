@@ -8,11 +8,19 @@ entirely by the database, with no rules hard-coded here.
 from apps.statuses.models import Status, StatusTransition
 
 
+def states_for(table):
+    """`Status` rows defined for `table`, in the table's natural (id) order."""
+    return Status.objects.filter(tabella=table).order_by("id")
+
+
+def transitions_for(table):
+    """`StatusTransition` rows defined for `table`, in the table's natural (id) order."""
+    return StatusTransition.objects.filter(tabella_check=table).order_by("id")
+
+
 def valid_states(table):
     """State names defined for `table`, in the table's natural (id) order."""
-    return list(
-        Status.objects.filter(tabella=table).order_by("id").values_list("nome", flat=True)
-    )
+    return list(states_for(table).values_list("nome", flat=True))
 
 
 def allowed_target_states(table, current_state):
@@ -24,9 +32,9 @@ def allowed_target_states(table, current_state):
     table may repeat a pair) and ordered by the state table's natural order.
     """
     rank = {name: index for index, name in enumerate(valid_states(table))}
-    targets = StatusTransition.objects.filter(
-        tabella_check=table, stato_partenza=current_state
-    ).values_list("stato_arrivo", flat=True)
+    targets = transitions_for(table).filter(stato_partenza=current_state).values_list(
+        "stato_arrivo", flat=True
+    )
     allowed = {target for target in targets if target in rank}
     return sorted(allowed, key=rank.__getitem__)
 

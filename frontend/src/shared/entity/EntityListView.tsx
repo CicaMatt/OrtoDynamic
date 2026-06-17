@@ -13,6 +13,8 @@ export type EntityColumn<T> = {
   searchable?: boolean;
   filterable?: boolean;
   render?: (value: string, item: T) => string;
+  /** Custom cell content, overriding the default value rendering when present. */
+  renderCell?: (item: T) => ReactNode;
 };
 
 type EntityListViewProps<T extends object> = {
@@ -200,7 +202,11 @@ function EntityRow<T extends object>({
         const raw = String(item[column.key] ?? '');
         return (
           <td key={String(column.key)} className={cellClassName(column)}>
-            <FieldValue value={column.render ? column.render(raw, item) : raw} />
+            {column.renderCell ? (
+              column.renderCell(item)
+            ) : (
+              <FieldValue value={column.render ? column.render(raw, item) : raw} />
+            )}
           </td>
         );
       })}

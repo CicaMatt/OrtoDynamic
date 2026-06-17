@@ -9,6 +9,9 @@ export type Quote = {
   // Links
   clientId: string;
   doctorId: string;
+  /** Display names for the linked client/doctor, resolved by the API (read-only). */
+  clientName: string;
+  doctorName: string;
 
   // Quote identity
   quoteNumber: string;

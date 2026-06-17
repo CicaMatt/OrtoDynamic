@@ -1,6 +1,7 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
 import { formatBirthDate, previewText } from '../../../shared/format/format';
+import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchQuotes } from '../api/quotes';
 import type { Quote } from '../types';
 
@@ -14,8 +15,20 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   { key: 'quoteNumber', label: 'Nº Preventivo', muted: true, filterable: false },
   { key: 'quoteType', label: 'Tipologia' },
   { key: 'status', label: 'Stato' },
-  { key: 'clientId', label: 'ID Cliente', muted: true, filterable: false },
-  { key: 'doctorId', label: 'ID Medico', muted: true, filterable: false },
+  {
+    key: 'clientName',
+    label: 'Cliente',
+    muted: true,
+    filterable: false,
+    renderCell: (quote) => <ReferenceName name={quote.clientName} id={quote.clientId} />,
+  },
+  {
+    key: 'doctorName',
+    label: 'Medico',
+    muted: true,
+    filterable: false,
+    renderCell: (quote) => <ReferenceName name={quote.doctorName} id={quote.doctorId} />,
+  },
   {
     key: 'creationDate',
     label: 'Data Creazione',

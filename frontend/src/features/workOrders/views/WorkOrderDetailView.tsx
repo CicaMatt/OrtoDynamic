@@ -9,6 +9,7 @@ import {
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
+import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchWorkOrder } from '../api/workOrders';
 import type { WorkOrder } from '../types';
@@ -35,9 +36,16 @@ const lifecycleFields: WorkOrderField[] = [
   { label: 'Data Annullamento', key: 'cancellationDate', type: 'date' },
 ];
 
+// In read mode the client shows by name with its id revealed on hover; edit mode
+// keeps the numeric id input, since the reference is still set by id.
 const referenceFields: WorkOrderField[] = [
   { label: 'ID Preventivo', key: 'quoteId', type: 'number' },
-  { label: 'ID Cliente', key: 'clientId', type: 'number' },
+  {
+    label: 'Cliente',
+    key: 'clientId',
+    type: 'number',
+    renderValue: (id, workOrder) => <ReferenceName name={workOrder.clientName} id={id} />,
+  },
   { label: 'Massima Scadenza', key: 'maxExpiry' },
 ];
 

@@ -10,6 +10,7 @@ import {
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
+import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchQuote } from '../api/quotes';
 import type { Quote } from '../types';
 import { QuoteItemsCard } from './QuoteItemsCard';
@@ -32,9 +33,21 @@ const identityFields: QuoteField[] = [
   { label: 'Totale', key: 'total', type: 'number' },
 ];
 
+// In read mode the client/doctor show by name with their id revealed on hover;
+// edit mode keeps the numeric id input, since references are still set by id.
 const referenceFields: QuoteField[] = [
-  { label: 'ID Cliente', key: 'clientId', type: 'number' },
-  { label: 'ID Medico', key: 'doctorId', type: 'number' },
+  {
+    label: 'Cliente',
+    key: 'clientId',
+    type: 'number',
+    renderValue: (id, quote) => <ReferenceName name={quote.clientName} id={id} />,
+  },
+  {
+    label: 'Medico',
+    key: 'doctorId',
+    type: 'number',
+    renderValue: (id, quote) => <ReferenceName name={quote.doctorName} id={id} />,
+  },
   { label: 'Inserito Da', key: 'entryBy' },
 ];
 

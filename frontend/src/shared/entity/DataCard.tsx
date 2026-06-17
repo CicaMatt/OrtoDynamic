@@ -146,6 +146,8 @@ type InfoBlockProps = {
   invalid?: boolean;
   /** Custom edit-mode control (e.g. an autocomplete) replacing the default input. */
   control?: ReactNode;
+  /** Custom read-mode content replacing the default value display. */
+  valueNode?: ReactNode;
   onChange?: (value: string) => void;
 };
 
@@ -161,6 +163,7 @@ export function InfoBlock({
   required = false,
   invalid = false,
   control,
+  valueNode,
   onChange,
 }: InfoBlockProps) {
   return (
@@ -182,7 +185,7 @@ export function InfoBlock({
           )
         ) : (
           <span className={`font-body-md text-body-md text-[#171a20] ${strong ? 'font-bold' : 'font-medium'}`}>
-            <FieldValue value={value} />
+            {valueNode ?? <FieldValue value={value} />}
           </span>
         )}
       </dd>
@@ -200,6 +203,8 @@ export type FieldConfig<T> = {
   options?: ReadonlyArray<SelectOption>;
   /** Required in the form; shows an asterisk and participates in validation. */
   required?: boolean;
+  /** Custom read-mode rendering for this field's value (ignored in edit mode). */
+  renderValue?: (raw: string, item: T) => ReactNode;
 };
 
 export function formatFieldValue<T>(field: FieldConfig<T>, raw: string): string {
@@ -280,6 +285,7 @@ export function FieldGrid<T extends object>({
             required={field.required}
             invalid={invalid}
             control={control}
+            valueNode={field.renderValue ? field.renderValue(raw, data) : undefined}
             onChange={canEdit ? (value) => onChange(field.key, value) : undefined}
           />
         );

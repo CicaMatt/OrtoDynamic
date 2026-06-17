@@ -3,10 +3,13 @@
 from rest_framework import generics
 from rest_framework.response import Response
 
+from apps.clients.models import Client
 from apps.common.api.views import (
     ReadUpdateDetailAPIView,
     UnpaginatedListCreateAPIView,
+    attach_related,
 )
+from apps.doctors.models import Doctor
 from apps.products.models import Product
 from apps.quotes.models import Quote, QuoteItem
 from apps.quotes.services import change_quote_status
@@ -21,16 +24,37 @@ from .serializers import (
 )
 
 
+def attach_people(quotes):
+    """
+    Attach each quote's referenced client and doctor as `quote.client` /
+    `quote.doctor`, so `QuoteSerializer` can render their names without a per-row
+    lookup. Two batched queries, one per relation.
+    """
+    quotes = list(quotes)
+    attach_related(quotes, id_attr="id_cliente", attr="client", model=Client)
+    attach_related(quotes, id_attr="id_medico", attr="doctor", model=Doctor)
+    return quotes
+
+
 class QuoteListView(UnpaginatedListCreateAPIView):
     serializer_class = QuoteSerializer
     create_serializer_class = QuoteCreateSerializer
     queryset = Quote.objects.order_by("-data_preventivo", "-id")
+
+    def get_queryset(self):
+        return attach_people(super().get_queryset())
 
 
 class QuoteDetailView(ReadUpdateDetailAPIView):
     serializer_class = QuoteSerializer
     write_serializer_class = QuoteUpdateSerializer
     queryset = Quote.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        quote = self.get_object()
+        attach_people([quote])
+        serializer = self.get_serializer(quote)
+        return Response(serializer.data)
 
 
 class QuoteItemListView(UnpaginatedListCreateAPIView):
@@ -95,4 +119,5 @@ class QuoteStatusUpdateView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         change_quote_status(quote, serializer.validated_data["status"])
+        attach_people([quote])
         return Response(QuoteSerializer(quote).data)

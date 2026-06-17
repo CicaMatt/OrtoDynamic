@@ -1,6 +1,7 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
 import { formatBirthDate, previewText } from '../../../shared/format/format';
+import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchWorkOrders } from '../api/workOrders';
 import type { WorkOrder } from '../types';
 
@@ -13,7 +14,13 @@ import type { WorkOrder } from '../types';
 const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
   { key: 'id', label: 'ID', primary: true, filterable: false },
   { key: 'quoteId', label: 'ID Preventivo', muted: true, filterable: false },
-  { key: 'clientId', label: 'ID Cliente', muted: true, filterable: false },
+  {
+    key: 'clientName',
+    label: 'Cliente',
+    muted: true,
+    filterable: false,
+    renderCell: (workOrder) => <ReferenceName name={workOrder.clientName} id={workOrder.clientId} />,
+  },
   { key: 'status', label: 'Stato' },
   {
     key: 'creationDate',
