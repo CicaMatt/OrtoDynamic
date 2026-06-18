@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DataCard } from '../../../shared/entity/DataCard';
+import { formatEuro } from '../../../shared/format/format';
 import { FieldValue } from '../../../shared/ui/FieldValue';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import type { Product } from '../../products/types';
@@ -118,10 +119,10 @@ function DraftReadRow({ item, onDelete }: { item: QuoteItemDraft; onDelete: () =
         <FieldValue value={item.quantity} />
       </td>
       <td className="py-3 px-4 whitespace-nowrap">
-        <FieldValue value={item.price} />
+        <FieldValue value={formatEuro(item.price)} />
       </td>
       <td className="py-3 px-4 whitespace-nowrap">
-        <FieldValue value={previewAmount(item.price, item.quantity, item.discount)} />
+        <FieldValue value={formatEuro(previewAmount(item.price, item.quantity, item.discount))} />
       </td>
       <td className="py-3 px-4 whitespace-nowrap">
         <FieldValue value={item.discount} />

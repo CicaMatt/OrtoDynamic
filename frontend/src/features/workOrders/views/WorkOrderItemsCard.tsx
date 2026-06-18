@@ -5,7 +5,7 @@ import {
 } from '../../../shared/entity/DetailTableCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
-import { formatBirthDate } from '../../../shared/format/format';
+import { formatBirthDate, formatEuro, formatInteger } from '../../../shared/format/format';
 import { fetchWorkOrderItems, updateWorkOrderItem } from '../api/workOrders';
 import type { WorkOrderItem } from '../types';
 
@@ -32,9 +32,9 @@ const DATE_KEYS = ['cancellationDate', 'orderDate', 'partialDeliveryDate', 'deli
  */
 const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
   { key: 'productId', label: 'Codice Nomenclatore' },
-  { key: 'quantity', label: 'Quantità' },
-  { key: 'price', label: 'Prezzo' },
-  { key: 'amount', label: 'Importo' },
+  { key: 'quantity', label: 'Quantità', render: formatInteger },
+  { key: 'price', label: 'Prezzo', render: formatEuro },
+  { key: 'amount', label: 'Importo', render: formatEuro },
   { key: 'discount', label: 'Sconto' },
   { key: 'status', label: 'Stato', render: renderStatus, editOptions: ITEM_STATUSES },
   { key: 'production', label: 'Produzione', editOptions: ITEM_PRODUCTIONS },

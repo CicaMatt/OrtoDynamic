@@ -1,4 +1,5 @@
 import { EditInput } from '../../../shared/entity/DataCard';
+import { formatEuro } from '../../../shared/format/format';
 import { FieldValue } from '../../../shared/ui/FieldValue';
 import { Icon } from '../../../shared/ui/Icon';
 import type { Product } from '../../products/types';
@@ -169,10 +170,10 @@ export function ItemDraftRow({
         />
       </td>
       <td className="py-3 px-4 align-top">
-        <DerivedValue value={draft.price} />
+        <DerivedValue value={formatEuro(draft.price)} />
       </td>
       <td className="py-3 px-4 align-top">
-        <DerivedValue value={previewAmount(draft.price, draft.quantity, draft.discount)} />
+        <DerivedValue value={formatEuro(previewAmount(draft.price, draft.quantity, draft.discount))} />
       </td>
       <td className="py-3 px-4 align-top">
         <EditInput
@@ -231,10 +232,10 @@ export function ItemEditRow({
         />
       </td>
       <td className="py-3 px-4 align-top">
-        <DerivedValue value={draft.price} />
+        <DerivedValue value={formatEuro(draft.price)} />
       </td>
       <td className="py-3 px-4 align-top">
-        <DerivedValue value={previewAmount(draft.price, draft.quantity, draft.discount)} />
+        <DerivedValue value={formatEuro(previewAmount(draft.price, draft.quantity, draft.discount))} />
       </td>
       <td className="py-3 px-4 align-top">
         <EditInput

@@ -9,6 +9,8 @@ import {
   type FieldSectionConfig,
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
+import { formatEuro } from '../../../shared/format/format';
+import { FieldValue } from '../../../shared/ui/FieldValue';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchQuote } from '../api/quotes';
@@ -30,7 +32,12 @@ const identityFields: QuoteField[] = [
   { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
   { label: 'Stato', key: 'status', readonly: true },
   { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
-  { label: 'Totale', key: 'total', type: 'number' },
+  {
+    label: 'Totale',
+    key: 'total',
+    type: 'number',
+    renderValue: (raw) => <FieldValue value={formatEuro(raw)} />,
+  },
 ];
 
 // In read mode the client/doctor show by name with their id revealed on hover;

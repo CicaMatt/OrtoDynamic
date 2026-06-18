@@ -1,6 +1,6 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
-import { formatBirthDate, previewText } from '../../../shared/format/format';
+import { formatBirthDate, formatEuro, previewText } from '../../../shared/format/format';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchQuotes } from '../api/quotes';
 import type { Quote } from '../types';
@@ -45,7 +45,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     filterable: false,
     render: formatBirthDate,
   },
-  { key: 'total', label: 'Totale', muted: true, filterable: false },
+  { key: 'total', label: 'Totale', muted: true, filterable: false, render: formatEuro },
   { key: 'entryBy', label: 'Inserito Da', muted: true },
   { key: 'authorizationNumber', label: 'Nº Autorizzazione', muted: true, filterable: false },
   {

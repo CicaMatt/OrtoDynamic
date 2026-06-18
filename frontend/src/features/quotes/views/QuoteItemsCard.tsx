@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DataCard } from '../../../shared/entity/DataCard';
+import { formatEuro, formatInteger } from '../../../shared/format/format';
 import { FieldValue } from '../../../shared/ui/FieldValue';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import type { Product } from '../../products/types';
@@ -28,14 +29,20 @@ import {
 /**
  * Read-mode columns in display order; the value is read straight off the item.
  * `wrap` lets a long cell (the product description) flow onto multiple lines
- * instead of forcing the row onto a single, ever-widening line.
+ * instead of forcing the row onto a single, ever-widening line. `format` maps the
+ * raw value to its display string (e.g. Euro formatting for prezzo/importo).
  */
-const READ_COLUMNS: ReadonlyArray<{ key: keyof QuoteItem; label: string; wrap?: boolean }> = [
+const READ_COLUMNS: ReadonlyArray<{
+  key: keyof QuoteItem;
+  label: string;
+  wrap?: boolean;
+  format?: (raw: string) => string;
+}> = [
   { key: 'productId', label: 'Codice Nomenclatore' },
   { key: 'productDescription', label: 'Prodotto', wrap: true },
-  { key: 'quantity', label: 'Quantità' },
-  { key: 'price', label: 'Prezzo' },
-  { key: 'amount', label: 'Importo' },
+  { key: 'quantity', label: 'Quantità', format: formatInteger },
+  { key: 'price', label: 'Prezzo', format: formatEuro },
+  { key: 'amount', label: 'Importo', format: formatEuro },
   { key: 'discount', label: 'Sconto' },
 ];
 
@@ -239,20 +246,24 @@ function ReadRow({
 }) {
   return (
     <tr className="border-b border-surface-variant last:border-0">
-      {READ_COLUMNS.map((column) => (
-        <td
-          key={column.key}
-          className={`py-3 px-4 ${column.wrap ? 'align-top' : 'whitespace-nowrap'}`}
-        >
-          {column.wrap ? (
-            <div className="max-w-[360px] whitespace-normal break-words">
-              <FieldValue value={item[column.key]} />
-            </div>
-          ) : (
-            <FieldValue value={item[column.key]} />
-          )}
-        </td>
-      ))}
+      {READ_COLUMNS.map((column) => {
+        const raw = item[column.key];
+        const value = column.format ? column.format(raw) : raw;
+        return (
+          <td
+            key={column.key}
+            className={`py-3 px-4 ${column.wrap ? 'align-top' : 'whitespace-nowrap'}`}
+          >
+            {column.wrap ? (
+              <div className="max-w-[360px] whitespace-normal break-words">
+                <FieldValue value={value} />
+              </div>
+            ) : (
+              <FieldValue value={value} />
+            )}
+          </td>
+        );
+      })}
       <td className="py-3 px-4 text-right">
         <div className="flex items-center justify-end gap-[4px]">
           <IconButton
