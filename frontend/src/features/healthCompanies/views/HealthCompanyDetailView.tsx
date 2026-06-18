@@ -1,10 +1,9 @@
-import { useEffect } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
+import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchHealthCompany } from '../api/healthCompanies';
 import { healthCompanyFields } from '../components/healthCompanyFields';
@@ -15,30 +14,17 @@ const healthCompanyActions = [
 
 export function HealthCompanyDetailView() {
   const { selectedHealthCompanyId, navigate } = useNavigation();
-  const {
-    editing,
-    editTarget,
-    healthCompanyDraft,
-    dataVersion,
-    startHealthCompanyEdit,
-    seedHealthCompany,
-    setHealthCompanyField,
-  } = useEntityEdit();
+  const { healthCompanyDraft, startHealthCompanyEdit, seedHealthCompany, setHealthCompanyField } =
+    useEntityEdit();
 
-  const isEditingHealthCompany =
-    editing && editTarget?.type === 'healthCompany' && editTarget.id === selectedHealthCompanyId;
-
-  const { data: company, loading, error } = useApiData(
-    () =>
-      selectedHealthCompanyId
-        ? fetchHealthCompany(selectedHealthCompanyId)
-        : Promise.reject(new Error('Nessuna azienda sanitaria selezionata.')),
-    [selectedHealthCompanyId, dataVersion],
-  );
-
-  useEffect(() => {
-    if (isEditingHealthCompany && company) seedHealthCompany(company);
-  }, [isEditingHealthCompany, company, seedHealthCompany]);
+  const { data, loading, error, isEditing } = useEntityDetail({
+    type: 'healthCompany',
+    selectedId: selectedHealthCompanyId,
+    fetcher: fetchHealthCompany,
+    missingMessage: 'Nessuna azienda sanitaria selezionata.',
+    draft: healthCompanyDraft,
+    seed: seedHealthCompany,
+  });
 
   if (loading) {
     return (
@@ -47,7 +33,7 @@ export function HealthCompanyDetailView() {
       </StatusMessage>
     );
   }
-  if (error || !company) {
+  if (error || !data) {
     return (
       <StatusMessage
         onBack={() => navigate('health-companies')}
@@ -59,12 +45,11 @@ export function HealthCompanyDetailView() {
     );
   }
 
-  const data = isEditingHealthCompany && healthCompanyDraft ? healthCompanyDraft : company;
   const title = data.companyName || data.municipality || `Azienda sanitaria ${data.id}`;
   const actions = healthCompanyActions.map((action) => ({
     ...action,
-    active: isEditingHealthCompany,
-    onClick: !isEditingHealthCompany ? () => startHealthCompanyEdit(data.id) : undefined,
+    active: isEditing,
+    onClick: !isEditing ? () => startHealthCompanyEdit(data.id) : undefined,
   }));
 
   return (
@@ -92,7 +77,7 @@ export function HealthCompanyDetailView() {
         title="Dati Azienda Sanitaria"
         data={data}
         fields={healthCompanyFields}
-        editing={isEditingHealthCompany}
+        editing={isEditing}
         onChange={setHealthCompanyField}
       />
     </EntityDetailLayout>

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
+import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
@@ -8,7 +9,6 @@ import {
   type FieldSectionConfig,
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
-import { useApiData } from '../../../shared/hooks/useApiData';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchWorkOrder } from '../api/workOrders';
@@ -83,34 +83,18 @@ const workOrderSections: FieldSectionConfig<WorkOrder>[] = [
 
 export function WorkOrderDetailView() {
   const { selectedWorkOrderId, navigate } = useNavigation();
-  const {
-    editing,
-    editTarget,
-    workOrderDraft,
-    dataVersion,
-    startWorkOrderEdit,
-    seedWorkOrder,
-    setWorkOrderField,
-  } = useEntityEdit();
+  const { workOrderDraft, startWorkOrderEdit, seedWorkOrder, setWorkOrderField } = useEntityEdit();
 
-  const isEditingWorkOrder =
-    editing && editTarget?.type === 'workOrder' && editTarget.id === selectedWorkOrderId;
+  const { data, loading, error, isEditing, reload } = useEntityDetail({
+    type: 'workOrder',
+    selectedId: selectedWorkOrderId,
+    fetcher: fetchWorkOrder,
+    missingMessage: 'Nessuna lavorazione selezionata.',
+    draft: workOrderDraft,
+    seed: seedWorkOrder,
+  });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  // Bumped after a status change to refetch the work order with its new state.
-  const [reloadKey, setReloadKey] = useState(0);
-
-  const { data: workOrder, loading, error } = useApiData(
-    () =>
-      selectedWorkOrderId
-        ? fetchWorkOrder(selectedWorkOrderId)
-        : Promise.reject(new Error('Nessuna lavorazione selezionata.')),
-    [selectedWorkOrderId, dataVersion, reloadKey],
-  );
-
-  useEffect(() => {
-    if (isEditingWorkOrder && workOrder) seedWorkOrder(workOrder);
-  }, [isEditingWorkOrder, workOrder, seedWorkOrder]);
 
   if (loading) {
     return (
@@ -119,7 +103,7 @@ export function WorkOrderDetailView() {
       </StatusMessage>
     );
   }
-  if (error || !workOrder) {
+  if (error || !data) {
     return (
       <StatusMessage
         onBack={() => navigate('work-orders')}
@@ -131,21 +115,20 @@ export function WorkOrderDetailView() {
     );
   }
 
-  const data = isEditingWorkOrder && workOrderDraft ? workOrderDraft : workOrder;
   const title = `Lavorazione ${data.id}`;
   const actions = [
     {
       id: 'edit',
       icon: 'edit',
       label: 'Modifica Dati Lavorazione',
-      active: isEditingWorkOrder,
-      onClick: !isEditingWorkOrder ? () => startWorkOrderEdit(data.id) : undefined,
+      active: isEditing,
+      onClick: !isEditing ? () => startWorkOrderEdit(data.id) : undefined,
     },
     {
       id: 'status',
       icon: 'sync_alt',
       label: 'Cambia Stato',
-      onClick: !isEditingWorkOrder ? () => setStatusDialogOpen(true) : undefined,
+      onClick: !isEditing ? () => setStatusDialogOpen(true) : undefined,
     },
   ];
 
@@ -180,7 +163,7 @@ export function WorkOrderDetailView() {
           <FieldSectionList
             data={data}
             sections={workOrderSections}
-            editing={isEditingWorkOrder}
+            editing={isEditing}
             onChange={setWorkOrderField}
           />
           <WorkOrderItemsCard workOrderId={data.id} />
@@ -192,7 +175,7 @@ export function WorkOrderDetailView() {
           workOrderId={data.id}
           currentStatus={data.status}
           onClose={() => setStatusDialogOpen(false)}
-          onChanged={() => setReloadKey((key) => key + 1)}
+          onChanged={reload}
         />
       )}
     </>

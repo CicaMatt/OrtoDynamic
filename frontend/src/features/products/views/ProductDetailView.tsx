@@ -1,10 +1,9 @@
-import { useEffect } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
+import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { fetchProduct } from '../api/products';
 import { productFields } from '../components/productFields';
@@ -15,30 +14,16 @@ const productActions = [
 
 export function ProductDetailView() {
   const { selectedProductId, navigate } = useNavigation();
-  const {
-    editing,
-    editTarget,
-    productDraft,
-    dataVersion,
-    startProductEdit,
-    seedProduct,
-    setProductField,
-  } = useEntityEdit();
+  const { productDraft, startProductEdit, seedProduct, setProductField } = useEntityEdit();
 
-  const isEditingProduct =
-    editing && editTarget?.type === 'product' && editTarget.id === selectedProductId;
-
-  const { data: product, loading, error } = useApiData(
-    () =>
-      selectedProductId
-        ? fetchProduct(selectedProductId)
-        : Promise.reject(new Error('Nessun prodotto selezionato.')),
-    [selectedProductId, dataVersion],
-  );
-
-  useEffect(() => {
-    if (isEditingProduct && product) seedProduct(product);
-  }, [isEditingProduct, product, seedProduct]);
+  const { data, loading, error, isEditing } = useEntityDetail({
+    type: 'product',
+    selectedId: selectedProductId,
+    fetcher: fetchProduct,
+    missingMessage: 'Nessun prodotto selezionato.',
+    draft: productDraft,
+    seed: seedProduct,
+  });
 
   if (loading) {
     return (
@@ -47,7 +32,7 @@ export function ProductDetailView() {
       </StatusMessage>
     );
   }
-  if (error || !product) {
+  if (error || !data) {
     return (
       <StatusMessage onBack={() => navigate('products')} backLabel="Torna ai prodotti" tone="error">
         {error ?? 'Nessun prodotto selezionato.'}
@@ -55,12 +40,11 @@ export function ProductDetailView() {
     );
   }
 
-  const data = isEditingProduct && productDraft ? productDraft : product;
   const title = data.description || data.code || `Prodotto ${data.id}`;
   const actions = productActions.map((action) => ({
     ...action,
-    active: isEditingProduct,
-    onClick: !isEditingProduct ? () => startProductEdit(data.id) : undefined,
+    active: isEditing,
+    onClick: !isEditing ? () => startProductEdit(data.id) : undefined,
   }));
 
   return (
@@ -88,7 +72,7 @@ export function ProductDetailView() {
         title="Dati Prodotto"
         data={data}
         fields={productFields}
-        editing={isEditingProduct}
+        editing={isEditing}
         onChange={setProductField}
       />
     </EntityDetailLayout>

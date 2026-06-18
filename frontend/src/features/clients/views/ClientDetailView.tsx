@@ -1,12 +1,11 @@
-import { useEffect } from 'react';
 import { fetchClient } from '../api/clients';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { ClientPageHeader } from '../components/ClientPageHeader';
 import { ClientDataSections } from '../components/ClientDataSections';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
+import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
-import { useApiData } from '../../../shared/hooks/useApiData';
 import { useClientMunicipalityAutocomplete } from '../components/useClientMunicipalityAutocomplete';
 
 const clientActions = [
@@ -17,30 +16,18 @@ const clientActions = [
 
 export function ClientDetailView() {
   const { selectedClientCode, navigate } = useNavigation();
-  const {
-    editing,
-    editTarget,
-    clientDraft,
-    dataVersion,
-    startClientEdit,
-    seedClient,
-    setClientField,
-  } = useEntityEdit();
-  const isEditingClient = editing && editTarget?.type === 'client' && editTarget.id === selectedClientCode;
+  const { clientDraft, startClientEdit, seedClient, setClientField } = useEntityEdit();
 
-  const { data: client, loading, error } = useApiData(
-    () =>
-      selectedClientCode
-        ? fetchClient(selectedClientCode)
-        : Promise.reject(new Error('Nessun cliente selezionato.')),
-    [selectedClientCode, dataVersion],
-  );
+  const { data, loading, error, isEditing } = useEntityDetail({
+    type: 'client',
+    selectedId: selectedClientCode,
+    fetcher: fetchClient,
+    missingMessage: 'Nessun cliente selezionato.',
+    draft: clientDraft,
+    seed: seedClient,
+  });
 
-  useEffect(() => {
-    if (isEditingClient && client) seedClient(client);
-  }, [isEditingClient, client, seedClient]);
-
-  const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditingClient);
+  const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditing);
 
   if (loading) {
     return (
@@ -49,7 +36,7 @@ export function ClientDetailView() {
       </StatusMessage>
     );
   }
-  if (error || !client) {
+  if (error || !data) {
     return (
       <StatusMessage onBack={() => navigate('clients')} backLabel="Torna ai clienti" tone="error">
         {error ?? 'Nessun cliente selezionato.'}
@@ -57,11 +44,10 @@ export function ClientDetailView() {
     );
   }
 
-  const data = isEditingClient && clientDraft ? clientDraft : client;
   const actions = clientActions.map((action) => ({
     ...action,
-    active: isEditingClient && action.id === 'edit',
-    onClick: action.id === 'edit' && !isEditingClient ? () => startClientEdit(data.code) : undefined,
+    active: isEditing && action.id === 'edit',
+    onClick: action.id === 'edit' && !isEditing ? () => startClientEdit(data.code) : undefined,
   }));
 
   return (
@@ -81,7 +67,7 @@ export function ClientDetailView() {
     >
       <ClientDataSections
         data={data}
-        editing={isEditingClient}
+        editing={isEditing}
         onChange={setClientField}
         autocompleteFields={municipalityFields}
       />

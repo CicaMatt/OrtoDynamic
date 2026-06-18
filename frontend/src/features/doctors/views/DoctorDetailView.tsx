@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { fetchDoctor } from '../api/doctors';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
@@ -6,8 +5,8 @@ import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import { NoteCard } from '../../../shared/entity/NoteCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
+import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
-import { useApiData } from '../../../shared/hooks/useApiData';
 import { doctorFields } from '../components/doctorFields';
 
 const doctorActions = [
@@ -16,29 +15,16 @@ const doctorActions = [
 
 export function DoctorDetailView() {
   const { selectedDoctorId, navigate } = useNavigation();
-  const {
-    editing,
-    editTarget,
-    doctorDraft,
-    dataVersion,
-    startDoctorEdit,
-    seedDoctor,
-    setDoctorField,
-  } = useEntityEdit();
+  const { doctorDraft, startDoctorEdit, seedDoctor, setDoctorField } = useEntityEdit();
 
-  const isEditingDoctor = editing && editTarget?.type === 'doctor' && editTarget.id === selectedDoctorId;
-
-  const { data: doctor, loading, error } = useApiData(
-    () =>
-      selectedDoctorId
-        ? fetchDoctor(selectedDoctorId)
-        : Promise.reject(new Error('Nessun medico selezionato.')),
-    [selectedDoctorId, dataVersion],
-  );
-
-  useEffect(() => {
-    if (isEditingDoctor && doctor) seedDoctor(doctor);
-  }, [isEditingDoctor, doctor, seedDoctor]);
+  const { data, loading, error, isEditing } = useEntityDetail({
+    type: 'doctor',
+    selectedId: selectedDoctorId,
+    fetcher: fetchDoctor,
+    missingMessage: 'Nessun medico selezionato.',
+    draft: doctorDraft,
+    seed: seedDoctor,
+  });
 
   if (loading) {
     return (
@@ -47,7 +33,7 @@ export function DoctorDetailView() {
       </StatusMessage>
     );
   }
-  if (error || !doctor) {
+  if (error || !data) {
     return (
       <StatusMessage onBack={() => navigate('doctors')} backLabel="Torna ai medici" tone="error">
         {error ?? 'Nessun medico selezionato.'}
@@ -55,12 +41,11 @@ export function DoctorDetailView() {
     );
   }
 
-  const data = isEditingDoctor && doctorDraft ? doctorDraft : doctor;
   const title = `${data.name} ${data.surname}`.trim() || `Medico ${data.id}`;
   const actions = doctorActions.map((action) => ({
     ...action,
-    active: isEditingDoctor,
-    onClick: !isEditingDoctor ? () => startDoctorEdit(data.id) : undefined,
+    active: isEditing,
+    onClick: !isEditing ? () => startDoctorEdit(data.id) : undefined,
   }));
 
   return (
@@ -88,13 +73,13 @@ export function DoctorDetailView() {
         title="Dati Medico"
         data={data}
         fields={doctorFields}
-        editing={isEditingDoctor}
+        editing={isEditing}
         onChange={setDoctorField}
       />
 
       <NoteCard
         value={data.note}
-        editing={isEditingDoctor}
+        editing={isEditing}
         onChange={(value) => setDoctorField('note', value)}
         className="mt-[28px]"
       />

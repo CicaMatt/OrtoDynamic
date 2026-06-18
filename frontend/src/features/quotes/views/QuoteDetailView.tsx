@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
+import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
@@ -8,7 +9,6 @@ import {
   type FieldSectionConfig,
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
-import { useApiData } from '../../../shared/hooks/useApiData';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchQuote } from '../api/quotes';
@@ -94,33 +94,18 @@ const quoteSections: FieldSectionConfig<Quote>[] = [
 
 export function QuoteDetailView() {
   const { selectedQuoteId, navigate } = useNavigation();
-  const {
-    editing,
-    editTarget,
-    quoteDraft,
-    dataVersion,
-    startQuoteEdit,
-    seedQuote,
-    setQuoteField,
-  } = useEntityEdit();
+  const { quoteDraft, startQuoteEdit, seedQuote, setQuoteField } = useEntityEdit();
 
-  const isEditingQuote = editing && editTarget?.type === 'quote' && editTarget.id === selectedQuoteId;
+  const { data, loading, error, isEditing, reload } = useEntityDetail({
+    type: 'quote',
+    selectedId: selectedQuoteId,
+    fetcher: fetchQuote,
+    missingMessage: 'Nessun preventivo selezionato.',
+    draft: quoteDraft,
+    seed: seedQuote,
+  });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  // Bumped after a status change to refetch the quote with its new state.
-  const [reloadKey, setReloadKey] = useState(0);
-
-  const { data: quote, loading, error } = useApiData(
-    () =>
-      selectedQuoteId
-        ? fetchQuote(selectedQuoteId)
-        : Promise.reject(new Error('Nessun preventivo selezionato.')),
-    [selectedQuoteId, dataVersion, reloadKey],
-  );
-
-  useEffect(() => {
-    if (isEditingQuote && quote) seedQuote(quote);
-  }, [isEditingQuote, quote, seedQuote]);
 
   if (loading) {
     return (
@@ -129,7 +114,7 @@ export function QuoteDetailView() {
       </StatusMessage>
     );
   }
-  if (error || !quote) {
+  if (error || !data) {
     return (
       <StatusMessage onBack={() => navigate('quotes')} backLabel="Torna ai preventivi" tone="error">
         {error ?? 'Nessun preventivo selezionato.'}
@@ -137,21 +122,20 @@ export function QuoteDetailView() {
     );
   }
 
-  const data = isEditingQuote && quoteDraft ? quoteDraft : quote;
   const title = data.quoteNumber ? `Preventivo Nº ${data.quoteNumber}` : `Preventivo ${data.id}`;
   const actions = [
     {
       id: 'edit',
       icon: 'edit',
       label: 'Modifica Dati Preventivo',
-      active: isEditingQuote,
-      onClick: !isEditingQuote ? () => startQuoteEdit(data.id) : undefined,
+      active: isEditing,
+      onClick: !isEditing ? () => startQuoteEdit(data.id) : undefined,
     },
     {
       id: 'status',
       icon: 'sync_alt',
       label: 'Cambia Stato',
-      onClick: !isEditingQuote ? () => setStatusDialogOpen(true) : undefined,
+      onClick: !isEditing ? () => setStatusDialogOpen(true) : undefined,
     },
   ];
 
@@ -186,7 +170,7 @@ export function QuoteDetailView() {
           <FieldSectionList
             data={data}
             sections={quoteSections}
-            editing={isEditingQuote}
+            editing={isEditing}
             onChange={setQuoteField}
           />
           <QuoteItemsCard quoteId={data.id} />
@@ -198,7 +182,7 @@ export function QuoteDetailView() {
           quoteId={data.id}
           currentStatus={data.status}
           onClose={() => setStatusDialogOpen(false)}
-          onChanged={() => setReloadKey((key) => key + 1)}
+          onChanged={reload}
         />
       )}
     </>
