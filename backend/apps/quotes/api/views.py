@@ -1,5 +1,7 @@
 """Thin endpoints for the Quote resource."""
 
+from types import SimpleNamespace
+
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import generics, status
@@ -15,6 +17,7 @@ from apps.common.api.views import (
 from apps.common.exceptions import NotFoundError, ServiceError
 from apps.doctors.models import Doctor
 from apps.products.models import Product
+from apps.quotes.ddt import ddt_filename, prepare_ddt, render_ddt
 from apps.quotes.delivery_form import (
     delivery_form_filename,
     prepare_delivery_form_fields,
@@ -172,4 +175,52 @@ class QuoteDeliveryFormView(APIView):
         response = HttpResponse(pdf, content_type="application/pdf")
         filename = delivery_form_filename(quote, today)
         response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
+
+
+def _ddt_item_rows(quote_id):
+    """
+    The quote's line items merged with their catalogue product, as plain rows
+    carrying the three fields the DDT prints (`codice`, `descrizione`, `quantita`).
+    Products are loaded in one query; a line whose product is gone keeps null
+    code/description (the LEFT JOIN in the original).
+    """
+    items = list(QuoteItem.objects.filter(id_preventivo=quote_id).order_by("id"))
+    product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
+    products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
+
+    rows = []
+    for item in items:
+        product = products.get(item.codice_nomenclatore)
+        rows.append(
+            SimpleNamespace(
+                codice=product.codice if product else None,
+                descrizione=product.descrizione if product else None,
+                quantita=item.quantita,
+            )
+        )
+    return rows
+
+
+class QuoteDdtView(APIView):
+    """
+    Stream a quote's DDT (delivery note) as an inline PDF.
+
+    The recipient comes from the quote's client (the original query inner-joins
+    `clienti`, so a quote with no client resolves to "not found"), and the table
+    from its line items. See `apps.quotes.ddt`.
+    """
+
+    def get(self, request, pk):
+        quote = Quote.objects.filter(pk=pk).first()
+        client = Client.objects.filter(pk=quote.id_cliente).first() if quote else None
+        if quote is None or client is None:
+            raise NotFoundError("Preventivo non trovato.")
+
+        today = timezone.localdate()
+        document = prepare_ddt(quote, client, _ddt_item_rows(quote.id), today=today)
+        pdf = render_ddt(document)
+
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{ddt_filename(quote)}"'
         return response

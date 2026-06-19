@@ -63,3 +63,8 @@ export function createQuote(values: QuoteCreatePayload): Promise<Quote> {
 export function fetchQuoteDeliveryForm(id: string): Promise<{ blob: Blob; filename: string | null }> {
   return apiGetBlob(`/quotes/${id}/delivery-form/`);
 }
+
+/** Fetch the quote's DDT (delivery note) as an inline PDF blob. */
+export function fetchQuoteDdt(id: string): Promise<{ blob: Blob; filename: string | null }> {
+  return apiGetBlob(`/quotes/${id}/ddt/`);
+}

@@ -19,9 +19,10 @@ from datetime import date
 from io import BytesIO
 from pathlib import Path
 
-from pypdf import PdfReader, PdfWriter, Transformation
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+
+from apps.quotes.pdf_background import compose_on_template
 
 # The template is a server-side asset shipped with the app (not user data and not
 # a Django static file): a 1-page A4 PDF of the pre-printed form. It is absent
@@ -33,7 +34,7 @@ TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "moduloconsega.pdf"
 # FPDF works in millimetres with a top-left origin; reportlab and pypdf work in
 # PostScript points with a bottom-left origin. These constants bridge the two.
 _MM_TO_PT = 72.0 / 25.4
-_PAGE_W_PT, _PAGE_H_PT = A4  # 210x297 mm, matching the original AddPage() default
+_PAGE_H_PT = A4[1]  # 297 mm, matching the original AddPage() default
 
 _FONT_NAME = "Helvetica"  # FPDF's "Arial" maps to the core Helvetica font
 _FONT_SIZE_PT = 9
@@ -45,11 +46,6 @@ _FONT_SIZE_PT = 9
 # only the pen (SetXY) position.
 _BASELINE_OFFSET_MM = 0.3 * (_FONT_SIZE_PT / _MM_TO_PT)  # ~0.95 mm below the pen Y
 _CELL_MARGIN_MM = (28.35 / _MM_TO_PT) / 10               # ~1.00 mm right of the pen X
-
-# Background placement: the template is drawn at (5 mm, 5 mm) from the top-left,
-# scaled to 200 mm wide with its aspect ratio preserved (FPDI useTemplate).
-_TEMPLATE_OFFSET_MM = 5.0
-_TEMPLATE_WIDTH_MM = 200.0
 
 
 @dataclass(frozen=True)
@@ -102,7 +98,7 @@ def render_delivery_form(
     tests can run against a generated stand-in.
     """
     overlay = _build_overlay(fields)
-    return _compose(template_path, overlay)
+    return compose_on_template(overlay, template_path)
 
 
 def _build_overlay(fields: DeliveryFormFields) -> bytes:
@@ -133,32 +129,3 @@ def _draw(pdf: canvas.Canvas, x_mm: float, y_mm: float, text: str) -> None:
     x_pt = (x_mm + _CELL_MARGIN_MM) * _MM_TO_PT
     baseline_pt = _PAGE_H_PT - (y_mm + _BASELINE_OFFSET_MM) * _MM_TO_PT
     pdf.drawString(x_pt, baseline_pt, text)
-
-
-def _compose(template_path: Path, overlay: bytes) -> bytes:
-    """Lay the template as the background of a blank A4 page, then the overlay on top."""
-    template_page = PdfReader(str(template_path)).pages[0]
-    box = template_page.mediabox
-    scale = (_TEMPLATE_WIDTH_MM * _MM_TO_PT) / float(box.width)
-    scaled_height_pt = float(box.height) * scale
-
-    # Normalise a non-(0,0) MediaBox origin, scale to the target width, then place
-    # the template's top-left corner 5 mm in from the page's top-left.
-    placement = (
-        Transformation()
-        .translate(-float(box.left), -float(box.bottom))
-        .scale(scale)
-        .translate(
-            _TEMPLATE_OFFSET_MM * _MM_TO_PT,
-            _PAGE_H_PT - _TEMPLATE_OFFSET_MM * _MM_TO_PT - scaled_height_pt,
-        )
-    )
-
-    writer = PdfWriter()
-    page = writer.add_blank_page(width=_PAGE_W_PT, height=_PAGE_H_PT)
-    page.merge_transformed_page(template_page, placement)
-    page.merge_page(PdfReader(BytesIO(overlay)).pages[0])
-
-    output = BytesIO()
-    writer.write(output)
-    return output.getvalue()
