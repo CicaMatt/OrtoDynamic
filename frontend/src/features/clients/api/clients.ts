@@ -1,5 +1,5 @@
 import type { Client, ClientListItem, ClientOrthopedic } from '../types';
-import { apiGet, apiPatch, apiPost } from '../../../shared/api/http';
+import { apiGet, apiGetBlob, apiPatch, apiPost } from '../../../shared/api/http';
 
 /** Editable client fields, keyed as the API expects (camelCase). */
 export type ClientUpdate = Record<string, string | number | null>;
@@ -27,4 +27,9 @@ export function updateClient(code: string, changes: ClientUpdate): Promise<unkno
 /** Create a new client; the API returns the created record (with its new code). */
 export function createClient(values: ClientUpdate): Promise<Client> {
   return apiPost<Client>('/clients/', values);
+}
+
+/** Fetch the client's "Modulo di privacy" consent form as an inline PDF blob. */
+export function fetchClientPrivacyForm(code: string): Promise<{ blob: Blob; filename: string | null }> {
+  return apiGetBlob(`/clients/${code}/privacy-form/`);
 }

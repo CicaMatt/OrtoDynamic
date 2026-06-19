@@ -50,3 +50,22 @@ Requirements:
 
 Until the file is present, `GET /api/v1/quotes/<id>/scheda/` returns HTTP 500 with
 the message "Modello della scheda progetto non disponibile."
+
+## `privacy.pdf` (required, not yet in version control)
+
+The "Modulo di privacy" generator (`apps.quotes.privacy_form`) stamps a client's
+first name, surname and today's date onto this pre-printed consent form. Drop it
+here:
+
+    backend/apps/quotes/assets/privacy.pdf
+
+Requirements:
+
+- **1 page**, **A4** (MediaBox ≈ 595.25 × 842 pt).
+- Same placement as the other overlays: top-left at (5 mm, 5 mm), scaled to 200 mm
+  wide. The overlay coordinates are calibrated to it.
+
+This document is keyed on a **client** (the form generator lives with the other PDF
+documents, but the endpoint is `GET /api/v1/clients/<id>/privacy-form/`). Until the
+file is present that endpoint returns HTTP 500 with the message "Modello del modulo
+di privacy non disponibile."

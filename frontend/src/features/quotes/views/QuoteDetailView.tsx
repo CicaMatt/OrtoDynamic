@@ -10,7 +10,7 @@ import {
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import { formatEuro } from '../../../shared/format/format';
-import { presentBlobInWindow } from '../../../shared/files/openBlob';
+import { useInlineDocument } from '../../../shared/files/useInlineDocument';
 import { FieldValue } from '../../../shared/ui/FieldValue';
 import { Icon } from '../../../shared/ui/Icon';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
@@ -115,8 +115,8 @@ export function QuoteDetailView() {
   });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [generating, setGenerating] = useState<'consegna' | 'ddt' | 'scheda' | null>(null);
-  const [docError, setDocError] = useState<string | null>(null);
+  const { generating, error: docError, clearError, open: openDocument } =
+    useInlineDocument<'consegna' | 'ddt' | 'scheda'>();
 
   if (loading) {
     return (
@@ -134,27 +134,6 @@ export function QuoteDetailView() {
   }
 
   const title = data.quoteNumber ? `Preventivo Nº ${data.quoteNumber}` : `Preventivo ${data.id}`;
-
-  // Open a generated PDF document (consegna form / DDT) inline in a new tab. The
-  // tab is opened synchronously so the browser keeps it tied to this click and
-  // does not block it as a popup; the PDF is loaded into it once it arrives.
-  const openDocument = async (
-    kind: 'consegna' | 'ddt' | 'scheda',
-    fetcher: (id: string) => Promise<{ blob: Blob }>,
-  ) => {
-    setDocError(null);
-    const win = window.open('', '_blank');
-    setGenerating(kind);
-    try {
-      const { blob } = await fetcher(data.id);
-      presentBlobInWindow(win, blob);
-    } catch (err) {
-      win?.close();
-      setDocError(err instanceof Error ? err.message : 'Impossibile generare il documento.');
-    } finally {
-      setGenerating(null);
-    }
-  };
 
   const actions = [
     {
@@ -174,19 +153,26 @@ export function QuoteDetailView() {
       id: 'delivery-form',
       icon: 'picture_as_pdf',
       label: generating === 'consegna' ? 'Generazione modulo…' : 'Modulo di Consegna',
-      onClick: !isEditing && !generating ? () => openDocument('consegna', fetchQuoteDeliveryForm) : undefined,
+      onClick:
+        !isEditing && !generating
+          ? () => openDocument('consegna', () => fetchQuoteDeliveryForm(data.id))
+          : undefined,
     },
     {
       id: 'ddt',
       icon: 'local_shipping',
       label: generating === 'ddt' ? 'Generazione DDT…' : 'Genera DDT',
-      onClick: !isEditing && !generating ? () => openDocument('ddt', fetchQuoteDdt) : undefined,
+      onClick:
+        !isEditing && !generating ? () => openDocument('ddt', () => fetchQuoteDdt(data.id)) : undefined,
     },
     {
       id: 'scheda',
       icon: 'assignment',
       label: generating === 'scheda' ? 'Generazione scheda…' : 'Scheda Progetto',
-      onClick: !isEditing && !generating ? () => openDocument('scheda', fetchQuoteScheda) : undefined,
+      onClick:
+        !isEditing && !generating
+          ? () => openDocument('scheda', () => fetchQuoteScheda(data.id))
+          : undefined,
     },
   ];
 
@@ -226,7 +212,7 @@ export function QuoteDetailView() {
               <span className="font-body-sm text-body-sm text-error">{docError}</span>
               <button
                 type="button"
-                onClick={() => setDocError(null)}
+                onClick={clearError}
                 aria-label="Chiudi"
                 className="text-error/70 hover:text-error"
               >

@@ -1,8 +1,10 @@
-import { fetchClient } from '../api/clients';
+import { fetchClient, fetchClientPrivacyForm } from '../api/clients';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { ClientPageHeader } from '../components/ClientPageHeader';
 import { ClientDataSections } from '../components/ClientDataSections';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
+import { Icon } from '../../../shared/ui/Icon';
+import { useInlineDocument } from '../../../shared/files/useInlineDocument';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
@@ -28,6 +30,7 @@ export function ClientDetailView() {
   });
 
   const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditing);
+  const { generating, error: docError, clearError, open: openDocument } = useInlineDocument<'privacy'>();
 
   if (loading) {
     return (
@@ -44,11 +47,26 @@ export function ClientDetailView() {
     );
   }
 
-  const actions = clientActions.map((action) => ({
-    ...action,
-    active: isEditing && action.id === 'edit',
-    onClick: action.id === 'edit' && !isEditing ? () => startClientEdit(data.code) : undefined,
-  }));
+  const actions = clientActions.map((action) => {
+    if (action.id === 'edit') {
+      return {
+        ...action,
+        active: isEditing,
+        onClick: !isEditing ? () => startClientEdit(data.code) : undefined,
+      };
+    }
+    if (action.id === 'privacy') {
+      return {
+        ...action,
+        label: generating === 'privacy' ? 'Generazione modulo…' : action.label,
+        onClick:
+          !isEditing && !generating
+            ? () => openDocument('privacy', () => fetchClientPrivacyForm(data.code))
+            : undefined,
+      };
+    }
+    return action;
+  });
 
   return (
     <EntityDetailLayout
@@ -65,6 +83,22 @@ export function ClientDetailView() {
       actionsTitle="Azioni cliente"
       actions={actions}
     >
+      {docError && (
+        <div
+          role="alert"
+          className="mb-[28px] flex items-start justify-between gap-3 rounded-[10px] border border-error bg-error/10 px-[20px] py-[14px]"
+        >
+          <span className="font-body-sm text-body-sm text-error">{docError}</span>
+          <button
+            type="button"
+            onClick={clearError}
+            aria-label="Chiudi"
+            className="text-error/70 hover:text-error"
+          >
+            <Icon name="close" className="text-[20px]" />
+          </button>
+        </div>
+      )}
       <ClientDataSections
         data={data}
         editing={isEditing}

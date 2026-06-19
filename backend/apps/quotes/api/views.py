@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from django.http import HttpResponse
 from django.utils import timezone
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,7 +14,7 @@ from apps.common.api.views import (
     UnpaginatedListCreateAPIView,
     attach_related,
 )
-from apps.common.exceptions import NotFoundError, ServiceError
+from apps.common.exceptions import NotFoundError, TemplateAssetMissing
 from apps.doctors.models import Doctor
 from apps.products.models import Product
 from apps.quotes.ddt import ddt_filename, prepare_ddt, render_ddt
@@ -140,13 +140,6 @@ class QuoteStatusUpdateView(generics.GenericAPIView):
         change_quote_status(quote, serializer.validated_data["status"])
         attach_people([quote])
         return Response(QuoteSerializer(quote).data)
-
-
-class TemplateAssetMissing(ServiceError):
-    """A required pre-printed template asset is not installed — a server-side error."""
-
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    default_message = "Modello del documento non disponibile."
 
 
 class QuoteDeliveryFormView(APIView):

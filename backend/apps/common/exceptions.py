@@ -36,6 +36,18 @@ class ConflictError(ServiceError):
     default_message = "The request conflicts with the current state of the resource."
 
 
+class TemplateAssetMissing(ServiceError):
+    """A required pre-printed PDF template asset is not installed — a server-side error.
+
+    Raised by the document generators (consegna, scheda, privacy) when their
+    background template is absent, so the client sees a clear message instead of an
+    unhandled 500.
+    """
+
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_message = "Modello del documento non disponibile."
+
+
 def api_exception_handler(exc, context):
     """DRF exception handler that normalises errors into `{"error": {...}}`."""
     if isinstance(exc, ServiceError):
