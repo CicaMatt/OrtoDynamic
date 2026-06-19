@@ -32,3 +32,21 @@ it is drawn as the page background behind the generated content, with the same
 1-page A4 placement as `moduloconsega.pdf` (top-left at (5 mm, 5 mm), scaled to
 200 mm wide). Its absence is not an error; `GET /api/v1/quotes/<id>/ddt/` simply
 renders on a blank page.
+
+## `scheda.pdf` (required, not yet in version control)
+
+The "Scheda Progetto" generator (`apps.quotes.scheda`) stamps header fields, the
+diagnosi/protesi blocks and a line-items table onto this pre-printed form. Drop it
+here:
+
+    backend/apps/quotes/assets/scheda.pdf
+
+Requirements:
+
+- **Page 1** is used (the file may have more pages). **A4** (MediaBox ≈ 595.5 × 842 pt).
+- Same placement as the other overlays: top-left at (5 mm, 5 mm), scaled to 200 mm
+  wide. The overlay coordinates are calibrated to it — a different background will
+  not line up.
+
+Until the file is present, `GET /api/v1/quotes/<id>/scheda/` returns HTTP 500 with
+the message "Modello della scheda progetto non disponibile."

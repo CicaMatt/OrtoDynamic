@@ -16,12 +16,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from io import BytesIO
 from pathlib import Path
 
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-
+from apps.quotes.fpdf_canvas import FpdfCanvas
 from apps.quotes.pdf_background import compose_on_template
 
 # Optional background template; absent in the current system, so the default path
@@ -31,87 +28,6 @@ TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "ddt.pdf"
 _DESCRIPTION_LIMIT = 55  # max width of the description column text, marker included
 _TRIM_MARKER = "..."
 _SIGNATURE_RULE = "_" * 30
-
-
-class _FpdfCanvas:
-    """
-    Minimal FPDF-compatible writer over a reportlab canvas: millimetres, top-left
-    origin, and the Cell/Ln cursor model. Only what the DDT layout needs is
-    implemented — single-line cells with an optional full border and L/C/R
-    alignment. Geometry matches FPDF 1.81 so the output mirrors the original.
-    """
-
-    _MM_TO_PT = 72.0 / 25.4
-    _PAGE_W_MM = 210.0
-    _PAGE_H_PT = A4[1]
-    _LEFT_MARGIN_MM = 10.0
-    _RIGHT_MARGIN_MM = 10.0
-    _TOP_MARGIN_MM = 10.0
-    _CELL_MARGIN_MM = 1.0    # FPDF interior cell margin (left/right text inset)
-    _BORDER_WIDTH_MM = 0.2   # FPDF default line width
-
-    def __init__(self, buffer: BytesIO) -> None:
-        self._buffer = buffer
-        self._canvas = canvas.Canvas(buffer, pagesize=A4)
-        self._canvas.setLineWidth(self._BORDER_WIDTH_MM * self._MM_TO_PT)
-        self.x = self._LEFT_MARGIN_MM
-        self.y = self._TOP_MARGIN_MM
-        self._font = "Helvetica"
-        self._size = 10.0
-        self._canvas.setFont(self._font, self._size)
-
-    def set_font(self, style: str = "", size: float = 10.0) -> None:
-        self._font = "Helvetica-Bold" if "B" in style.upper() else "Helvetica"
-        self._size = size
-        self._canvas.setFont(self._font, size)
-
-    def cell(self, w: float, h: float, text: str = "", border: int = 0, ln: int = 0,
-             align: str = "L") -> None:
-        if w == 0:
-            w = self._PAGE_W_MM - self._RIGHT_MARGIN_MM - self.x
-
-        if border:
-            self._canvas.rect(
-                self.x * self._MM_TO_PT,
-                self._PAGE_H_PT - (self.y + h) * self._MM_TO_PT,
-                w * self._MM_TO_PT,
-                h * self._MM_TO_PT,
-                stroke=1,
-                fill=0,
-            )
-
-        if text:
-            if align == "C":
-                dx = (w - self._string_width_mm(text)) / 2
-            elif align == "R":
-                dx = w - self._CELL_MARGIN_MM - self._string_width_mm(text)
-            else:
-                dx = self._CELL_MARGIN_MM
-            # FPDF vertical centering: baseline at y + 0.5*h + 0.3*FontSize (mm).
-            baseline_mm = self.y + 0.5 * h + 0.3 * (self._size / self._MM_TO_PT)
-            self._canvas.drawString(
-                (self.x + dx) * self._MM_TO_PT,
-                self._PAGE_H_PT - baseline_mm * self._MM_TO_PT,
-                text,
-            )
-
-        if ln == 1:
-            self.x = self._LEFT_MARGIN_MM
-            self.y += h
-        else:
-            self.x += w
-
-    def ln(self, h: float) -> None:
-        self.x = self._LEFT_MARGIN_MM
-        self.y += h
-
-    def output(self) -> bytes:
-        self._canvas.showPage()
-        self._canvas.save()
-        return self._buffer.getvalue()
-
-    def _string_width_mm(self, text: str) -> float:
-        return self._canvas.stringWidth(text, self._font, self._size) / self._MM_TO_PT
 
 
 @dataclass(frozen=True)
@@ -180,7 +96,7 @@ def render_ddt(document: DdtDocument, *, template_path: Path = TEMPLATE_PATH) ->
 
 
 def _build_content(document: DdtDocument) -> bytes:
-    pdf = _FpdfCanvas(BytesIO())
+    pdf = FpdfCanvas()
 
     # 1. Title.
     pdf.set_font("B", 14)

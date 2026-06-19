@@ -15,7 +15,7 @@ import { FieldValue } from '../../../shared/ui/FieldValue';
 import { Icon } from '../../../shared/ui/Icon';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
-import { fetchQuote, fetchQuoteDdt, fetchQuoteDeliveryForm } from '../api/quotes';
+import { fetchQuote, fetchQuoteDdt, fetchQuoteDeliveryForm, fetchQuoteScheda } from '../api/quotes';
 import type { Quote } from '../types';
 import { QuoteItemsCard } from './QuoteItemsCard';
 import { QuoteStatusDialog } from './QuoteStatusDialog';
@@ -115,7 +115,7 @@ export function QuoteDetailView() {
   });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [generating, setGenerating] = useState<'consegna' | 'ddt' | null>(null);
+  const [generating, setGenerating] = useState<'consegna' | 'ddt' | 'scheda' | null>(null);
   const [docError, setDocError] = useState<string | null>(null);
 
   if (loading) {
@@ -139,7 +139,7 @@ export function QuoteDetailView() {
   // tab is opened synchronously so the browser keeps it tied to this click and
   // does not block it as a popup; the PDF is loaded into it once it arrives.
   const openDocument = async (
-    kind: 'consegna' | 'ddt',
+    kind: 'consegna' | 'ddt' | 'scheda',
     fetcher: (id: string) => Promise<{ blob: Blob }>,
   ) => {
     setDocError(null);
@@ -181,6 +181,12 @@ export function QuoteDetailView() {
       icon: 'local_shipping',
       label: generating === 'ddt' ? 'Generazione DDT…' : 'Genera DDT',
       onClick: !isEditing && !generating ? () => openDocument('ddt', fetchQuoteDdt) : undefined,
+    },
+    {
+      id: 'scheda',
+      icon: 'assignment',
+      label: generating === 'scheda' ? 'Generazione scheda…' : 'Scheda Progetto',
+      onClick: !isEditing && !generating ? () => openDocument('scheda', fetchQuoteScheda) : undefined,
     },
   ];
 

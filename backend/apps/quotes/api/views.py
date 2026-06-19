@@ -24,6 +24,7 @@ from apps.quotes.delivery_form import (
     render_delivery_form,
 )
 from apps.quotes.models import Quote, QuoteItem
+from apps.quotes.scheda import prepare_scheda, render_scheda, scheda_filename
 from apps.quotes.services import change_quote_status
 from apps.statuses.services import allowed_target_states
 from .serializers import (
@@ -141,11 +142,11 @@ class QuoteStatusUpdateView(generics.GenericAPIView):
         return Response(QuoteSerializer(quote).data)
 
 
-class DeliveryFormTemplateMissing(ServiceError):
-    """The pre-printed template asset is not installed — a server-side error."""
+class TemplateAssetMissing(ServiceError):
+    """A required pre-printed template asset is not installed — a server-side error."""
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    default_message = "Modello del modulo di consegna non disponibile."
+    default_message = "Modello del documento non disponibile."
 
 
 class QuoteDeliveryFormView(APIView):
@@ -170,7 +171,7 @@ class QuoteDeliveryFormView(APIView):
         try:
             pdf = render_delivery_form(fields)
         except FileNotFoundError as exc:
-            raise DeliveryFormTemplateMissing() from exc
+            raise TemplateAssetMissing("Modello del modulo di consegna non disponibile.") from exc
 
         response = HttpResponse(pdf, content_type="application/pdf")
         filename = delivery_form_filename(quote, today)
@@ -223,4 +224,60 @@ class QuoteDdtView(APIView):
 
         response = HttpResponse(pdf, content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{ddt_filename(quote)}"'
+        return response
+
+
+def _scheda_item_rows(quote_id):
+    """
+    The quote's line items joined to their catalogue product, as plain rows for the
+    Scheda Progetto table (`codice`/`descrizione` from the product, the money
+    columns from the line). The original query inner-joins `nomenclatore`, so a
+    line whose product is missing is dropped.
+    """
+    items = QuoteItem.objects.filter(id_preventivo=quote_id).order_by("id")
+    product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
+    products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
+
+    rows = []
+    for item in items:
+        product = products.get(item.codice_nomenclatore)
+        if product is None:
+            continue
+        rows.append(
+            SimpleNamespace(
+                codice=product.codice,
+                descrizione=product.descrizione,
+                prezzo=item.prezzo,
+                quantita=item.quantita,
+                importo=item.importo,
+                sconto=item.sconto,
+            )
+        )
+    return rows
+
+
+class QuoteSchedaView(APIView):
+    """
+    Stream a quote's "Scheda Progetto" as an inline PDF.
+
+    Header data comes from the quote and its client (the original query inner-joins
+    `clienti`, so a quote with no client resolves to "not found"); the items table
+    from its line items. The required background template is reported through the
+    standard error envelope when absent. See `apps.quotes.scheda`.
+    """
+
+    def get(self, request, pk):
+        quote = Quote.objects.filter(pk=pk).first()
+        client = Client.objects.filter(pk=quote.id_cliente).first() if quote else None
+        if quote is None or client is None:
+            raise NotFoundError("Preventivo non trovato.")
+
+        document = prepare_scheda(quote, client, _scheda_item_rows(quote.id))
+        try:
+            pdf = render_scheda(document)
+        except FileNotFoundError as exc:
+            raise TemplateAssetMissing("Modello della scheda progetto non disponibile.") from exc
+
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{scheda_filename(quote)}"'
         return response

@@ -7,6 +7,7 @@ from .views import (
     QuoteItemDetailView,
     QuoteItemListView,
     QuoteListView,
+    QuoteSchedaView,
     QuoteStatusTransitionsView,
     QuoteStatusUpdateView,
 )
@@ -21,6 +22,7 @@ urlpatterns = [
     path("<int:pk>/status/", QuoteStatusUpdateView.as_view(), name="status"),
     path("<int:pk>/delivery-form/", QuoteDeliveryFormView.as_view(), name="delivery-form"),
     path("<int:pk>/ddt/", QuoteDdtView.as_view(), name="ddt"),
+    path("<int:pk>/scheda/", QuoteSchedaView.as_view(), name="scheda"),
     path(
         "<int:pk>/status-transitions/",
         QuoteStatusTransitionsView.as_view(),

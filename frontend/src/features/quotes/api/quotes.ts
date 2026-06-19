@@ -68,3 +68,8 @@ export function fetchQuoteDeliveryForm(id: string): Promise<{ blob: Blob; filena
 export function fetchQuoteDdt(id: string): Promise<{ blob: Blob; filename: string | null }> {
   return apiGetBlob(`/quotes/${id}/ddt/`);
 }
+
+/** Fetch the quote's "Scheda Progetto" project sheet as an inline PDF blob. */
+export function fetchQuoteScheda(id: string): Promise<{ blob: Blob; filename: string | null }> {
+  return apiGetBlob(`/quotes/${id}/scheda/`);
+}

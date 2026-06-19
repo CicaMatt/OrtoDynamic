@@ -16,12 +16,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from io import BytesIO
 from pathlib import Path
 
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-
+from apps.quotes.fpdf_canvas import FpdfCanvas
 from apps.quotes.pdf_background import compose_on_template
 
 # The template is a server-side asset shipped with the app (not user data and not
@@ -29,23 +26,6 @@ from apps.quotes.pdf_background import compose_on_template
 # from version control until supplied; the view turns a missing file into a clear
 # error.
 TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "moduloconsega.pdf"
-
-# --- Page & font geometry, reproducing FPDF 1.81 ----------------------------
-# FPDF works in millimetres with a top-left origin; reportlab and pypdf work in
-# PostScript points with a bottom-left origin. These constants bridge the two.
-_MM_TO_PT = 72.0 / 25.4
-_PAGE_H_PT = A4[1]  # 297 mm, matching the original AddPage() default
-
-_FONT_NAME = "Helvetica"  # FPDF's "Arial" maps to the core Helvetica font
-_FONT_SIZE_PT = 9
-
-# FPDF's Cell() places the text baseline at ``y + 0.3 * FontSize`` (cell height
-# 0), and Write()/Cell() indents a left-aligned string from the pen X by the
-# interior cell margin. Both offsets are part of the original's real output, so
-# they are reproduced rather than dropped; the coordinate table in the spec gives
-# only the pen (SetXY) position.
-_BASELINE_OFFSET_MM = 0.3 * (_FONT_SIZE_PT / _MM_TO_PT)  # ~0.95 mm below the pen Y
-_CELL_MARGIN_MM = (28.35 / _MM_TO_PT) / 10               # ~1.00 mm right of the pen X
 
 
 @dataclass(frozen=True)
@@ -103,29 +83,17 @@ def render_delivery_form(
 
 def _build_overlay(fields: DeliveryFormFields) -> bytes:
     """An A4 page carrying only the five stamped strings (no background fill)."""
-    buffer = BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=A4)
-    pdf.setFont(_FONT_NAME, _FONT_SIZE_PT)
-    pdf.setFillColorRGB(0, 0, 0)
+    pdf = FpdfCanvas()
+    pdf.set_font("", 9)
 
-    # COGNOME first, then NOME flush after it with a 2 mm gap on the same baseline.
-    # The gap is measured from the pen position FPDF leaves after COGNOME, which
-    # advances by the string width only (the cell margin is not added to it).
-    _draw(pdf, 92.0, 110.0, fields.cognome)
-    cognome_width_mm = pdf.stringWidth(fields.cognome, _FONT_NAME, _FONT_SIZE_PT) / _MM_TO_PT
-    _draw(pdf, 92.0 + cognome_width_mm + 2.0, 110.0, fields.nome)
+    # COGNOME first, then NOME flush after it with a 2 mm gap on the same baseline
+    # (`get_x()` after a write is the pen position FPDF leaves: start + text width).
+    pdf.write_at(92, 110, fields.cognome)
+    pdf.set_xy(pdf.get_x() + 2, pdf.get_y())
+    pdf.write(fields.nome)
 
-    _draw(pdf, 55.0, 115.0, fields.numero_autorizzazione)
-    _draw(pdf, 120.0, 115.0, fields.data_accettazione)
-    _draw(pdf, 40.0, 255.0, fields.data_generazione)
+    pdf.write_at(55, 115, fields.numero_autorizzazione)
+    pdf.write_at(120, 115, fields.data_accettazione)
+    pdf.write_at(40, 255, fields.data_generazione)
 
-    pdf.showPage()
-    pdf.save()
-    return buffer.getvalue()
-
-
-def _draw(pdf: canvas.Canvas, x_mm: float, y_mm: float, text: str) -> None:
-    """Stamp `text` at the FPDF pen position (x_mm, y_mm), matching FPDF geometry."""
-    x_pt = (x_mm + _CELL_MARGIN_MM) * _MM_TO_PT
-    baseline_pt = _PAGE_H_PT - (y_mm + _BASELINE_OFFSET_MM) * _MM_TO_PT
-    pdf.drawString(x_pt, baseline_pt, text)
+    return pdf.output()
