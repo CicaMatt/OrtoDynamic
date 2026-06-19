@@ -13,3 +13,9 @@ bcrypt>=4.0
 # throughput in production, `mysqlclient>=2.2` (C-based) can be swapped in,
 # but it requires the MySQL client C libraries + pkg-config on the build host.
 PyMySQL>=1.1
+
+# "Modulo di consegna" PDF generation (apps.quotes.delivery_form): reportlab
+# draws the text overlay, pypdf imports the pre-printed template page and merges
+# the two. Both are BSD-licensed and need no system libraries.
+reportlab>=4.0
+pypdf>=4.0

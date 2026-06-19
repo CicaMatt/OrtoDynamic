@@ -23,7 +23,7 @@ type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
  * `{ "error": { "message" } }` envelope into a thrown Error. A 401 means the
  * session is gone, so it notifies the auth layer before surfacing the error.
  */
-async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
+async function performRequest(method: Method, path: string, body?: unknown): Promise<Response> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (method !== 'GET') {
@@ -51,6 +51,11 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
     throw new Error(await extractErrorMessage(response));
   }
 
+  return response;
+}
+
+async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
+  const response = await performRequest(method, path, body);
   if (response.status === 204) {
     return undefined as T;
   }
@@ -60,6 +65,17 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
 /** GET a JSON resource from the backend API. */
 export function apiGet<T>(path: string): Promise<T> {
   return request<T>('GET', path);
+}
+
+/**
+ * GET a binary resource (e.g. a generated PDF) as a Blob, with the same auth,
+ * CSRF and error handling as the JSON helpers. Returns the blob and the filename
+ * suggested by the response's `Content-Disposition` header (null if absent).
+ */
+export async function apiGetBlob(path: string): Promise<{ blob: Blob; filename: string | null }> {
+  const response = await performRequest('GET', path);
+  const blob = await response.blob();
+  return { blob, filename: filenameFromContentDisposition(response.headers.get('Content-Disposition')) };
 }
 
 /** POST a JSON body to create a resource (body optional for action endpoints). */
@@ -75,6 +91,13 @@ export function apiPatch<T>(path: string, body: unknown): Promise<T> {
 /** DELETE a resource; resolves with nothing on the backend's 204 response. */
 export function apiDelete(path: string): Promise<void> {
   return request<void>('DELETE', path);
+}
+
+/** Pull the filename out of a `Content-Disposition` header, if it carries one. */
+function filenameFromContentDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const match = header.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 async function extractErrorMessage(response: Response): Promise<string> {

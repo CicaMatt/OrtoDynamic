@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from '../../../shared/api/http';
+import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '../../../shared/api/http';
 import type { Quote, QuoteItem, QuoteItemCreate, QuoteStatusTransitions } from '../types';
 
 export type QuoteUpdate = Record<string, string | number | null>;
@@ -57,4 +57,9 @@ export function updateQuote(id: string, changes: QuoteUpdate): Promise<unknown> 
 /** Create a new quote (optionally with its initial line items); the API returns the record. */
 export function createQuote(values: QuoteCreatePayload): Promise<Quote> {
   return apiPost<Quote>('/quotes/', values);
+}
+
+/** Fetch the quote's "Modulo di consegna" delivery form as an inline PDF blob. */
+export function fetchQuoteDeliveryForm(id: string): Promise<{ blob: Blob; filename: string | null }> {
+  return apiGetBlob(`/quotes/${id}/delivery-form/`);
 }

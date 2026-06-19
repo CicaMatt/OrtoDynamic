@@ -10,10 +10,12 @@ import {
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import { formatEuro } from '../../../shared/format/format';
+import { presentBlobInWindow } from '../../../shared/files/openBlob';
 import { FieldValue } from '../../../shared/ui/FieldValue';
+import { Icon } from '../../../shared/ui/Icon';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
-import { fetchQuote } from '../api/quotes';
+import { fetchQuote, fetchQuoteDeliveryForm } from '../api/quotes';
 import type { Quote } from '../types';
 import { QuoteItemsCard } from './QuoteItemsCard';
 import { QuoteStatusDialog } from './QuoteStatusDialog';
@@ -113,6 +115,8 @@ export function QuoteDetailView() {
   });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [generatingForm, setGeneratingForm] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -130,6 +134,24 @@ export function QuoteDetailView() {
   }
 
   const title = data.quoteNumber ? `Preventivo Nº ${data.quoteNumber}` : `Preventivo ${data.id}`;
+
+  const openDeliveryForm = async () => {
+    setFormError(null);
+    // Open the tab synchronously so the browser keeps it tied to this click and
+    // does not block it as a popup; the PDF is loaded into it once it arrives.
+    const win = window.open('', '_blank');
+    setGeneratingForm(true);
+    try {
+      const { blob } = await fetchQuoteDeliveryForm(data.id);
+      presentBlobInWindow(win, blob);
+    } catch (err) {
+      win?.close();
+      setFormError(err instanceof Error ? err.message : 'Impossibile generare il modulo di consegna.');
+    } finally {
+      setGeneratingForm(false);
+    }
+  };
+
   const actions = [
     {
       id: 'edit',
@@ -143,6 +165,12 @@ export function QuoteDetailView() {
       icon: 'sync_alt',
       label: 'Cambia Stato',
       onClick: !isEditing ? () => setStatusDialogOpen(true) : undefined,
+    },
+    {
+      id: 'delivery-form',
+      icon: 'picture_as_pdf',
+      label: generatingForm ? 'Generazione modulo…' : 'Modulo di Consegna',
+      onClick: !isEditing && !generatingForm ? openDeliveryForm : undefined,
     },
   ];
 
@@ -174,6 +202,22 @@ export function QuoteDetailView() {
         actions={actions}
       >
         <div className="space-y-[28px]">
+          {formError && (
+            <div
+              role="alert"
+              className="flex items-start justify-between gap-3 rounded-[10px] border border-error bg-error/10 px-[20px] py-[14px]"
+            >
+              <span className="font-body-sm text-body-sm text-error">{formError}</span>
+              <button
+                type="button"
+                onClick={() => setFormError(null)}
+                aria-label="Chiudi"
+                className="text-error/70 hover:text-error"
+              >
+                <Icon name="close" className="text-[20px]" />
+              </button>
+            </div>
+          )}
           <FieldSectionList
             data={data}
             sections={quoteSections}

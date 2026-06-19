@@ -1,7 +1,10 @@
 """Thin endpoints for the Quote resource."""
 
-from rest_framework import generics
+from django.http import HttpResponse
+from django.utils import timezone
+from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.clients.models import Client
 from apps.common.api.views import (
@@ -9,8 +12,14 @@ from apps.common.api.views import (
     UnpaginatedListCreateAPIView,
     attach_related,
 )
+from apps.common.exceptions import NotFoundError, ServiceError
 from apps.doctors.models import Doctor
 from apps.products.models import Product
+from apps.quotes.delivery_form import (
+    delivery_form_filename,
+    prepare_delivery_form_fields,
+    render_delivery_form,
+)
 from apps.quotes.models import Quote, QuoteItem
 from apps.quotes.services import change_quote_status
 from apps.statuses.services import allowed_target_states
@@ -127,3 +136,40 @@ class QuoteStatusUpdateView(generics.GenericAPIView):
         change_quote_status(quote, serializer.validated_data["status"])
         attach_people([quote])
         return Response(QuoteSerializer(quote).data)
+
+
+class DeliveryFormTemplateMissing(ServiceError):
+    """The pre-printed template asset is not installed — a server-side error."""
+
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_message = "Modello del modulo di consegna non disponibile."
+
+
+class QuoteDeliveryFormView(APIView):
+    """
+    Stream a quote's "Modulo di consegna" as an inline PDF.
+
+    The five stamped values come from the quote and its client (see
+    `apps.quotes.delivery_form`). The body is a raw PDF rather than the JSON
+    envelope, so the view returns a Django `HttpResponse` directly; a missing
+    template asset is reported through the standard error envelope.
+    """
+
+    def get(self, request, pk):
+        quote = Quote.objects.filter(pk=pk).first()
+        if quote is None:
+            raise NotFoundError("Preventivo inesistente.")
+
+        client = Client.objects.filter(pk=quote.id_cliente).first()
+        today = timezone.localdate()
+        fields = prepare_delivery_form_fields(quote, client, today=today)
+
+        try:
+            pdf = render_delivery_form(fields)
+        except FileNotFoundError as exc:
+            raise DeliveryFormTemplateMissing() from exc
+
+        response = HttpResponse(pdf, content_type="application/pdf")
+        filename = delivery_form_filename(quote, today)
+        response["Content-Disposition"] = f'inline; filename="{filename}"'
+        return response
