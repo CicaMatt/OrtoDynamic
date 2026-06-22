@@ -19,25 +19,17 @@ from datetime import date
 from pathlib import Path
 
 from apps.quotes.fpdf_canvas import FpdfCanvas
+from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
 from apps.quotes.pdf_background import compose_on_template
 
 # Optional background template; absent in the current system, so the default path
 # normally does not exist and the document renders on a blank page.
 TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "ddt.pdf"
-LOGO_PATH = Path(__file__).resolve().parent / "assets" / "logo.png"
 
 _DESCRIPTION_LIMIT = 55  # max width of the description column text, marker included
 _DESCRIPTION_WITH_PRICES_LIMIT = 38
 _TRIM_MARKER = "..."
 _SIGNATURE_RULE = "_" * 30
-_LETTERHEAD_LINES = (
-    "Ortodynamic srl",
-    "Via Filettine 12-14",
-    "84016 Pagani SA",
-    "Tel 081-5151302 081-18754715",
-    "Pec: ortdynamicsrl@arubapec.it",
-    "P. Iva 05078030656",
-)
 
 
 @dataclass(frozen=True)
@@ -115,9 +107,9 @@ def render_ddt(document: DdtDocument, *, template_path: Path = TEMPLATE_PATH) ->
 def _build_content(document: DdtDocument) -> bytes:
     pdf = FpdfCanvas()
 
-    # 1. Letterhead, matching the company header used by the privacy form.
-    _write_letterhead(pdf)
-    pdf.set_xy(10, 46)
+    # 1. Letterhead, shared by all the generated documents.
+    write_letterhead(pdf)
+    pdf.set_xy(10, CONTENT_TOP_MM)
 
     # 2. Title.
     pdf.set_font("B", 14)
@@ -167,17 +159,6 @@ def _build_content(document: DdtDocument) -> bytes:
     pdf.cell(95, 7, f"FIRMA: {_SIGNATURE_RULE}", 0, 1, "R")
 
     return pdf.output()
-
-
-def _write_letterhead(pdf: FpdfCanvas) -> None:
-    if LOGO_PATH.exists():
-        pdf.image(LOGO_PATH, 16, 9, 18, 22.5)
-
-    pdf.set_font("B", 11)
-    pdf.write_at(39, 10, _LETTERHEAD_LINES[0])
-    pdf.set_font("", 8)
-    for index, line in enumerate(_LETTERHEAD_LINES[1:]):
-        pdf.write_at(39, 15 + index * 4, line)
 
 
 def _write_items_header(pdf: FpdfCanvas, *, show_prices: bool) -> None:

@@ -1,47 +1,43 @@
 """
 Build the "Scheda Progetto" project sheet for a quote.
 
-Like the consegna form, this is a coordinate overlay: values are stamped at fixed
-millimetre positions onto a pre-printed background (``assets/scheda.pdf``),
-reproducing the legacy FPDF + FPDI script — including its header fields, the
-two wrapping free-text blocks (diagnosi/protesi) and a repeating line-items table
-with running totals.
+A single A4 page generated entirely in code: the shared company letterhead, the
+project/client header, the diagnosi and protesi free-text blocks, and a line-items
+table with running totals. Unlike the legacy overlay this loses nothing — the
+diagnosi/protesi and item descriptions are rendered in full (word-wrapped) instead
+of being truncated to fixed-length lines.
 
 `prepare_scheda` turns a quote, its client and its line items into the document's
-display values (pure, DB/HTTP-free); `render_scheda` stamps them over the template
-and returns the PDF bytes (template path injectable for testing).
+display values (pure, DB/HTTP-free); `render_scheda` lays them out and returns the
+PDF bytes.
 """
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
-from pathlib import Path
 
 from apps.quotes.fpdf_canvas import FpdfCanvas
-from apps.quotes.pdf_background import compose_on_template
+from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
 
-# Required background template (the overlay coordinates are meaningless without
-# it); the view turns a missing file into a clear error.
-TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "scheda.pdf"
-
-# Lab/accreditation code printed verbatim on every sheet.
+# Lab/accreditation code shown in the header.
 _LAB_CODE = "ITCA01059027"
-# Wrap thresholds and the per-row vertical pitch, straight from the original.
-_BLOCK_WRAP_AT = 65
-_DESCRIPTION_WRAP_AT = 30
-_ROW_PITCH_MM = 5.1
-_ROW_BASE_Y_MM = 145.7
 _VAT_RATE = 0.04
+
+# Items table: column widths (mm, summing to the 190 mm usable width), headers and
+# alignments, and the per-line height used when a description wraps.
+_ITEM_WIDTHS = (24.0, 74.0, 12.0, 26.0, 16.0, 26.0, 12.0)
+_ITEM_HEADERS = ("Codice", "Descrizione", "Qtà", "Prezzo", "Sconto", "Importo", "IVA")
+_ITEM_ALIGNS = ("L", "L", "C", "R", "C", "R", "C")
+_ITEM_LINE_MM = 5.0
 
 
 @dataclass(frozen=True)
 class SchedaItem:
-    """One line-items row, formatted for display."""
+    """One line-items row, formatted for display (description kept in full)."""
 
     codice: str
-    descrizione: tuple[str, ...]  # 1 element (single line) or 2 (wrapped)
+    descrizione: str
     quantita: str
     prezzo: str
     sconto: str
@@ -51,7 +47,7 @@ class SchedaItem:
 
 @dataclass(frozen=True)
 class SchedaDocument:
-    """The sheet's display values, ready to stamp."""
+    """The sheet's display values, ready to lay out."""
 
     id_progetto: str
     data_preventivo: str
@@ -64,8 +60,8 @@ class SchedaDocument:
     comune_nascita: str
     data_nascita: str
     tipologia: str
-    diagnosi: tuple[str, ...]  # 1 element (single line) or 2 (wrapped)
-    protesi: tuple[str, ...]
+    diagnosi: str
+    protesi: str
     items: tuple[SchedaItem, ...]
     sub_totale: str
     totale: str
@@ -75,16 +71,13 @@ def prepare_scheda(quote, client, items) -> SchedaDocument:
     """
     Map a quote, its client and its line items onto the sheet's display values.
 
-    Names, comuni and tipologia are upper-cased; the indirizzo and telefono are
-    left as-is; dates render ``DD/MM/YY``; the diagnosi (CR/LF stripped) and
-    protesi wrap to two lines past 65 characters. Quantities and unit prices print
-    as-is (whole numbers without a decimal part); line and document totals round to
-    two decimals. `items` is any sequence exposing `codice`, `descrizione`,
-    `prezzo`, `quantita`, `importo`, `sconto`.
+    Names, comuni, tipologia, diagnosi and protesi are upper-cased; indirizzo and
+    telefono are kept as-is; dates render ``DD/MM/YY``. Free text and item
+    descriptions are kept in full (the renderer wraps them). Quantities and unit
+    prices print as-is (whole numbers without a decimal part); line and document
+    totals round to two decimals. `items` is any sequence exposing `codice`,
+    `descrizione`, `prezzo`, `quantita`, `importo`, `sconto`.
     """
-    diagnosi_raw = quote.diagnosi_circostanziata or ""
-    protesi_raw = quote.prescizione_dettagliata_protesi or ""
-
     sub_total = 0.0
     prepared_items = []
     for item in items:
@@ -93,7 +86,7 @@ def prepare_scheda(quote, client, items) -> SchedaDocument:
         prepared_items.append(
             SchedaItem(
                 codice=str(item.codice) if item.codice is not None else "",
-                descrizione=_description_lines(item.descrizione or ""),
+                descrizione=item.descrizione or "",
                 quantita=_plain(item.quantita),
                 prezzo=_plain(item.prezzo),
                 sconto=_plain(item.sconto),
@@ -114,9 +107,8 @@ def prepare_scheda(quote, client, items) -> SchedaDocument:
         comune_nascita=(client.comune_nascita or "").upper(),
         data_nascita=_date(client.data_nascita),
         tipologia=(quote.tipologia_preventivo or "").upper(),
-        # The original tests the raw length (CR/LF included) but stamps the cleaned text.
-        diagnosi=_wrap(_strip_newlines(diagnosi_raw).upper(), len(diagnosi_raw)),
-        protesi=_wrap(protesi_raw.upper(), len(protesi_raw)),
+        diagnosi=(quote.diagnosi_circostanziata or "").upper(),
+        protesi=(quote.prescizione_dettagliata_protesi or "").upper(),
         items=tuple(prepared_items),
         sub_totale=_amount(sub_total),
         totale=_amount(sub_total * (1 + _VAT_RATE)),
@@ -128,98 +120,113 @@ def scheda_filename(quote) -> str:
     return f"scheda-progetto-{quote.id}.pdf"
 
 
-def render_scheda(document: SchedaDocument, *, template_path: Path = TEMPLATE_PATH) -> bytes:
-    """
-    Stamp `document` over the template and return the PDF bytes. Raises
-    `FileNotFoundError` when the template asset is absent (surfaced by the caller).
-    """
-    return compose_on_template(_build_overlay(document), template_path)
-
-
-def _build_overlay(document: SchedaDocument) -> bytes:
+def render_scheda(document: SchedaDocument) -> bytes:
+    """Lay the project sheet out on a code-drawn A4 page and return the PDF bytes."""
     pdf = FpdfCanvas()
+    write_letterhead(pdf)
+    pdf.set_xy(10, CONTENT_TOP_MM)
+
+    pdf.set_font("B", 14)
+    pdf.cell(0, 8, "Scheda Progetto", 0, 1, "C")
+    pdf.ln(4)
+
+    # Project header.
+    _field(pdf, "Progetto Nº:", document.id_progetto)
+    _field(pdf, "Data Preventivo:", document.data_preventivo)
+    _field(pdf, "Tipologia:", document.tipologia)
+    _field(pdf, "Codice Lab.:", _LAB_CODE)
+    pdf.ln(3)
+
+    # Client.
+    _section(pdf, "Cliente")
+    _field(pdf, "Cognome e Nome:", f"{document.cognome} {document.nome}".strip())
+    _field(pdf, "Indirizzo:", _address(document))
+    _field(pdf, "Telefono:", document.telefono)
+    _field(pdf, "Nato a:", _birth(document))
+    pdf.ln(3)
+
+    # Free-text blocks, rendered in full.
+    _section(pdf, "Diagnosi Circostanziata")
     pdf.set_font("", 9)
+    pdf.multi_cell(0, 5, document.diagnosi or "—")
+    pdf.ln(2)
 
-    # Header / fixed fields.
-    pdf.write_at(23.5, 57, _LAB_CODE)
-    pdf.write_at(32, 74.5, document.id_progetto)
-    pdf.write_at(30, 81.6, document.data_preventivo)
-    pdf.write_at(40, 89.5, document.cognome)
-    pdf.set_xy(pdf.get_x() + 2, pdf.get_y())  # NOME flush after COGNOME, 2 mm gap
-    pdf.write(document.nome)
-    pdf.write_at(43, 97, document.indirizzo)
-    pdf.set_xy(pdf.get_x() + 2, pdf.get_y())  # COMUNE after the address, 2 mm gap
-    pdf.write(document.comune_residenza)
-    pdf.set_xy(pdf.get_x() + 1, pdf.get_y())  # (PROVINCIA) after the comune, 1 mm gap
-    pdf.write(f"({document.provincia})")
-    pdf.write_at(38, 104.7, document.telefono)
-    pdf.write_at(36, 112.1, document.comune_nascita)
-    pdf.set_xy(pdf.get_x() + 2, pdf.get_y())  # birth date after the comune, 2 mm gap
-    pdf.write(f"Data {document.data_nascita}")
-    pdf.write_at(168, 59, document.tipologia)
+    _section(pdf, "Prescrizione Dettagliata Protesi")
+    pdf.set_font("", 9)
+    pdf.multi_cell(0, 5, document.protesi or "—")
+    pdf.ln(4)
 
-    # Free-text blocks (9 pt), single line or wrapped to two.
-    _write_block(pdf, document.diagnosi, single=(44, 120.7), wrapped=((44, 119), (44, 122)))
-    _write_block(pdf, document.protesi, single=(50, 127.3), wrapped=((50, 125.4), (50, 128.4)))
-
-    # Line-items table.
-    for index, item in enumerate(document.items):
-        dy = index * _ROW_PITCH_MM
-        pdf.set_font("", 8)
-        pdf.write_at(28, _ROW_BASE_Y_MM + dy, item.codice)
-
-        pdf.set_font("", 6)
-        if len(item.descrizione) == 2:
-            pdf.write_at(49.2, 145.1 + dy, item.descrizione[0])
-            pdf.write_at(49.2, 146.9 + dy, item.descrizione[1])
-        else:
-            pdf.write_at(49.2, 145.7 + dy, item.descrizione[0])
-
-        pdf.set_font("", 8)
-        pdf.write_at(94.5, 145.7 + dy, item.quantita)
-        pdf.write_at(110.8, 145.7 + dy, f"{item.prezzo} €")
-        if item.show_sconto:
-            pdf.write_at(135.8, 145.7 + dy, f"{item.sconto}%")
-        pdf.write_at(153.8, 145.9 + dy, f"{item.importo} €")
-        pdf.write_at(173, 145.8 + dy, "4%")
-
-    # Totals inherit the loop's 8 pt; with no items the size is still the 9 pt the
-    # header left set, matching the original.
-    pdf.set_font("", 8 if document.items else 9)
-    pdf.write_at(153.8, 235, f"{document.sub_totale} €")
-    pdf.write_at(153.8, 240, f"{document.totale} €")
+    # Items.
+    _section(pdf, "Voci")
+    _items_table(pdf, document)
+    pdf.ln(2)
+    pdf.set_font("", 10)
+    pdf.cell(150, 6, "Subtotale:", 0, 0, "R")
+    pdf.cell(40, 6, f"{document.sub_totale} €", 0, 1, "R")
+    pdf.set_font("B", 10)
+    pdf.cell(150, 6, "Totale (IVA 4% inclusa):", 0, 0, "R")
+    pdf.cell(40, 6, f"{document.totale} €", 0, 1, "R")
 
     return pdf.output()
 
 
-def _write_block(pdf, lines, *, single, wrapped) -> None:
-    if len(lines) == 2:
-        pdf.write_at(*wrapped[0], lines[0])
-        pdf.write_at(*wrapped[1], lines[1])
-    else:
-        pdf.write_at(*single, lines[0])
+def _section(pdf: FpdfCanvas, title: str) -> None:
+    pdf.set_font("B", 11)
+    pdf.cell(0, 6, title, 0, 1)
 
 
-def _wrap(text: str, raw_length: int) -> tuple[str, ...]:
-    """Split into two fixed lines past the 65-char threshold (measured on `raw_length`)."""
-    if raw_length >= _BLOCK_WRAP_AT:
-        return (text[0:65], text[65:190])
-    return (text,)
+def _field(pdf: FpdfCanvas, label: str, value: str) -> None:
+    pdf.set_font("", 10)
+    pdf.cell(46, 6, label, 0, 0)
+    pdf.set_font("B", 10)
+    pdf.cell(0, 6, value, 0, 1)
 
 
-def _description_lines(text: str) -> tuple[str, ...]:
-    """Item description: single line, or two past 30 chars (dropping index 28, per the original)."""
-    if len(text) >= _DESCRIPTION_WRAP_AT:
-        return (text[0:28], text[29:89])
-    return (text,)
+def _items_table(pdf: FpdfCanvas, document: SchedaDocument) -> None:
+    last = len(_ITEM_WIDTHS) - 1
+
+    pdf.set_font("B", 8)
+    for index, (width, header) in enumerate(zip(_ITEM_WIDTHS, _ITEM_HEADERS)):
+        pdf.cell(width, 7, header, 1, 1 if index == last else 0, "C")
+
+    pdf.set_font("", 8)
+    if not document.items:
+        pdf.cell(sum(_ITEM_WIDTHS), 7, "Nessuna voce disponibile", 1, 1, "C")
+        return
+
+    description_x = 10.0 + _ITEM_WIDTHS[0]
+    for item in document.items:
+        description_lines = pdf.wrap(item.descrizione, _ITEM_WIDTHS[1])
+        row_height = max(1, len(description_lines)) * _ITEM_LINE_MM
+        top = pdf.get_y()
+
+        sconto = f"{item.sconto}%" if item.show_sconto else ""
+        prezzo = f"{item.prezzo} €" if item.prezzo else ""
+        importo = f"{item.importo} €" if item.importo else ""
+        # The description cell is drawn empty (border only); its wrapped lines are
+        # placed afterwards so a long description grows the row instead of clipping.
+        values = (item.codice, "", item.quantita, prezzo, sconto, importo, "4%")
+        for index, (width, value, align) in enumerate(zip(_ITEM_WIDTHS, values, _ITEM_ALIGNS)):
+            pdf.cell(width, row_height, value, 1, 1 if index == last else 0, align)
+        for line_index, line in enumerate(description_lines):
+            pdf.text_cell(description_x, top + line_index * _ITEM_LINE_MM, _ITEM_WIDTHS[1], _ITEM_LINE_MM, line, "L")
+
+
+def _address(document: SchedaDocument) -> str:
+    location = " ".join(
+        part for part in (document.comune_residenza, f"({document.provincia})" if document.provincia else "") if part
+    )
+    return f"{document.indirizzo} - {location}".strip(" -")
+
+
+def _birth(document: SchedaDocument) -> str:
+    if document.data_nascita:
+        return f"{document.comune_nascita} il {document.data_nascita}".strip()
+    return document.comune_nascita
 
 
 def _date(value: date | None) -> str:
     return value.strftime("%d/%m/%y") if value else ""
-
-
-def _strip_newlines(text: str) -> str:
-    return re.sub(r"[\r\n]", "", text)
 
 
 def _plain(value) -> str:

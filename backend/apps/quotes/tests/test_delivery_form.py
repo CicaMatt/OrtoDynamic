@@ -3,8 +3,8 @@ Tests for the "Modulo di consegna" generator.
 
 `prepare_delivery_form_fields` and `delivery_form_filename` are exercised with
 lightweight stubs (they only read attributes, so no database or Django model is
-needed). `render_delivery_form` runs against a generated blank-A4 stand-in for the
-template, so the suite stays hermetic and does not depend on the real asset.
+needed). `render_delivery_form` produces a code-drawn page, asserted by its size
+and extracted text.
 """
 from datetime import date
 from io import BytesIO
@@ -13,7 +13,6 @@ from types import SimpleNamespace
 import pytest
 from pypdf import PdfReader
 from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 
 from apps.quotes.delivery_form import (
     DeliveryFormFields,
@@ -107,19 +106,9 @@ def test_filename_falls_back_to_today_without_quote_date():
 
 # --- render_delivery_form ----------------------------------------------------
 
-@pytest.fixture
-def template_path(tmp_path):
-    """A blank A4 stand-in for the real pre-printed template."""
-    path = tmp_path / "template.pdf"
-    pdf = canvas.Canvas(str(path), pagesize=A4)
-    pdf.showPage()
-    pdf.save()
-    return path
-
-
-def test_render_produces_single_a4_pdf(template_path):
+def test_render_produces_single_a4_pdf():
     fields = DeliveryFormFields("ROSSI", "MARIO", "AUT-12345", "07/03/24", "18/06/2026")
-    pdf = render_delivery_form(fields, template_path=template_path)
+    pdf = render_delivery_form(fields)
 
     assert pdf.startswith(b"%PDF")
     reader = PdfReader(BytesIO(pdf))
@@ -129,16 +118,15 @@ def test_render_produces_single_a4_pdf(template_path):
     assert float(box.height) == pytest.approx(A4[1], abs=1.0)
 
 
-def test_render_stamps_every_field(template_path):
+def test_render_includes_letterhead_title_and_fields():
     fields = DeliveryFormFields("ROSSI", "MARIO", "AUT-12345", "07/03/24", "18/06/2026")
-    pdf = render_delivery_form(fields, template_path=template_path)
-
-    text = PdfReader(BytesIO(pdf)).pages[0].extract_text()
-    for value in ("ROSSI", "MARIO", "AUT-12345", "07/03/24", "18/06/2026"):
+    text = PdfReader(BytesIO(render_delivery_form(fields))).pages[0].extract_text()
+    for value in (
+        "Ortodynamic srl",
+        "Modulo di Consegna",
+        "ROSSI MARIO",
+        "AUT-12345",
+        "07/03/24",
+        "18/06/2026",
+    ):
         assert value in text
-
-
-def test_render_missing_template_raises(tmp_path):
-    fields = DeliveryFormFields("ROSSI", "MARIO", "", "", "18/06/2026")
-    with pytest.raises(FileNotFoundError):
-        render_delivery_form(fields, template_path=tmp_path / "does-not-exist.pdf")

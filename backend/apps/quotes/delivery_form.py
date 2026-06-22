@@ -1,31 +1,21 @@
 """
 Build the "Modulo di consegna" delivery form for a quote.
 
-A single A4 page: a pre-printed template PDF (``assets/moduloconsega.pdf``) is
-placed as the page background and five short values are stamped on top of it at
-fixed positions. This reproduces the legacy FPDF 1.81 + FPDI script, including its
-exact text geometry, so the values land inside the boxes printed on the template.
-
-The public functions are pure and free of HTTP/DB concerns, so the view stays thin
-and both can be unit tested in isolation: `prepare_delivery_form_fields` turns a
-quote and its client into the five display strings, and `render_delivery_form`
-draws those strings over the template and returns the PDF bytes (the template path
-is injectable for testing).
+A single A4 page generated entirely in code: the shared company letterhead followed
+by the recipient and the delivery details. The public functions are pure and free
+of HTTP/DB concerns, so the view stays thin and both can be unit tested in
+isolation: `prepare_delivery_form_fields` turns a quote and its client into the
+display strings, and `render_delivery_form` lays them out and returns the PDF bytes.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 
 from apps.quotes.fpdf_canvas import FpdfCanvas
-from apps.quotes.pdf_background import compose_on_template
+from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
 
-# The template is a server-side asset shipped with the app (not user data and not
-# a Django static file): a 1-page A4 PDF of the pre-printed form. It is absent
-# from version control until supplied; the view turns a missing file into a clear
-# error.
-TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "moduloconsega.pdf"
+_SIGNATURE_RULE = "_" * 30
 
 
 @dataclass(frozen=True)
@@ -67,33 +57,36 @@ def delivery_form_filename(quote, today: date) -> str:
     return f"modulo-consegna-{basis:%y%m%d}.pdf"
 
 
-def render_delivery_form(
-    fields: DeliveryFormFields, *, template_path: Path = TEMPLATE_PATH
-) -> bytes:
-    """
-    Draw `fields` over the template and return the finished PDF as bytes.
-
-    Raises `FileNotFoundError` when the template asset is absent (a deployment
-    error the caller surfaces to the client). `template_path` is injectable so
-    tests can run against a generated stand-in.
-    """
-    overlay = _build_overlay(fields)
-    return compose_on_template(overlay, template_path)
-
-
-def _build_overlay(fields: DeliveryFormFields) -> bytes:
-    """An A4 page carrying only the five stamped strings (no background fill)."""
+def render_delivery_form(fields: DeliveryFormFields) -> bytes:
+    """Lay the delivery form out on a code-drawn A4 page and return the PDF bytes."""
     pdf = FpdfCanvas()
-    pdf.set_font("", 9)
+    write_letterhead(pdf)
+    pdf.set_xy(10, CONTENT_TOP_MM)
 
-    # COGNOME first, then NOME flush after it with a 2 mm gap on the same baseline
-    # (`get_x()` after a write is the pen position FPDF leaves: start + text width).
-    pdf.write_at(92, 110, fields.cognome)
-    pdf.set_xy(pdf.get_x() + 2, pdf.get_y())
-    pdf.write(fields.nome)
+    pdf.set_font("B", 14)
+    pdf.cell(0, 8, "Modulo di Consegna", 0, 1, "C")
+    pdf.ln(8)
 
-    pdf.write_at(55, 115, fields.numero_autorizzazione)
-    pdf.write_at(120, 115, fields.data_accettazione)
-    pdf.write_at(40, 255, fields.data_generazione)
+    pdf.set_font("", 11)
+    pdf.cell(0, 6, "Si attesta la consegna della fornitura ortopedica a:", 0, 1)
+    pdf.ln(2)
+
+    full_name = f"{fields.cognome} {fields.nome}".strip()
+    _field_row(pdf, "Cognome e Nome:", full_name, value_bold=True)
+    _field_row(pdf, "Nº Autorizzazione:", fields.numero_autorizzazione)
+    _field_row(pdf, "Data Accettazione:", fields.data_accettazione)
+
+    pdf.ln(24)
+    pdf.set_font("", 11)
+    pdf.cell(95, 7, f"Data: {fields.data_generazione}", 0, 0, "L")
+    pdf.cell(95, 7, f"Firma per ricevuta: {_SIGNATURE_RULE}", 0, 1, "R")
 
     return pdf.output()
+
+
+def _field_row(pdf: FpdfCanvas, label: str, value: str, *, value_bold: bool = False) -> None:
+    """A label/value line: a fixed-width label cell followed by the value to the margin."""
+    pdf.set_font("", 11)
+    pdf.cell(48, 7, label, 0, 0)
+    pdf.set_font("B" if value_bold else "", 11)
+    pdf.cell(0, 7, value, 0, 1)

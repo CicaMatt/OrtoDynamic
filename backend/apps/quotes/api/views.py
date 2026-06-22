@@ -169,11 +169,7 @@ class QuoteDeliveryFormView(APIView):
         client = Client.objects.filter(pk=quote.id_cliente).first()
         today = timezone.localdate()
         fields = prepare_delivery_form_fields(quote, client, today=today)
-
-        try:
-            pdf = render_delivery_form(fields)
-        except FileNotFoundError as exc:
-            raise TemplateAssetMissing("Modello del modulo di consegna non disponibile.") from exc
+        pdf = render_delivery_form(fields)
 
         response = HttpResponse(pdf, content_type="application/pdf")
         filename = delivery_form_filename(quote, today)
@@ -284,10 +280,7 @@ class QuoteSchedaView(APIView):
             raise NotFoundError("Preventivo non trovato.")
 
         document = prepare_scheda(quote, client, _scheda_item_rows(quote.id))
-        try:
-            pdf = render_scheda(document)
-        except FileNotFoundError as exc:
-            raise TemplateAssetMissing("Modello della scheda progetto non disponibile.") from exc
+        pdf = render_scheda(document)
 
         response = HttpResponse(pdf, content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{scheda_filename(quote)}"'

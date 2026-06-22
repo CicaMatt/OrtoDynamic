@@ -95,25 +95,56 @@ class FpdfCanvas:
             )
 
         if text:
-            if align == "C":
-                dx = (w - self._string_width_mm(text)) / 2
-            elif align == "R":
-                dx = w - _CELL_MARGIN_MM - self._string_width_mm(text)
-            else:
-                dx = _CELL_MARGIN_MM
-            # FPDF vertical centering: baseline at y + 0.5*h + 0.3*FontSize (mm).
-            baseline_mm = self.y + 0.5 * h + 0.3 * (self._size / _MM_TO_PT)
-            self._canvas.drawString(
-                (self.x + dx) * _MM_TO_PT,
-                _PAGE_H_PT - baseline_mm * _MM_TO_PT,
-                text,
-            )
+            self.text_cell(self.x, self.y, w, h, text, align)
 
         if ln == 1:
             self.x = _MARGIN_MM
             self.y += h
         else:
             self.x += w
+
+    def text_cell(self, x: float, y: float, w: float, h: float, text: str, align: str = "L") -> None:
+        """Draw `text` inside the box (x, y, w, h) — vertically centered, L/C/R — without a
+        border or moving the cursor. Shared by `cell` and the table/wrapping helpers."""
+        if not text:
+            return
+        if align == "C":
+            dx = (w - self._string_width_mm(text)) / 2
+        elif align == "R":
+            dx = w - _CELL_MARGIN_MM - self._string_width_mm(text)
+        else:
+            dx = _CELL_MARGIN_MM
+        # FPDF vertical centering: baseline at y + 0.5*h + 0.3*FontSize (mm).
+        baseline_mm = y + 0.5 * h + 0.3 * (self._size / _MM_TO_PT)
+        self._canvas.drawString((x + dx) * _MM_TO_PT, _PAGE_H_PT - baseline_mm * _MM_TO_PT, text)
+
+    def wrap(self, text: str, w: float) -> list[str]:
+        """Greedily word-wrap `text` into lines fitting width `w` (mm) at the current font,
+        honouring existing newlines. Always returns at least one (possibly empty) line."""
+        usable = w - 2 * _CELL_MARGIN_MM
+        lines: list[str] = []
+        for paragraph in (text or "").split("\n"):
+            current = ""
+            for word in paragraph.split(" "):
+                candidate = word if not current else f"{current} {word}"
+                if not current or self._string_width_mm(candidate) <= usable:
+                    current = candidate
+                else:
+                    lines.append(current)
+                    current = word
+            lines.append(current)
+        return lines
+
+    def multi_cell(self, w: float, h: float, text: str) -> None:
+        """Draw `text` word-wrapped to width `w` with line height `h`, then drop the cursor
+        below the block (x back to the left margin) — FPDF's MultiCell, left-aligned."""
+        if w == 0:
+            w = _PAGE_W_MM - _MARGIN_MM - self.x
+        left = self.x
+        for line in self.wrap(text, w):
+            self.text_cell(left, self.y, w, h, line, "L")
+            self.y += h
+        self.x = _MARGIN_MM
 
     def ln(self, h: float) -> None:
         self.x = _MARGIN_MM
