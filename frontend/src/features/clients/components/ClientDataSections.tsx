@@ -35,7 +35,7 @@ export function ClientDataSections({
           ? {
               ...field,
               label: 'Medico',
-              renderValue: (id: string) => <ReferenceName name={doctorName} id={id} />,
+              renderValue: (id: string) => <ReferenceName name={doctorName} id={id} entity="doctor" />,
             }
           : field,
       );

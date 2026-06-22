@@ -41,12 +41,19 @@ const lifecycleFields: WorkOrderField[] = [
 // In read mode the client shows by name with its id revealed on hover; edit mode
 // keeps the numeric id input, since the reference is still set by id.
 const referenceFields: WorkOrderField[] = [
-  { label: 'ID Preventivo', key: 'quoteId', type: 'number' },
+  {
+    label: 'ID Preventivo',
+    key: 'quoteId',
+    type: 'number',
+    renderValue: (id) => <ReferenceName name={id} id={id} entity="quote" />,
+  },
   {
     label: 'Cliente',
     key: 'clientId',
     type: 'number',
-    renderValue: (id, workOrder) => <ReferenceName name={workOrder.clientName} id={id} />,
+    renderValue: (id, workOrder) => (
+      <ReferenceName name={workOrder.clientName} id={id} entity="client" />
+    ),
   },
   { label: 'Massima Scadenza', key: 'maxExpiry' },
 ];
@@ -84,7 +91,7 @@ const workOrderSections: FieldSectionConfig<WorkOrder>[] = [
 ];
 
 export function WorkOrderDetailView() {
-  const { selectedWorkOrderId, navigate } = useNavigation();
+  const { selectedWorkOrderId, navigate, goBack } = useNavigation();
   const { workOrderDraft, startWorkOrderEdit, seedWorkOrder, setWorkOrderField } = useEntityEdit();
 
   const { data, loading, error, isEditing, reload } = useEntityDetail({
@@ -101,7 +108,7 @@ export function WorkOrderDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => navigate('work-orders')} backLabel="Torna alle lavorazioni">
+      <StatusMessage onBack={() => goBack('work-orders')} backLabel="Torna alle lavorazioni">
         Caricamento lavorazione...
       </StatusMessage>
     );
@@ -109,7 +116,7 @@ export function WorkOrderDetailView() {
   if (error || !data) {
     return (
       <StatusMessage
-        onBack={() => navigate('work-orders')}
+        onBack={() => goBack('work-orders')}
         backLabel="Torna alle lavorazioni"
         tone="error"
       >
@@ -149,7 +156,7 @@ export function WorkOrderDetailView() {
       <EntityDetailLayout
         header={
           <EntityPageHeader
-            back={{ label: 'Torna indietro', onClick: () => navigate('work-orders') }}
+            back={{ label: 'Torna indietro', onClick: () => goBack('work-orders') }}
             crumbs={[
               { label: 'Lavorazioni', onClick: () => navigate('work-orders') },
               { label: 'Dettaglio' },

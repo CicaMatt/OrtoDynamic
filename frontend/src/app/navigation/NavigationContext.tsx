@@ -11,6 +11,7 @@ type NavigationValue = {
   selectedQuoteId: string | null;
   selectedWorkOrderId: string | null;
   navigate: (view: View) => void;
+  goBack: (fallback: View) => void;
   openClientDetail: (clientCode: string) => void;
   openClientCreate: () => void;
   openDoctorDetail: (id: string) => void;
@@ -84,6 +85,16 @@ type NavigationTarget = {
   workOrderId?: string | null;
 };
 
+function targetKey(target: NavigationTarget): string {
+  if (isClientView(target.view)) return `${target.view}:${target.clientCode ?? ''}`;
+  if (target.view === 'doctor-detail') return `${target.view}:${target.doctorId ?? ''}`;
+  if (target.view === 'health-company-detail') return `${target.view}:${target.healthCompanyId ?? ''}`;
+  if (target.view === 'product-detail') return `${target.view}:${target.productId ?? ''}`;
+  if (target.view === 'quote-detail') return `${target.view}:${target.quoteId ?? ''}`;
+  if (target.view === 'work-order-detail') return `${target.view}:${target.workOrderId ?? ''}`;
+  return target.view;
+}
+
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const edit = useEntityEdit();
   const [view, setView] = useState<View>('dashboard');
@@ -94,6 +105,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
   const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | null>(null);
   const [pendingTarget, setPendingTarget] = useState<NavigationTarget | null>(null);
+  const [pendingHistory, setPendingHistory] = useState<NavigationTarget[] | null>(null);
+  const [history, setHistory] = useState<NavigationTarget[]>([]);
 
   const targetForView = (next: View): NavigationTarget => ({
     view: next,
@@ -140,19 +153,31 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     setSelectedWorkOrderId(target.view === 'work-order-detail' ? target.workOrderId ?? null : null);
   };
 
-  const guardedApply = (target: NavigationTarget) => {
+  const pushHistoryFor = (target: NavigationTarget) => {
+    const current = targetForView(view);
+    return targetKey(current) === targetKey(target) ? history : [...history, current];
+  };
+
+  const guardedApply = (target: NavigationTarget, nextHistory = pushHistoryFor(target)) => {
     if (edit.editing && !isSameEditTarget(target)) {
       if (edit.isDirty) {
         setPendingTarget(target);
+        setPendingHistory(nextHistory);
         return;
       }
       edit.cancel();
     }
+    setHistory(nextHistory);
     applyTarget(target);
   };
 
   const navigate = (next: View) => {
     guardedApply(targetForView(next));
+  };
+
+  const goBack = (fallback: View) => {
+    const target = history[history.length - 1] ?? targetForView(fallback);
+    guardedApply(target, history.slice(0, -1));
   };
 
   const openClientDetail = (clientCode: string) => {
@@ -214,17 +239,26 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     const target = pendingTarget;
     const result = await edit.save();
     setPendingTarget(null);
+    const nextHistory = pendingHistory;
+    setPendingHistory(null);
     if (result.ok && target) applyTarget(target);
+    if (result.ok && nextHistory) setHistory(nextHistory);
   };
 
   const discardAndContinue = () => {
     const target = pendingTarget;
+    const nextHistory = pendingHistory;
     edit.cancel();
     setPendingTarget(null);
+    setPendingHistory(null);
+    if (nextHistory) setHistory(nextHistory);
     if (target) applyTarget(target);
   };
 
-  const dismissPending = () => setPendingTarget(null);
+  const dismissPending = () => {
+    setPendingTarget(null);
+    setPendingHistory(null);
+  };
 
   return (
     <NavigationContext.Provider
@@ -237,6 +271,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         selectedQuoteId,
         selectedWorkOrderId,
         navigate,
+        goBack,
         openClientDetail,
         openClientCreate,
         openDoctorDetail,

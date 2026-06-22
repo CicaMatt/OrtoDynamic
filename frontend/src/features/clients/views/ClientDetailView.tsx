@@ -19,7 +19,7 @@ const clientActions = [
 ];
 
 export function ClientDetailView() {
-  const { selectedClientCode, navigate } = useNavigation();
+  const { selectedClientCode, navigate, goBack } = useNavigation();
   const { clientDraft, startClientEdit, seedClient, setClientField } = useEntityEdit();
 
   const { data, loading, error, isEditing } = useEntityDetail({
@@ -42,14 +42,14 @@ export function ClientDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => navigate('clients')} backLabel="Torna ai clienti">
+      <StatusMessage onBack={() => goBack('clients')} backLabel="Torna ai clienti">
         Caricamento cliente...
       </StatusMessage>
     );
   }
   if (error || !data) {
     return (
-      <StatusMessage onBack={() => navigate('clients')} backLabel="Torna ai clienti" tone="error">
+      <StatusMessage onBack={() => goBack('clients')} backLabel="Torna ai clienti" tone="error">
         {error ?? 'Nessun cliente selezionato.'}
       </StatusMessage>
     );
@@ -80,7 +80,7 @@ export function ClientDetailView() {
     <EntityDetailLayout
       header={
         <ClientPageHeader
-          back={{ label: 'Torna indietro', onClick: () => navigate('clients') }}
+          back={{ label: 'Torna indietro', onClick: () => goBack('clients') }}
           crumbs={[
             { label: 'Clienti', onClick: () => navigate('clients') },
             { label: 'Dettaglio' },

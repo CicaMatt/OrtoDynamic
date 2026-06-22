@@ -13,7 +13,7 @@ const healthCompanyActions = [
 ];
 
 export function HealthCompanyDetailView() {
-  const { selectedHealthCompanyId, navigate } = useNavigation();
+  const { selectedHealthCompanyId, navigate, goBack } = useNavigation();
   const { healthCompanyDraft, startHealthCompanyEdit, seedHealthCompany, setHealthCompanyField } =
     useEntityEdit();
 
@@ -28,7 +28,7 @@ export function HealthCompanyDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => navigate('health-companies')} backLabel="Torna alle aziende sanitarie">
+      <StatusMessage onBack={() => goBack('health-companies')} backLabel="Torna alle aziende sanitarie">
         Caricamento azienda sanitaria...
       </StatusMessage>
     );
@@ -36,7 +36,7 @@ export function HealthCompanyDetailView() {
   if (error || !data) {
     return (
       <StatusMessage
-        onBack={() => navigate('health-companies')}
+        onBack={() => goBack('health-companies')}
         backLabel="Torna alle aziende sanitarie"
         tone="error"
       >
@@ -56,7 +56,7 @@ export function HealthCompanyDetailView() {
     <EntityDetailLayout
       header={
         <EntityPageHeader
-          back={{ label: 'Torna indietro', onClick: () => navigate('health-companies') }}
+          back={{ label: 'Torna indietro', onClick: () => goBack('health-companies') }}
           crumbs={[
             { label: 'Aziende Sanitarie', onClick: () => navigate('health-companies') },
             { label: 'Dettaglio' },

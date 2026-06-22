@@ -49,13 +49,13 @@ const referenceFields: QuoteField[] = [
     label: 'Cliente',
     key: 'clientId',
     type: 'number',
-    renderValue: (id, quote) => <ReferenceName name={quote.clientName} id={id} />,
+    renderValue: (id, quote) => <ReferenceName name={quote.clientName} id={id} entity="client" />,
   },
   {
     label: 'Medico',
     key: 'doctorId',
     type: 'number',
-    renderValue: (id, quote) => <ReferenceName name={quote.doctorName} id={id} />,
+    renderValue: (id, quote) => <ReferenceName name={quote.doctorName} id={id} entity="doctor" />,
   },
   { label: 'Inserito Da', key: 'entryBy' },
 ];
@@ -102,7 +102,7 @@ const quoteSections: FieldSectionConfig<Quote>[] = [
 ];
 
 export function QuoteDetailView() {
-  const { selectedQuoteId, navigate } = useNavigation();
+  const { selectedQuoteId, navigate, goBack } = useNavigation();
   const { quoteDraft, startQuoteEdit, seedQuote, setQuoteField } = useEntityEdit();
 
   const { data, loading, error, isEditing, reload } = useEntityDetail({
@@ -121,14 +121,14 @@ export function QuoteDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => navigate('quotes')} backLabel="Torna ai preventivi">
+      <StatusMessage onBack={() => goBack('quotes')} backLabel="Torna ai preventivi">
         Caricamento preventivo...
       </StatusMessage>
     );
   }
   if (error || !data) {
     return (
-      <StatusMessage onBack={() => navigate('quotes')} backLabel="Torna ai preventivi" tone="error">
+      <StatusMessage onBack={() => goBack('quotes')} backLabel="Torna ai preventivi" tone="error">
         {error ?? 'Nessun preventivo selezionato.'}
       </StatusMessage>
     );
@@ -181,7 +181,7 @@ export function QuoteDetailView() {
       <EntityDetailLayout
         header={
           <EntityPageHeader
-            back={{ label: 'Torna indietro', onClick: () => navigate('quotes') }}
+            back={{ label: 'Torna indietro', onClick: () => goBack('quotes') }}
             crumbs={[
               { label: 'Preventivi', onClick: () => navigate('quotes') },
               { label: 'Dettaglio' },

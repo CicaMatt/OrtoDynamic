@@ -14,7 +14,7 @@ const doctorActions = [
 ];
 
 export function DoctorDetailView() {
-  const { selectedDoctorId, navigate } = useNavigation();
+  const { selectedDoctorId, navigate, goBack } = useNavigation();
   const { doctorDraft, startDoctorEdit, seedDoctor, setDoctorField } = useEntityEdit();
 
   const { data, loading, error, isEditing } = useEntityDetail({
@@ -28,14 +28,14 @@ export function DoctorDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => navigate('doctors')} backLabel="Torna ai medici">
+      <StatusMessage onBack={() => goBack('doctors')} backLabel="Torna ai medici">
         Caricamento medico...
       </StatusMessage>
     );
   }
   if (error || !data) {
     return (
-      <StatusMessage onBack={() => navigate('doctors')} backLabel="Torna ai medici" tone="error">
+      <StatusMessage onBack={() => goBack('doctors')} backLabel="Torna ai medici" tone="error">
         {error ?? 'Nessun medico selezionato.'}
       </StatusMessage>
     );
@@ -52,7 +52,7 @@ export function DoctorDetailView() {
     <EntityDetailLayout
       header={
         <EntityPageHeader
-          back={{ label: 'Torna indietro', onClick: () => navigate('doctors') }}
+          back={{ label: 'Torna indietro', onClick: () => goBack('doctors') }}
           crumbs={[
             { label: 'Medici', onClick: () => navigate('doctors') },
             { label: 'Dettaglio' },

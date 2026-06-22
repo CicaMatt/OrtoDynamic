@@ -6,6 +6,7 @@ import {
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { formatBirthDate, formatEuro, formatInteger } from '../../../shared/format/format';
+import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchWorkOrderItems, updateWorkOrderItem } from '../api/workOrders';
 import type { WorkOrderItem } from '../types';
 
@@ -136,12 +137,22 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
       return { ...prev, [item.id]: itemEdits };
     });
   };
+  const columns = itemColumns.map((column) =>
+    column.key === 'productId'
+      ? {
+          ...column,
+          renderNode: (value: string, item: WorkOrderItem) => (
+            <ReferenceName name={value} id={item.productId} entity="product" />
+          ),
+        }
+      : column,
+  );
 
   return (
     <DetailTableCard
       icon="inventory_2"
       title="Articoli Lavorazione"
-      columns={itemColumns}
+      columns={columns}
       items={items}
       loading={loading}
       error={error}

@@ -8,6 +8,8 @@ export type DetailTableColumn<T> = {
   label: string;
   /** Map the raw value to its display string (e.g. date formatting). */
   render?: (value: string) => string;
+  /** Custom read-mode content replacing the formatted value. */
+  renderNode?: (value: string, item: T, raw: string) => ReactNode;
   /** When set and the card is editing, the cell is a select over these values. */
   editOptions?: ReadonlyArray<string>;
   /** When true and the card is editing, the cell is a date input. */
@@ -122,6 +124,7 @@ function DetailTableBody<T extends object>({
         <tr key={rowKey(item)} className="border-b border-surface-variant last:border-0">
           {columns.map((column) => {
             const raw = String(item[column.key] ?? '');
+            const value = column.render ? column.render(raw) : raw;
             const cellEditable =
               editing &&
               (column.editOptions || column.editDate) &&
@@ -138,7 +141,7 @@ function DetailTableBody<T extends object>({
                     onChange={(value) => onCellChange!(item, column.key, value)}
                   />
                 ) : (
-                  <FieldValue value={column.render ? column.render(raw) : raw} />
+                  column.renderNode ? column.renderNode(value, item, raw) : <FieldValue value={value} />
                 )}
               </td>
             );

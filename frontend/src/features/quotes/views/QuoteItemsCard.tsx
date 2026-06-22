@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DataCard } from '../../../shared/entity/DataCard';
 import { formatEuro, formatInteger } from '../../../shared/format/format';
 import { FieldValue } from '../../../shared/ui/FieldValue';
+import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import type { Product } from '../../products/types';
 import {
@@ -256,10 +257,10 @@ function ReadRow({
           >
             {column.wrap ? (
               <div className="max-w-[360px] whitespace-normal break-words">
-                <FieldValue value={value} />
+                {renderReadValue(column.key, value, item)}
               </div>
             ) : (
-              <FieldValue value={value} />
+              renderReadValue(column.key, value, item)
             )}
           </td>
         );
@@ -285,4 +286,11 @@ function ReadRow({
       </td>
     </tr>
   );
+}
+
+function renderReadValue(key: keyof QuoteItem, value: string, item: QuoteItem) {
+  if (key === 'productId' || key === 'productDescription') {
+    return <ReferenceName name={value} id={item.productId} entity="product" />;
+  }
+  return <FieldValue value={value} />;
 }

@@ -13,7 +13,7 @@ const productActions = [
 ];
 
 export function ProductDetailView() {
-  const { selectedProductId, navigate } = useNavigation();
+  const { selectedProductId, navigate, goBack } = useNavigation();
   const { productDraft, startProductEdit, seedProduct, setProductField } = useEntityEdit();
 
   const { data, loading, error, isEditing } = useEntityDetail({
@@ -27,14 +27,14 @@ export function ProductDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => navigate('products')} backLabel="Torna ai prodotti">
+      <StatusMessage onBack={() => goBack('products')} backLabel="Torna ai prodotti">
         Caricamento prodotto...
       </StatusMessage>
     );
   }
   if (error || !data) {
     return (
-      <StatusMessage onBack={() => navigate('products')} backLabel="Torna ai prodotti" tone="error">
+      <StatusMessage onBack={() => goBack('products')} backLabel="Torna ai prodotti" tone="error">
         {error ?? 'Nessun prodotto selezionato.'}
       </StatusMessage>
     );
@@ -51,7 +51,7 @@ export function ProductDetailView() {
     <EntityDetailLayout
       header={
         <EntityPageHeader
-          back={{ label: 'Torna indietro', onClick: () => navigate('products') }}
+          back={{ label: 'Torna indietro', onClick: () => goBack('products') }}
           crumbs={[
             { label: 'Prodotti', onClick: () => navigate('products') },
             { label: 'Dettaglio' },
