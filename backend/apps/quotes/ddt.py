@@ -24,10 +24,20 @@ from apps.quotes.pdf_background import compose_on_template
 # Optional background template; absent in the current system, so the default path
 # normally does not exist and the document renders on a blank page.
 TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "ddt.pdf"
+LOGO_PATH = Path(__file__).resolve().parent / "assets" / "logo.png"
 
 _DESCRIPTION_LIMIT = 55  # max width of the description column text, marker included
+_DESCRIPTION_WITH_PRICES_LIMIT = 38
 _TRIM_MARKER = "..."
 _SIGNATURE_RULE = "_" * 30
+_LETTERHEAD_LINES = (
+    "Ortodynamic srl",
+    "Via Filettine 12-14",
+    "84016 Pagani SA",
+    "Tel 081-5151302 081-18754715",
+    "Pec: ortdynamicsrl@arubapec.it",
+    "P. Iva 05078030656",
+)
 
 
 @dataclass(frozen=True)
@@ -37,6 +47,8 @@ class DdtItem:
     codice: str
     descrizione: str
     quantita: str
+    prezzo_unitario: str = ""
+    importo: str = ""
 
 
 @dataclass(frozen=True)
@@ -49,18 +61,20 @@ class DdtDocument:
     destinatario: str
     indirizzo_completo: str   # "" when there is nothing to show
     items: tuple[DdtItem, ...]
+    show_prices: bool = False
 
 
-def prepare_ddt(quote, client, items, *, today: date) -> DdtDocument:
+def prepare_ddt(quote, client, items, *, today: date, show_prices: bool = False) -> DdtDocument:
     """
     Map a quote, its client and its line items onto the DDT's display strings.
 
-    `items` is any sequence of objects exposing `codice`, `descrizione` and
-    `quantita` (the catalogue code/description, null when the product is gone, and
-    the line quantity). Descriptions are truncated and quantities formatted here so
-    `render_ddt` only lays out finished strings. `today` is injected to keep this
-    pure (the view passes `timezone.localdate()`).
+    `items` is any sequence of objects exposing `codice`, `descrizione`,
+    `quantita`, and optionally `prezzo`/`importo`. Descriptions are truncated and
+    quantities/prices formatted here so `render_ddt` only lays out finished
+    strings. `today` is injected to keep this pure (the view passes
+    `timezone.localdate()`).
     """
+    description_limit = _DESCRIPTION_WITH_PRICES_LIMIT if show_prices else _DESCRIPTION_LIMIT
     return DdtDocument(
         ddt_number=_ddt_number(quote),
         generated_date=today.strftime("%d/%m/%Y"),
@@ -70,11 +84,14 @@ def prepare_ddt(quote, client, items, *, today: date) -> DdtDocument:
         items=tuple(
             DdtItem(
                 codice=item.codice or "",
-                descrizione=_truncate(item.descrizione or ""),
+                descrizione=_truncate(item.descrizione or "", limit=description_limit),
                 quantita=_format_quantity(item.quantita),
+                prezzo_unitario=_format_money(getattr(item, "prezzo", None)),
+                importo=_format_money(getattr(item, "importo", None)),
             )
             for item in items
         ),
+        show_prices=show_prices,
     )
 
 
@@ -98,19 +115,23 @@ def render_ddt(document: DdtDocument, *, template_path: Path = TEMPLATE_PATH) ->
 def _build_content(document: DdtDocument) -> bytes:
     pdf = FpdfCanvas()
 
-    # 1. Title.
+    # 1. Letterhead, matching the company header used by the privacy form.
+    _write_letterhead(pdf)
+    pdf.set_xy(10, 46)
+
+    # 2. Title.
     pdf.set_font("B", 14)
     pdf.cell(0, 8, "Documento di trasporto", 0, 1, "C")
     pdf.ln(2)
 
-    # 2. Header line 1: DDT number and today's date.
+    # 3. Header line 1: DDT number and today's date.
     pdf.set_font("", 10)
     pdf.cell(35, 6, "DDT n°:", 0, 0)
     pdf.cell(80, 6, document.ddt_number, 0, 0)
     pdf.cell(35, 6, "Data:", 0, 0)
     pdf.cell(0, 6, document.generated_date, 0, 1)
 
-    # 3. Header line 2: authorization number when present, else a blank line to
+    # 4. Header line 2: authorization number when present, else a blank line to
     #    keep the vertical rhythm.
     if document.numero_autorizzazione:
         pdf.cell(35, 6, "Autorizzazione:", 0, 0)
@@ -119,7 +140,7 @@ def _build_content(document: DdtDocument) -> bytes:
         pdf.ln(6)
     pdf.ln(2)
 
-    # 4. Recipient block.
+    # 5. Recipient block.
     pdf.set_font("B", 11)
     pdf.cell(0, 6, "Destinatario", 0, 1)
     pdf.set_font("", 10)
@@ -128,29 +149,64 @@ def _build_content(document: DdtDocument) -> bytes:
         pdf.cell(0, 6, document.indirizzo_completo, 0, 1)
     pdf.ln(4)
 
-    # 5. Items table header.
-    pdf.set_font("B", 9)
-    pdf.cell(30, 7, "Codice", 1, 0, "L")
-    pdf.cell(140, 7, "Descrizione", 1, 0, "L")
-    pdf.cell(20, 7, "Qtà", 1, 1, "C")
+    # 6. Items table header.
+    _write_items_header(pdf, show_prices=document.show_prices)
 
-    # 6. Items, or the empty state.
+    # 7. Items, or the empty state.
     pdf.set_font("", 9)
     if document.items:
         for item in document.items:
-            pdf.cell(30, 7, item.codice, 1, 0, "L")
-            pdf.cell(140, 7, item.descrizione, 1, 0, "L")
-            pdf.cell(20, 7, item.quantita, 1, 1, "C")
+            _write_item_row(pdf, item, show_prices=document.show_prices)
     else:
         pdf.cell(190, 7, "Nessuna voce disponibile", 1, 1, "C")
 
-    # 7. Footer: date and signature line.
+    # 8. Footer: date and signature line.
     pdf.ln(12)
     pdf.set_font("", 10)
     pdf.cell(95, 7, f"Data: {document.generated_date}", 0, 0, "L")
     pdf.cell(95, 7, f"FIRMA: {_SIGNATURE_RULE}", 0, 1, "R")
 
     return pdf.output()
+
+
+def _write_letterhead(pdf: FpdfCanvas) -> None:
+    if LOGO_PATH.exists():
+        pdf.image(LOGO_PATH, 16, 9, 18, 22.5)
+
+    pdf.set_font("B", 11)
+    pdf.write_at(39, 10, _LETTERHEAD_LINES[0])
+    pdf.set_font("", 8)
+    for index, line in enumerate(_LETTERHEAD_LINES[1:]):
+        pdf.write_at(39, 15 + index * 4, line)
+
+
+def _write_items_header(pdf: FpdfCanvas, *, show_prices: bool) -> None:
+    pdf.set_font("B", 9)
+    if show_prices:
+        pdf.cell(25, 7, "Codice", 1, 0, "L")
+        pdf.cell(90, 7, "Descrizione", 1, 0, "L")
+        pdf.cell(15, 7, "Qtà", 1, 0, "C")
+        pdf.cell(30, 7, "Prezzo unit.", 1, 0, "R")
+        pdf.cell(30, 7, "Totale", 1, 1, "R")
+        return
+
+    pdf.cell(30, 7, "Codice", 1, 0, "L")
+    pdf.cell(140, 7, "Descrizione", 1, 0, "L")
+    pdf.cell(20, 7, "Qtà", 1, 1, "C")
+
+
+def _write_item_row(pdf: FpdfCanvas, item: DdtItem, *, show_prices: bool) -> None:
+    if show_prices:
+        pdf.cell(25, 7, item.codice, 1, 0, "L")
+        pdf.cell(90, 7, item.descrizione, 1, 0, "L")
+        pdf.cell(15, 7, item.quantita, 1, 0, "C")
+        pdf.cell(30, 7, item.prezzo_unitario, 1, 0, "R")
+        pdf.cell(30, 7, item.importo, 1, 1, "R")
+        return
+
+    pdf.cell(30, 7, item.codice, 1, 0, "L")
+    pdf.cell(140, 7, item.descrizione, 1, 0, "L")
+    pdf.cell(20, 7, item.quantita, 1, 1, "C")
 
 
 def _ddt_number(quote) -> str:
@@ -187,3 +243,9 @@ def _format_quantity(value) -> str:
         return str(int(quantity))
     integer_part, decimal_part = f"{quantity:,.2f}".split(".")
     return f"{integer_part.replace(',', '.')},{decimal_part}"
+
+
+def _format_money(value) -> str:
+    amount = float(value) if value not in (None, "") else 0.0
+    integer_part, decimal_part = f"{amount:,.2f}".split(".")
+    return f"{integer_part.replace(',', '.')},{decimal_part} €"

@@ -65,8 +65,12 @@ export function fetchQuoteDeliveryForm(id: string): Promise<{ blob: Blob; filena
 }
 
 /** Fetch the quote's DDT (delivery note) as an inline PDF blob. */
-export function fetchQuoteDdt(id: string): Promise<{ blob: Blob; filename: string | null }> {
-  return apiGetBlob(`/quotes/${id}/ddt/`);
+export function fetchQuoteDdt(
+  id: string,
+  includePrices = false,
+): Promise<{ blob: Blob; filename: string | null }> {
+  const query = includePrices ? '?include_prices=true' : '';
+  return apiGetBlob(`/quotes/${id}/ddt/${query}`);
 }
 
 /** Fetch the quote's "Scheda Progetto" project sheet as an inline PDF blob. */

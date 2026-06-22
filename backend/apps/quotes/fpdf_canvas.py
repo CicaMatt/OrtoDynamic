@@ -16,8 +16,10 @@ Geometry (FPDF 1.81):
 from __future__ import annotations
 
 from io import BytesIO
+from pathlib import Path
 
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 _MM_TO_PT = 72.0 / 25.4
@@ -65,6 +67,17 @@ class FpdfCanvas:
         """Convenience for the ``SetXY`` then ``Write`` pattern used by the overlays."""
         self.set_xy(x, y)
         self.write(text)
+
+    def image(self, path: Path, x: float, y: float, w: float, h: float) -> None:
+        """Draw an image using FPDF's top-left millimetre coordinates."""
+        self._canvas.drawImage(
+            ImageReader(str(path)),
+            x * _MM_TO_PT,
+            _PAGE_H_PT - (y + h) * _MM_TO_PT,
+            width=w * _MM_TO_PT,
+            height=h * _MM_TO_PT,
+            mask="auto",
+        )
 
     def cell(self, w: float, h: float, text: str = "", border: int = 0, ln: int = 0,
              align: str = "L") -> None:

@@ -115,6 +115,7 @@ export function QuoteDetailView() {
   });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [ddtOptionsOpen, setDdtOptionsOpen] = useState(false);
   const { generating, error: docError, clearError, open: openDocument } =
     useInlineDocument<'consegna' | 'ddt' | 'scheda'>();
 
@@ -162,8 +163,7 @@ export function QuoteDetailView() {
       id: 'ddt',
       icon: 'local_shipping',
       label: generating === 'ddt' ? 'Generazione DDT…' : 'Genera DDT',
-      onClick:
-        !isEditing && !generating ? () => openDocument('ddt', () => fetchQuoteDdt(data.id)) : undefined,
+      onClick: !isEditing && !generating ? () => setDdtOptionsOpen(true) : undefined,
     },
     {
       id: 'scheda',
@@ -238,6 +238,80 @@ export function QuoteDetailView() {
           onChanged={reload}
         />
       )}
+      {ddtOptionsOpen && (
+        <DdtOptionsDialog
+          generating={generating === 'ddt'}
+          onClose={() => setDdtOptionsOpen(false)}
+          onGenerate={(includePrices) => {
+            setDdtOptionsOpen(false);
+            openDocument('ddt', () => fetchQuoteDdt(data.id, includePrices));
+          }}
+        />
+      )}
     </>
+  );
+}
+
+function DdtOptionsDialog({
+  generating,
+  onClose,
+  onGenerate,
+}: {
+  generating: boolean;
+  onClose: () => void;
+  onGenerate: (includePrices: boolean) => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ddt-options-title"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-[460px] max-w-full rounded-[12px] bg-white p-[28px] shadow-[0_16px_48px_rgba(0,0,0,0.22)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h3 id="ddt-options-title" className="font-headline-md text-headline-md font-bold text-black">
+          Genera DDT
+        </h3>
+        <p className="mt-[10px] font-body-md text-body-md text-on-surface-variant">
+          Scegli se includere prezzo unitario e totale riga per ogni articolo.
+        </p>
+
+        <div className="mt-[24px] grid gap-[10px]">
+          <button
+            type="button"
+            disabled={generating}
+            onClick={() => onGenerate(false)}
+            className="flex h-[46px] items-center justify-between rounded-[6px] border border-outline-variant px-[16px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+          >
+            Senza prezzi
+            <Icon name="visibility_off" className="text-[20px] text-secondary" />
+          </button>
+          <button
+            type="button"
+            disabled={generating}
+            onClick={() => onGenerate(true)}
+            className="flex h-[46px] items-center justify-between rounded-[6px] bg-secondary px-[16px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
+          >
+            Con prezzi
+            <Icon name="euro" className="text-[20px]" />
+          </button>
+        </div>
+
+        <div className="mt-[22px] flex justify-end">
+          <button
+            type="button"
+            disabled={generating}
+            onClick={onClose}
+            className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+          >
+            Annulla
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

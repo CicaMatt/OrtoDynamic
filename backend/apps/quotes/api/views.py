@@ -184,9 +184,9 @@ class QuoteDeliveryFormView(APIView):
 def _ddt_item_rows(quote_id):
     """
     The quote's line items merged with their catalogue product, as plain rows
-    carrying the three fields the DDT prints (`codice`, `descrizione`, `quantita`).
-    Products are loaded in one query; a line whose product is gone keeps null
-    code/description (the LEFT JOIN in the original).
+    carrying the fields the DDT prints (`codice`, `descrizione`, `quantita`, plus
+    optional price columns). Products are loaded in one query; a line whose
+    product is gone keeps null code/description (the LEFT JOIN in the original).
     """
     items = list(QuoteItem.objects.filter(id_preventivo=quote_id).order_by("id"))
     product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
@@ -200,6 +200,8 @@ def _ddt_item_rows(quote_id):
                 codice=product.codice if product else None,
                 descrizione=product.descrizione if product else None,
                 quantita=item.quantita,
+                prezzo=item.prezzo,
+                importo=item.importo,
             )
         )
     return rows
@@ -221,7 +223,14 @@ class QuoteDdtView(APIView):
             raise NotFoundError("Preventivo non trovato.")
 
         today = timezone.localdate()
-        document = prepare_ddt(quote, client, _ddt_item_rows(quote.id), today=today)
+        show_prices = request.query_params.get("include_prices") == "true"
+        document = prepare_ddt(
+            quote,
+            client,
+            _ddt_item_rows(quote.id),
+            today=today,
+            show_prices=show_prices,
+        )
         pdf = render_ddt(document)
 
         response = HttpResponse(pdf, content_type="application/pdf")

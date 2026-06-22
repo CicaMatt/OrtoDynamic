@@ -44,8 +44,14 @@ def make_client(**overrides):
     return SimpleNamespace(**base)
 
 
-def item(codice="C1", descrizione="Tutore", quantita=1.0):
-    return SimpleNamespace(codice=codice, descrizione=descrizione, quantita=quantita)
+def item(codice="C1", descrizione="Tutore", quantita=1.0, prezzo=107.91, importo=215.82):
+    return SimpleNamespace(
+        codice=codice,
+        descrizione=descrizione,
+        quantita=quantita,
+        prezzo=prezzo,
+        importo=importo,
+    )
 
 
 def prepare(quote=None, client=None, items=()):
@@ -120,6 +126,27 @@ def test_quantity_formatting(quantita, expected):
     assert prepare(items=[item(quantita=quantita)]).items[0].quantita == expected
 
 
+def test_price_fields_are_formatted_when_requested():
+    row = prepare(items=[item(prezzo=107.91, importo=215.82)],).items[0]
+    assert row.prezzo_unitario == "107,91 €"
+    assert row.importo == "215,82 €"
+
+
+def test_descriptions_are_shorter_when_prices_are_requested():
+    result = prepare(items=[item(descrizione="A" * 60)]).items[0].descrizione
+    assert result == "A" * 52 + "..."
+
+    priced_doc = prepare_ddt(
+        make_quote(),
+        make_client(),
+        [item(descrizione="A" * 60)],
+        today=TODAY,
+        show_prices=True,
+    )
+    assert priced_doc.items[0].descrizione == "A" * 35 + "..."
+    assert len(priced_doc.items[0].descrizione) == 38
+
+
 # --- filename ---------------------------------------------------------------
 
 def test_filename_uses_id():
@@ -153,8 +180,45 @@ def test_render_blank_page_is_single_a4_with_content():
     assert float(page.mediabox.height) == pytest.approx(A4[1], abs=1.0)
 
     text = page.extract_text()
-    for value in ("Documento di trasporto", "ORD-9", "Rossi Mario", "Codice", "Descrizione", "C1"):
+    for value in (
+        "Ortodynamic srl",
+        "Documento di trasporto",
+        "ORD-9",
+        "Rossi Mario",
+        "Codice",
+        "Descrizione",
+        "C1",
+    ):
         assert value in text
+
+
+def test_render_without_prices_keeps_price_columns_hidden():
+    text = _read(
+        render_ddt(
+            document(items=[DdtItem("C1", "Tutore", "1", "107,91 €", "215,82 €")]),
+            template_path=None,
+        )
+    )[1].extract_text()
+    assert "Prezzo unit." not in text
+    assert "107,91" not in text
+
+
+def test_render_with_prices_shows_unit_and_line_totals():
+    doc = DdtDocument(
+        ddt_number="ORD-9",
+        generated_date="19/06/2026",
+        numero_autorizzazione="AUT-7",
+        destinatario="Rossi Mario",
+        indirizzo_completo="Via Roma 1 - 80100 Napoli (NA)",
+        items=(DdtItem("C1", "Tutore", "1", "107,91 €", "215,82 €"),),
+        show_prices=True,
+    )
+
+    text = _read(render_ddt(doc, template_path=None))[1].extract_text()
+    assert "Prezzo unit." in text
+    assert "Totale" in text
+    assert "107,91 €" in text
+    assert "215,82 €" in text
 
 
 def test_render_empty_items_shows_placeholder():
