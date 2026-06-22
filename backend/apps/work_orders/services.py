@@ -1,5 +1,4 @@
 """Work order business operations that go beyond plain field updates."""
-from django.db import transaction
 from django.utils import timezone
 
 from apps.products.models import Product
@@ -23,27 +22,31 @@ def work_order_for_quote(quote_id):
 def create_work_order_from_quote(quote):
     """
     Create the work order (`lavorazioni`) and its lines (`item_lavorazioni`) from a
-    quote's items, in one transaction.
+    quote's items.
 
     Each work-order line copies its quote line's amount/quantity and the product's
     code/description. Idempotent: if a work order already exists for the quote it is
     returned unchanged, so re-triggering the transition never creates a duplicate.
     The single home for "a quote becomes a work order"; see
     `apps.quotes.services.change_quote_status`, which calls it on the transition.
+
+    The legacy tables are MyISAM and cannot roll back, so a partial failure is undone
+    explicitly (compensation): if building the line items fails, the just-created work
+    order and any items already inserted are deleted before the error propagates, so a
+    half-built work order is never left behind.
     """
+    existing = work_order_for_quote(quote.id)
+    if existing is not None:
+        return existing
+
     today = timezone.localdate()
-    with transaction.atomic():
-        existing = work_order_for_quote(quote.id)
-        if existing is not None:
-            return existing
-
-        work_order = WorkOrder.objects.create(
-            id_preventivo=quote.id,
-            id_cliente=quote.id_cliente,
-            stato=_WORK_ORDER_STATE,
-            data_creazione_lavorazione=today,
-        )
-
+    work_order = WorkOrder.objects.create(
+        id_preventivo=quote.id,
+        id_cliente=quote.id_cliente,
+        stato=_WORK_ORDER_STATE,
+        data_creazione_lavorazione=today,
+    )
+    try:
         items = list(QuoteItem.objects.filter(id_preventivo=quote.id).order_by("id"))
         product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
         products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
@@ -59,6 +62,10 @@ def create_work_order_from_quote(quote):
                 stato=_WORK_ORDER_STATE,
                 data_creazione_lavorazione=today,
             )
+    except Exception:
+        WorkOrderItem.objects.filter(id_lavorazione=work_order.id).delete()
+        work_order.delete()
+        raise
 
     return work_order
 

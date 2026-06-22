@@ -6,6 +6,10 @@ import { Icon } from '../ui/Icon';
  * selectable states (static or fetched) and the `onApply` action, so the same
  * dialog serves both rule-driven (quotes) and free-choice (work orders) flows.
  * Picking a state applies it, then reports back so the detail view can refresh.
+ *
+ * A caller may pass `confirmTarget` to require confirmation for certain targets
+ * (e.g. a transition that also creates entities): picking such a state shows an
+ * in-dialog confirm step first, and cancelling returns to the list with no change.
  */
 export function StatusChangeDialog({
   title,
@@ -17,6 +21,7 @@ export function StatusChangeDialog({
   onApply,
   onClose,
   onChanged,
+  confirmTarget,
 }: {
   title: string;
   currentStatus: string;
@@ -30,9 +35,15 @@ export function StatusChangeDialog({
   onApply: (target: string) => Promise<unknown>;
   onClose: () => void;
   onChanged: () => void;
+  /**
+   * Optional guard: return a confirmation message for a target that needs one
+   * (e.g. it also creates entities), or `null` to apply the target directly.
+   */
+  confirmTarget?: (target: string) => string | null;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ target: string; message: string } | null>(null);
 
   const apply = async (target: string) => {
     setSubmitting(true);
@@ -45,6 +56,16 @@ export function StatusChangeDialog({
       setSubmitError(err instanceof Error ? err.message : 'Errore durante il cambio di stato.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const select = (target: string) => {
+    const message = confirmTarget?.(target);
+    if (message) {
+      setSubmitError(null);
+      setPending({ target, message });
+    } else {
+      void apply(target);
     }
   };
 
@@ -62,42 +83,76 @@ export function StatusChangeDialog({
           Stato attuale: <span className="font-semibold text-on-surface">{currentStatus || '—'}</span>
         </p>
 
-        <div className="mt-[20px]">
-          {loading ? (
-            <p className="font-body-md text-body-md text-on-surface-variant">Caricamento stati…</p>
-          ) : error ? (
-            <p className="font-body-md text-body-md text-error">{error}</p>
-          ) : available.length === 0 ? (
-            <p className="font-body-md text-body-md text-on-surface-variant">{emptyLabel}</p>
-          ) : (
-            <div className="space-y-[8px]">
-              {available.map((target) => (
-                <button
-                  key={target}
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => apply(target)}
-                  className="flex w-full items-center justify-between rounded-[6px] border border-outline-variant px-[16px] py-[12px] text-left font-body-md text-body-md text-on-surface hover:bg-surface-container-low disabled:opacity-50"
-                >
-                  {target}
-                  <Icon name="arrow_forward" className="text-[18px] text-secondary" />
-                </button>
-              ))}
+        {pending ? (
+          <>
+            <p className="mt-[20px] font-body-md text-body-md text-on-surface">{pending.message}</p>
+            {submitError && (
+              <p className="mt-[14px] font-body-sm text-body-sm text-error">{submitError}</p>
+            )}
+            <div className="mt-[24px] flex justify-end gap-[10px]">
+              <button
+                type="button"
+                onClick={() => {
+                  setPending(null);
+                  setSubmitError(null);
+                }}
+                disabled={submitting}
+                className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                onClick={() => apply(pending.target)}
+                disabled={submitting}
+                className="h-[40px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
+              >
+                {submitting ? 'Attendere…' : 'Conferma'}
+              </button>
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          <>
+            <div className="mt-[20px]">
+              {loading ? (
+                <p className="font-body-md text-body-md text-on-surface-variant">Caricamento stati…</p>
+              ) : error ? (
+                <p className="font-body-md text-body-md text-error">{error}</p>
+              ) : available.length === 0 ? (
+                <p className="font-body-md text-body-md text-on-surface-variant">{emptyLabel}</p>
+              ) : (
+                <div className="space-y-[8px]">
+                  {available.map((target) => (
+                    <button
+                      key={target}
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => select(target)}
+                      className="flex w-full items-center justify-between rounded-[6px] border border-outline-variant px-[16px] py-[12px] text-left font-body-md text-body-md text-on-surface hover:bg-surface-container-low disabled:opacity-50"
+                    >
+                      {target}
+                      <Icon name="arrow_forward" className="text-[18px] text-secondary" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-        {submitError && <p className="mt-[14px] font-body-sm text-body-sm text-error">{submitError}</p>}
+            {submitError && (
+              <p className="mt-[14px] font-body-sm text-body-sm text-error">{submitError}</p>
+            )}
 
-        <div className="mt-[24px] flex justify-end">
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
-          >
-            Chiudi
-          </button>
-        </div>
+            <div className="mt-[24px] flex justify-end">
+              <button
+                onClick={onClose}
+                disabled={submitting}
+                className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+              >
+                Chiudi
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
