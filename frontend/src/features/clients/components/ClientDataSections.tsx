@@ -1,6 +1,7 @@
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import type { AutocompleteFieldConfig } from '../../../shared/entity/DataCard';
 import { NoteCard } from '../../../shared/entity/NoteCard';
+import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import type { Client } from '../types';
 import {
   clientCreateFieldGroups,
@@ -12,6 +13,7 @@ type ClientDataSectionsProps = {
   editing: boolean;
   create?: boolean;
   invalidKeys?: ReadonlyArray<keyof Client>;
+  doctorName?: string;
   autocompleteFields?: Partial<Record<keyof Client, AutocompleteFieldConfig>>;
   onChange: (key: keyof Client, value: string) => void;
 };
@@ -21,10 +23,22 @@ export function ClientDataSections({
   editing,
   create = false,
   invalidKeys,
+  doctorName = '',
   autocompleteFields,
   onChange,
 }: ClientDataSectionsProps) {
   const fields = create ? clientCreateFieldGroups : clientFieldGroups;
+  const contactFields = create
+    ? fields.contact
+    : fields.contact.map((field) =>
+        field.key === 'doctorId'
+          ? {
+              ...field,
+              label: 'Medico',
+              renderValue: (id: string) => <ReferenceName name={doctorName} id={id} />,
+            }
+          : field,
+      );
 
   return (
     <>
@@ -56,7 +70,7 @@ export function ClientDataSections({
           icon="contact_phone"
           title="Contatti e Distretto"
           data={data}
-          fields={fields.contact}
+          fields={contactFields}
           columns={2}
           editing={editing}
           onChange={onChange}

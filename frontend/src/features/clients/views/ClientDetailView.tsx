@@ -1,10 +1,12 @@
 import { fetchClient, fetchClientPrivacyForm } from '../api/clients';
+import { fetchDoctor } from '../../doctors/api/doctors';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { ClientPageHeader } from '../components/ClientPageHeader';
 import { ClientDataSections } from '../components/ClientDataSections';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { Icon } from '../../../shared/ui/Icon';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
+import { useApiData } from '../../../shared/hooks/useApiData';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
@@ -31,6 +33,12 @@ export function ClientDetailView() {
 
   const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditing);
   const { generating, error: docError, clearError, open: openDocument } = useInlineDocument<'privacy'>();
+  const doctorId = data?.doctorId?.trim() ?? '';
+  const { data: doctor } = useApiData(
+    () => (doctorId ? fetchDoctor(doctorId) : Promise.resolve(null)),
+    [doctorId],
+  );
+  const doctorName = doctor ? `${doctor.name} ${doctor.surname}`.trim() : '';
 
   if (loading) {
     return (
@@ -103,6 +111,7 @@ export function ClientDetailView() {
         data={data}
         editing={isEditing}
         onChange={setClientField}
+        doctorName={doctorName}
         autocompleteFields={municipalityFields}
       />
     </EntityDetailLayout>
