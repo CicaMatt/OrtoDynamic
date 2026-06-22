@@ -107,8 +107,38 @@ class WorkOrderItem(UnmanagedModel):
     data_consegna_parziale = models.DateField(null=True, blank=True)
     data_consegna = models.DateField(null=True, blank=True)
 
+    # --- Traceability (rendered on the risk-assessment / testing sheet) ---
+    # `db_column` maps the legacy uppercase `DDT` column onto a PEP 8 attribute.
+    materiale = models.TextField(null=True, blank=True)
+    fornitore = models.TextField(null=True, blank=True)
+    ddt = models.TextField(null=True, blank=True, db_column="DDT")
+    lotto = models.TextField(null=True, blank=True)
+
     class Meta(UnmanagedModel.Meta):
         db_table = "item_lavorazioni"
 
     def __str__(self) -> str:
         return str(self.pk)
+
+
+class PeriodicCheck(UnmanagedModel):
+    """
+    Periodic maintenance/check record — maps the existing `controlli_periodici` table.
+
+    Linked to its work order by the plain integer column `id_lavorazione`
+    (references `lavorazioni.id`), mirroring the rest of the mapped schema. Only the
+    columns rendered on the risk-assessment / testing sheet are mapped.
+    """
+
+    id = models.BigAutoField(primary_key=True)
+
+    id_lavorazione = models.BigIntegerField()
+    data_intervento = models.DateField(null=True, blank=True)
+    intervento = models.TextField(null=True, blank=True)
+    firma_tecnico = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta(UnmanagedModel.Meta):
+        db_table = "controlli_periodici"
+
+    def __str__(self) -> str:
+        return f"Controllo {self.pk}"

@@ -69,3 +69,20 @@ This document is keyed on a **client** (the form generator lives with the other 
 documents, but the endpoint is `GET /api/v1/clients/<id>/privacy-form/`). Until the
 file is present that endpoint returns HTTP 500 with the message "Modello del modulo
 di privacy non disponibile."
+
+## `schedacollaudi.pdf` (required, not yet in version control)
+
+The "Scheda valutazione rischi e collaudi" generator (`apps.quotes.collaudi`) stamps
+work-order data onto this **2-page** pre-printed sheet. Drop it here:
+
+    backend/apps/quotes/assets/schedacollaudi.pdf
+
+Requirements:
+
+- **2 pages**, each **A4** (MediaBox ≈ 595.32 × 842.04 pt).
+- Unlike the other templates, each page is used at **full original size** (no 5 mm
+  inset, no 200 mm scaling) — the overlay is drawn directly on the full-size page.
+
+This document is keyed on a **work order** (the generator lives here, but the endpoint
+is `GET /api/v1/work-orders/<id>/collaudi/`). Until the file is present that endpoint
+returns HTTP 500 with the message "Modello della scheda collaudi non disponibile."

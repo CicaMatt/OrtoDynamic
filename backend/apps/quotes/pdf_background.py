@@ -50,3 +50,23 @@ def compose_on_template(overlay_pdf: bytes, template_path: Path) -> bytes:
     output = BytesIO()
     writer.write(output)
     return output.getvalue()
+
+
+def overlay_full_size(template_path: Path, page_overlays: list[bytes]) -> bytes:
+    """
+    Stamp each overlay over the matching page of `template_path` at full original
+    size — no inset, no scaling — keeping each template page as the output page 1:1.
+
+    `page_overlays[i]` is a single-page PDF drawn over template page `i`. Used by
+    multi-page documents whose template pages are the output pages directly. Raises
+    `FileNotFoundError` when the template file is absent.
+    """
+    # Clone the template into the writer first, then merge onto the writer's own
+    # pages (the supported path; merging onto detached reader pages is unreliable).
+    writer = PdfWriter(clone_from=str(template_path))
+    for index, overlay_pdf in enumerate(page_overlays):
+        writer.pages[index].merge_page(PdfReader(BytesIO(overlay_pdf)).pages[0])
+
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()

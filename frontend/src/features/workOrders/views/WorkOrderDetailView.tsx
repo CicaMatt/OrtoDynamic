@@ -9,9 +9,11 @@ import {
   type FieldSectionConfig,
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
+import { useInlineDocument } from '../../../shared/files/useInlineDocument';
+import { Icon } from '../../../shared/ui/Icon';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
-import { fetchWorkOrder } from '../api/workOrders';
+import { fetchWorkOrder, fetchWorkOrderCollaudi } from '../api/workOrders';
 import type { WorkOrder } from '../types';
 import { WorkOrderItemsCard } from './WorkOrderItemsCard';
 import { WorkOrderStatusDialog } from './WorkOrderStatusDialog';
@@ -95,6 +97,7 @@ export function WorkOrderDetailView() {
   });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const { generating, error: docError, clearError, open: openDocument } = useInlineDocument<'collaudi'>();
 
   if (loading) {
     return (
@@ -130,6 +133,15 @@ export function WorkOrderDetailView() {
       label: 'Cambia Stato',
       onClick: !isEditing ? () => setStatusDialogOpen(true) : undefined,
     },
+    {
+      id: 'collaudi',
+      icon: 'fact_check',
+      label: generating === 'collaudi' ? 'Generazione scheda…' : 'Scheda Rischi e Collaudi',
+      onClick:
+        !isEditing && !generating
+          ? () => openDocument('collaudi', () => fetchWorkOrderCollaudi(data.id))
+          : undefined,
+    },
   ];
 
   return (
@@ -160,6 +172,22 @@ export function WorkOrderDetailView() {
         actions={actions}
       >
         <div className="space-y-[28px]">
+          {docError && (
+            <div
+              role="alert"
+              className="flex items-start justify-between gap-3 rounded-[10px] border border-error bg-error/10 px-[20px] py-[14px]"
+            >
+              <span className="font-body-sm text-body-sm text-error">{docError}</span>
+              <button
+                type="button"
+                onClick={clearError}
+                aria-label="Chiudi"
+                className="text-error/70 hover:text-error"
+              >
+                <Icon name="close" className="text-[20px]" />
+              </button>
+            </div>
+          )}
           <FieldSectionList
             data={data}
             sections={workOrderSections}

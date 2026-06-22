@@ -1,7 +1,10 @@
 """Thin endpoints for the WorkOrder resource."""
 
+from django.http import HttpResponse
+from django.utils import timezone
 from rest_framework import generics
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.clients.models import Client
 from apps.common.api.views import (
@@ -9,8 +12,10 @@ from apps.common.api.views import (
     UnpaginatedListAPIView,
     attach_related,
 )
-from apps.quotes.models import QuoteItem
-from apps.work_orders.models import WorkOrder, WorkOrderItem
+from apps.common.exceptions import NotFoundError, TemplateAssetMissing
+from apps.quotes.collaudi import collaudi_filename, prepare_collaudi, render_collaudi
+from apps.quotes.models import Quote, QuoteItem
+from apps.work_orders.models import PeriodicCheck, WorkOrder, WorkOrderItem
 from .serializers import (
     WorkOrderItemSerializer,
     WorkOrderItemUpdateSerializer,
@@ -93,3 +98,36 @@ class WorkOrderItemUpdateView(generics.UpdateAPIView):
     def get_queryset(self):
         # Scope to the parent work order so an id from another can't be edited.
         return WorkOrderItem.objects.filter(id_lavorazione=self.kwargs["pk"])
+
+
+class WorkOrderCollaudiView(APIView):
+    """
+    Stream a work order's "Scheda valutazione rischi e collaudi" as an inline PDF.
+
+    The header comes from the work order and its client/quote, the tables from its
+    line items (`item_lavorazioni`) and periodic checks (`controlli_periodici`).
+    See `apps.quotes.collaudi`. The body is a raw PDF, so the view returns a Django
+    `HttpResponse`; a missing template asset uses the standard error envelope.
+    """
+
+    def get(self, request, pk):
+        work_order = WorkOrder.objects.filter(pk=pk).first()
+        if work_order is None:
+            raise NotFoundError("Lavorazione inesistente.")
+
+        client = Client.objects.filter(pk=work_order.id_cliente).first()
+        quote = Quote.objects.filter(pk=work_order.id_preventivo).first()
+        items = WorkOrderItem.objects.filter(id_lavorazione=work_order.id).order_by("id")
+        checks = PeriodicCheck.objects.filter(id_lavorazione=work_order.id).order_by("id")
+
+        document = prepare_collaudi(
+            work_order, client, quote, list(items), list(checks), today=timezone.localdate()
+        )
+        try:
+            pdf = render_collaudi(document)
+        except FileNotFoundError as exc:
+            raise TemplateAssetMissing("Modello della scheda collaudi non disponibile.") from exc
+
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{collaudi_filename(work_order)}"'
+        return response

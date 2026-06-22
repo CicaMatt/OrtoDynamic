@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    WorkOrderCollaudiView,
     WorkOrderDetailView,
     WorkOrderItemListView,
     WorkOrderItemUpdateView,
@@ -16,4 +17,5 @@ urlpatterns = [
     path("<int:pk>/items/", WorkOrderItemListView.as_view(), name="item-list"),
     path("<int:pk>/items/<int:item_id>/", WorkOrderItemUpdateView.as_view(), name="item-detail"),
     path("<int:pk>/status/", WorkOrderStatusUpdateView.as_view(), name="status"),
+    path("<int:pk>/collaudi/", WorkOrderCollaudiView.as_view(), name="collaudi"),
 ]

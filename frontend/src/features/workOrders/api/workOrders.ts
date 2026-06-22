@@ -1,4 +1,4 @@
-import { apiGet, apiPatch } from '../../../shared/api/http';
+import { apiGet, apiGetBlob, apiPatch } from '../../../shared/api/http';
 import type { WorkOrder, WorkOrderItem } from '../types';
 
 export type WorkOrderUpdate = Record<string, string | number | null>;
@@ -31,4 +31,9 @@ export function updateWorkOrder(id: string, changes: WorkOrderUpdate): Promise<u
 /** Set a work order's status (free choice among the fixed states). */
 export function changeWorkOrderStatus(id: string, status: string): Promise<WorkOrder> {
   return apiPatch<WorkOrder>(`/work-orders/${id}/status/`, { status });
+}
+
+/** Fetch the work order's "Scheda valutazione rischi e collaudi" as an inline PDF blob. */
+export function fetchWorkOrderCollaudi(id: string): Promise<{ blob: Blob; filename: string | null }> {
+  return apiGetBlob(`/work-orders/${id}/collaudi/`);
 }
