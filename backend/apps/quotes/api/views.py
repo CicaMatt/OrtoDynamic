@@ -137,9 +137,18 @@ class QuoteStatusUpdateView(generics.GenericAPIView):
         quote = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        change_quote_status(quote, serializer.validated_data["status"])
+        change_quote_status(
+            quote,
+            serializer.validated_data["status"],
+            note=serializer.validated_data.get("note"),
+        )
         attach_people([quote])
-        return Response(QuoteSerializer(quote).data)
+        data = QuoteSerializer(quote).data
+        # When the transition spawned (or matched an existing) work order, surface its
+        # id so the caller can jump straight to the new Lavorazione.
+        if getattr(quote, "work_order", None) is not None:
+            data["workOrderId"] = str(quote.work_order.id)
+        return Response(data)
 
 
 class QuoteDeliveryFormView(APIView):

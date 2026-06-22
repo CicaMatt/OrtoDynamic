@@ -228,6 +228,8 @@ class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
 
 
 class QuoteStatusRequestSerializer(serializers.Serializer):
-    """Validates the body of a status-change request (the target state name)."""
+    """Validates a status-change request: the target state and an optional private note."""
 
     status = serializers.CharField()
+    # Optional private note recorded with the change (the legacy `state_note`).
+    note = serializers.CharField(required=False, allow_blank=True, allow_null=True)

@@ -1,8 +1,14 @@
 """Quote business operations that go beyond plain field updates."""
+from django.db import transaction
+
 from apps.common.exceptions import ConflictError, ServiceError
 from apps.products.models import Product
 from apps.quotes.models import QuoteItem
 from apps.statuses.services import allowed_target_states
+from apps.work_orders.services import (
+    WORK_ORDER_TRIGGER_STATES,
+    create_work_order_from_quote,
+)
 
 
 def line_amount(price, quantity, discount):
@@ -67,18 +73,35 @@ def update_quote_item(*, quote_item, quantity, discount):
     return quote_item
 
 
-def change_quote_status(quote, target_status):
+def change_quote_status(quote, target_status, *, note=None):
     """
-    Move `quote` to `target_status`, enforcing the PREVENTIVI transition rules.
+    Move `quote` to `target_status`, enforcing the PREVENTIVI transition rules, and
+    spawn its work order when the target is an "in lavorazione" state.
 
     The allowed transitions come entirely from the `stato_check` table (via
-    `apps.statuses`). Raises `ConflictError` when the move is not permitted from
-    the quote's current state; on success persists only the status column.
+    `apps.statuses`); a move that no row permits raises `ConflictError` and changes
+    nothing. On success the status (and `note_private`, when `note` is given) is
+    persisted, and — for `WORK_ORDER_TRIGGER_STATES` — a `lavorazioni` work order is
+    created from the quote's items (see `apps.work_orders.services`). The status
+    update and the creation share one transaction, so a failure rolls back both. The
+    created (or already-existing) work order is attached as `quote.work_order`.
     """
     if target_status not in allowed_target_states(quote.STATUS_TABLE, quote.stato):
         raise ConflictError(
             f"Transizione di stato non consentita da «{quote.stato or '—'}» a «{target_status}»."
         )
+
+    update_fields = ["stato"]
     quote.stato = target_status
-    quote.save(update_fields=["stato"])
+    if note is not None:
+        quote.note_private = note
+        update_fields.append("note_private")
+
+    work_order = None
+    with transaction.atomic():
+        quote.save(update_fields=update_fields)
+        if target_status in WORK_ORDER_TRIGGER_STATES:
+            work_order = create_work_order_from_quote(quote)
+
+    quote.work_order = work_order
     return quote

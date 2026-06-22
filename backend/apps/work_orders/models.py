@@ -114,6 +114,15 @@ class WorkOrderItem(UnmanagedModel):
     ddt = models.TextField(null=True, blank=True, db_column="DDT")
     lotto = models.TextField(null=True, blank=True)
 
+    # --- Line data copied from the quote line when the work order is created ---
+    # `codice_nomenclatore` here holds the catalogue *code* (a numeric tariff code),
+    # not the `nomenclatore.id` reference that the quote line stores.
+    codice_nomenclatore = models.BigIntegerField(null=True, blank=True)
+    descrizione_nomenclatore = models.CharField(max_length=500, null=True, blank=True)
+    importo = models.FloatField(null=True, blank=True)
+    quantita = models.FloatField(null=True, blank=True)
+    data_creazione_lavorazione = models.DateField(null=True, blank=True)
+
     class Meta(UnmanagedModel.Meta):
         db_table = "item_lavorazioni"
 
