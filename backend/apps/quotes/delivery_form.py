@@ -14,8 +14,7 @@ from datetime import date
 
 from apps.quotes.fpdf_canvas import FpdfCanvas
 from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
-
-_SIGNATURE_RULE = "_" * 30
+from apps.quotes.pdf_layout import label_value, signature_footer
 
 
 @dataclass(frozen=True)
@@ -77,16 +76,12 @@ def render_delivery_form(fields: DeliveryFormFields) -> bytes:
     _field_row(pdf, "Data Accettazione:", fields.data_accettazione)
 
     pdf.ln(24)
-    pdf.set_font("", 11)
-    pdf.cell(95, 7, f"Data: {fields.data_generazione}", 0, 0, "L")
-    pdf.cell(95, 7, f"Firma per ricevuta: {_SIGNATURE_RULE}", 0, 1, "R")
+    signature_footer(pdf, date_text=fields.data_generazione,
+                     sign_label="Firma per ricevuta:", size=11)
 
     return pdf.output()
 
 
 def _field_row(pdf: FpdfCanvas, label: str, value: str, *, value_bold: bool = False) -> None:
-    """A label/value line: a fixed-width label cell followed by the value to the margin."""
-    pdf.set_font("", 11)
-    pdf.cell(48, 7, label, 0, 0)
-    pdf.set_font("B" if value_bold else "", 11)
-    pdf.cell(0, 7, value, 0, 1)
+    """This form's wider (48 mm / 11 pt) label/value row."""
+    label_value(pdf, label, value, label_w=48, size=11, height=7, value_bold=value_bold)

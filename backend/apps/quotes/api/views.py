@@ -14,7 +14,7 @@ from apps.common.api.views import (
     UnpaginatedListCreateAPIView,
     attach_related,
 )
-from apps.common.exceptions import NotFoundError, TemplateAssetMissing
+from apps.common.exceptions import NotFoundError
 from apps.doctors.models import Doctor
 from apps.products.models import Product
 from apps.quotes.ddt import ddt_filename, prepare_ddt, render_ddt
@@ -269,8 +269,7 @@ class QuoteSchedaView(APIView):
 
     Header data comes from the quote and its client (the original query inner-joins
     `clienti`, so a quote with no client resolves to "not found"); the items table
-    from its line items. The required background template is reported through the
-    standard error envelope when absent. See `apps.quotes.scheda`.
+    from its line items. The page is drawn entirely in code. See `apps.quotes.scheda`.
     """
 
     def get(self, request, pk):

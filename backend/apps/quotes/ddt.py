@@ -21,6 +21,7 @@ from pathlib import Path
 from apps.quotes.fpdf_canvas import FpdfCanvas
 from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
 from apps.quotes.pdf_background import compose_on_template
+from apps.quotes.pdf_layout import section, signature_footer, table_empty, table_row
 
 # Optional background template; absent in the current system, so the default path
 # normally does not exist and the document renders on a blank page.
@@ -29,7 +30,15 @@ TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "ddt.pdf"
 _DESCRIPTION_LIMIT = 55  # max width of the description column text, marker included
 _DESCRIPTION_WITH_PRICES_LIMIT = 38
 _TRIM_MARKER = "..."
-_SIGNATURE_RULE = "_" * 30
+
+# Items-table column layouts as (width, align) tuples; the header labels pair with
+# these positionally. The with-prices layout splits the description column to make
+# room for the unit-price and total columns.
+_COLUMNS = ((30.0, "L"), (140.0, "L"), (20.0, "C"))
+_COLUMNS_WITH_PRICES = ((25.0, "L"), (90.0, "L"), (15.0, "C"), (30.0, "R"), (30.0, "R"))
+_HEADERS = ("Codice", "Descrizione", "Qtà")
+_HEADERS_WITH_PRICES = ("Codice", "Descrizione", "Qtà", "Prezzo unit.", "Totale")
+_TABLE_WIDTH_MM = 190.0
 
 
 @dataclass(frozen=True)
@@ -133,8 +142,7 @@ def _build_content(document: DdtDocument) -> bytes:
     pdf.ln(2)
 
     # 5. Recipient block.
-    pdf.set_font("B", 11)
-    pdf.cell(0, 6, "Destinatario", 0, 1)
+    section(pdf, "Destinatario")
     pdf.set_font("", 10)
     pdf.cell(0, 6, document.destinatario, 0, 1)
     if document.indirizzo_completo:
@@ -150,44 +158,31 @@ def _build_content(document: DdtDocument) -> bytes:
         for item in document.items:
             _write_item_row(pdf, item, show_prices=document.show_prices)
     else:
-        pdf.cell(190, 7, "Nessuna voce disponibile", 1, 1, "C")
+        table_empty(pdf, _TABLE_WIDTH_MM)
 
     # 8. Footer: date and signature line.
     pdf.ln(12)
-    pdf.set_font("", 10)
-    pdf.cell(95, 7, f"Data: {document.generated_date}", 0, 0, "L")
-    pdf.cell(95, 7, f"FIRMA: {_SIGNATURE_RULE}", 0, 1, "R")
+    signature_footer(pdf, date_text=document.generated_date, sign_label="FIRMA:")
 
     return pdf.output()
 
 
 def _write_items_header(pdf: FpdfCanvas, *, show_prices: bool) -> None:
+    columns, headers = (
+        (_COLUMNS_WITH_PRICES, _HEADERS_WITH_PRICES) if show_prices else (_COLUMNS, _HEADERS)
+    )
     pdf.set_font("B", 9)
-    if show_prices:
-        pdf.cell(25, 7, "Codice", 1, 0, "L")
-        pdf.cell(90, 7, "Descrizione", 1, 0, "L")
-        pdf.cell(15, 7, "Qtà", 1, 0, "C")
-        pdf.cell(30, 7, "Prezzo unit.", 1, 0, "R")
-        pdf.cell(30, 7, "Totale", 1, 1, "R")
-        return
-
-    pdf.cell(30, 7, "Codice", 1, 0, "L")
-    pdf.cell(140, 7, "Descrizione", 1, 0, "L")
-    pdf.cell(20, 7, "Qtà", 1, 1, "C")
+    table_row(pdf, ((width, header, align) for (width, align), header in zip(columns, headers)))
 
 
 def _write_item_row(pdf: FpdfCanvas, item: DdtItem, *, show_prices: bool) -> None:
     if show_prices:
-        pdf.cell(25, 7, item.codice, 1, 0, "L")
-        pdf.cell(90, 7, item.descrizione, 1, 0, "L")
-        pdf.cell(15, 7, item.quantita, 1, 0, "C")
-        pdf.cell(30, 7, item.prezzo_unitario, 1, 0, "R")
-        pdf.cell(30, 7, item.importo, 1, 1, "R")
-        return
-
-    pdf.cell(30, 7, item.codice, 1, 0, "L")
-    pdf.cell(140, 7, item.descrizione, 1, 0, "L")
-    pdf.cell(20, 7, item.quantita, 1, 1, "C")
+        columns = _COLUMNS_WITH_PRICES
+        values = (item.codice, item.descrizione, item.quantita, item.prezzo_unitario, item.importo)
+    else:
+        columns = _COLUMNS
+        values = (item.codice, item.descrizione, item.quantita)
+    table_row(pdf, ((width, value, align) for (width, align), value in zip(columns, values)))
 
 
 def _ddt_number(quote) -> str:

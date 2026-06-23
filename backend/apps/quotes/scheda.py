@@ -19,6 +19,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from apps.quotes.fpdf_canvas import FpdfCanvas
 from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
+from apps.quotes.pdf_layout import label_value, section, table_empty, table_row
 
 # Lab/accreditation code shown in the header.
 _LAB_CODE = "ITCA01059027"
@@ -138,7 +139,7 @@ def render_scheda(document: SchedaDocument) -> bytes:
     pdf.ln(3)
 
     # Client.
-    _section(pdf, "Cliente")
+    section(pdf, "Cliente")
     _field(pdf, "Cognome e Nome:", f"{document.cognome} {document.nome}".strip())
     _field(pdf, "Indirizzo:", _address(document))
     _field(pdf, "Telefono:", document.telefono)
@@ -146,18 +147,18 @@ def render_scheda(document: SchedaDocument) -> bytes:
     pdf.ln(3)
 
     # Free-text blocks, rendered in full.
-    _section(pdf, "Diagnosi Circostanziata")
+    section(pdf, "Diagnosi Circostanziata")
     pdf.set_font("", 9)
     pdf.multi_cell(0, 5, document.diagnosi or "—")
     pdf.ln(2)
 
-    _section(pdf, "Prescrizione Dettagliata Protesi")
+    section(pdf, "Prescrizione Dettagliata Protesi")
     pdf.set_font("", 9)
     pdf.multi_cell(0, 5, document.protesi or "—")
     pdf.ln(4)
 
     # Items.
-    _section(pdf, "Voci")
+    section(pdf, "Voci")
     _items_table(pdf, document)
     pdf.ln(2)
     pdf.set_font("", 10)
@@ -170,28 +171,18 @@ def render_scheda(document: SchedaDocument) -> bytes:
     return pdf.output()
 
 
-def _section(pdf: FpdfCanvas, title: str) -> None:
-    pdf.set_font("B", 11)
-    pdf.cell(0, 6, title, 0, 1)
-
-
 def _field(pdf: FpdfCanvas, label: str, value: str) -> None:
-    pdf.set_font("", 10)
-    pdf.cell(46, 6, label, 0, 0)
-    pdf.set_font("B", 10)
-    pdf.cell(0, 6, value, 0, 1)
+    """This sheet's 46 mm label / bold-value row."""
+    label_value(pdf, label, value, label_w=46)
 
 
 def _items_table(pdf: FpdfCanvas, document: SchedaDocument) -> None:
-    last = len(_ITEM_WIDTHS) - 1
-
     pdf.set_font("B", 8)
-    for index, (width, header) in enumerate(zip(_ITEM_WIDTHS, _ITEM_HEADERS)):
-        pdf.cell(width, 7, header, 1, 1 if index == last else 0, "C")
+    table_row(pdf, ((width, header, "C") for width, header in zip(_ITEM_WIDTHS, _ITEM_HEADERS)))
 
     pdf.set_font("", 8)
     if not document.items:
-        pdf.cell(sum(_ITEM_WIDTHS), 7, "Nessuna voce disponibile", 1, 1, "C")
+        table_empty(pdf, sum(_ITEM_WIDTHS))
         return
 
     description_x = 10.0 + _ITEM_WIDTHS[0]
@@ -206,8 +197,7 @@ def _items_table(pdf: FpdfCanvas, document: SchedaDocument) -> None:
         # The description cell is drawn empty (border only); its wrapped lines are
         # placed afterwards so a long description grows the row instead of clipping.
         values = (item.codice, "", item.quantita, prezzo, sconto, importo, "4%")
-        for index, (width, value, align) in enumerate(zip(_ITEM_WIDTHS, values, _ITEM_ALIGNS)):
-            pdf.cell(width, row_height, value, 1, 1 if index == last else 0, align)
+        table_row(pdf, zip(_ITEM_WIDTHS, values, _ITEM_ALIGNS), height=row_height)
         for line_index, line in enumerate(description_lines):
             pdf.text_cell(description_x, top + line_index * _ITEM_LINE_MM, _ITEM_WIDTHS[1], _ITEM_LINE_MM, line, "L")
 
