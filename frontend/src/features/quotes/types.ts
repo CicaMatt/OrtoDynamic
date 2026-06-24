@@ -66,6 +66,8 @@ export type QuoteStatusTransitions = {
 export type QuoteItem = {
   id: string;
   productId: string;
+  /** The product's `codice`, joined from `nomenclatore` for display. */
+  productCode: string;
   /** The product's `descrizione`, joined from `nomenclatore` for display. */
   productDescription: string;
   quantity: string;
@@ -75,14 +77,15 @@ export type QuoteItem = {
 };
 
 /**
- * Editable draft of a line item. `productId`/`description`/`price` are filled
- * together from the chosen product (so the code and product fields always agree),
+ * Editable draft of a line item. `productId`/`code`/`description`/`price` are
+ * filled together from the chosen product (so the code and product fields agree),
  * while `quantity` and `discount` are typed; `price` is shown read-only and the
  * importo is derived from it. Drives both the inline "Aggiungi" row and the create
  * form's pending-items list. All-strings, like the form values it backs.
  */
 export type QuoteItemDraft = {
   productId: string;
+  code: string;
   description: string;
   price: string;
   quantity: string;

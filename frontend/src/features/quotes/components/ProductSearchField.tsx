@@ -11,10 +11,9 @@ const invalidBorderClass = 'border-error focus:border-error focus:ring-error';
 // does not fire its own request.
 const SEARCH_DEBOUNCE_MS = 250;
 
-/** Human-readable line for a result: the id (what gets stored) plus its details. */
+/** Human-readable line for a result: its code and description, never the raw id. */
 function describe(product: Product): string {
-  const details = [product.code, product.description].filter(Boolean).join(' — ');
-  return details ? `${product.idProduct} · ${details}` : product.idProduct;
+  return [product.code, product.description].filter(Boolean).join(' — ');
 }
 
 /**
@@ -23,7 +22,7 @@ function describe(product: Product): string {
  * the catalog is too large to ship to the client. The same endpoint matches the
  * id, code, and description, so this drives both the code and the description
  * fields of a quote line: `inputValueOf` maps the chosen product to the text
- * shown in the input (its id for one field, its description for the other) while
+ * shown in the input (its code for one field, its description for the other) while
  * `onSelect` hands the full product back so the caller can fill the sibling.
  */
 export function ProductSearchField({
@@ -34,7 +33,7 @@ export function ProductSearchField({
   inputMode = 'text',
   inputValueOf = (product) => product.idProduct,
 }: {
-  /** Text currently shown in the input (the selected product's id or description). */
+  /** Text currently shown in the input (the selected product's code or description). */
   value: string;
   invalid?: boolean;
   onSelect: (product: Product) => void;

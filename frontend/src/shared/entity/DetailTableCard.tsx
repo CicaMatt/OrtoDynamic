@@ -121,7 +121,10 @@ function DetailTableBody<T extends object>({
   return (
     <>
       {items.map((item) => (
-        <tr key={rowKey(item)} className="border-b border-surface-variant last:border-0">
+        <tr
+          key={rowKey(item)}
+          className="border-b border-surface-variant last:border-0 hover:bg-surface-container-low transition-colors duration-300"
+        >
           {columns.map((column) => {
             const raw = String(item[column.key] ?? '');
             const value = column.render ? column.render(raw) : raw;

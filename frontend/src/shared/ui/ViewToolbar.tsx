@@ -52,9 +52,10 @@ export function ViewToolbar({
       {onCreate && (
         <button
           onClick={onCreate}
-          className="bg-secondary text-on-secondary font-label-caps text-label-caps px-4 py-2 rounded-lg hover:bg-secondary-hover transition-colors"
+          className="bg-secondary text-on-secondary font-label-caps text-label-caps px-4 py-2 rounded-lg flex items-center gap-2 border border-transparent hover:bg-secondary-hover transition-colors"
         >
-          Crea Nuovo
+          <Icon name="add" className="text-sm" />
+          Nuovo
         </button>
       )}
       {onActions && (

@@ -178,7 +178,7 @@ function EntityRow<T extends object>({
   return (
     <tr
       onClick={onClick}
-      className="border-b border-surface-variant h-row-height hover:bg-surface-container-lowest/50 transition-colors cursor-pointer"
+      className="border-b border-surface-variant h-row-height hover:bg-surface-container-low transition-colors duration-300 cursor-pointer"
     >
       {columns.map((column) => {
         const raw = String(item[column.key] ?? '');

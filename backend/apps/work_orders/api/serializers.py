@@ -157,6 +157,7 @@ class WorkOrderItemSerializer(NullToEmptyMixin):
 
     # Joined from the linked item_preventivi row (may be absent).
     productId = serializers.SerializerMethodField()
+    productCode = serializers.SerializerMethodField()
     quantity = serializers.SerializerMethodField()
     price = serializers.SerializerMethodField()
     amount = serializers.SerializerMethodField()
@@ -178,6 +179,11 @@ class WorkOrderItemSerializer(NullToEmptyMixin):
 
     def get_productId(self, item):
         return self._quote_value(item, "codice_nomenclatore")
+
+    def get_productCode(self, item):
+        quote_item = getattr(item, "quote_item", None)
+        product = getattr(quote_item, "product", None) if quote_item is not None else None
+        return product.codice if product is not None else None
 
     def get_quantity(self, item):
         return self._quote_value(item, "quantita")

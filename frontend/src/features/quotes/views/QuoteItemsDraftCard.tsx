@@ -33,7 +33,13 @@ export function QuoteItemsDraftCard() {
   const selectProduct = (product: Product) =>
     setDraft((current) =>
       current
-        ? { ...current, productId: product.idProduct, description: product.description, price: product.price }
+        ? {
+            ...current,
+            productId: product.idProduct,
+            code: product.code,
+            description: product.description,
+            price: product.price,
+          }
         : current,
     );
 
@@ -106,9 +112,9 @@ export function QuoteItemsDraftCard() {
 /** A confirmed pending item: read-only values (importo computed) plus a remove action. */
 function DraftReadRow({ item, onDelete }: { item: QuoteItemDraft; onDelete: () => void }) {
   return (
-    <tr className="border-b border-surface-variant last:border-0">
+    <tr className="border-b border-surface-variant last:border-0 hover:bg-surface-container-low transition-colors duration-300">
       <td className="py-3 px-4 whitespace-nowrap">
-        <FieldValue value={item.productId} />
+        <FieldValue value={item.code} />
       </td>
       <td className="py-3 px-4 align-top">
         <div className="max-w-[360px] whitespace-normal break-words">

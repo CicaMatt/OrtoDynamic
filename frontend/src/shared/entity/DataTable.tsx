@@ -54,7 +54,10 @@ export function DataTable<T>({
             <TableMessageRow columnCount={columns.length}>{emptyLabel}</TableMessageRow>
           ) : (
             rows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-surface-variant h-row-height">
+              <tr
+                key={rowKey(row)}
+                className="border-b border-surface-variant h-row-height hover:bg-surface-container-low transition-colors duration-300"
+              >
                 {columns.map((column) => (
                   <td key={column.key} className="px-6 whitespace-nowrap">
                     <FieldValue value={column.getValue(row)} />

@@ -13,6 +13,7 @@ from apps.common.api.views import (
     attach_related,
 )
 from apps.common.exceptions import NotFoundError, TemplateAssetMissing
+from apps.products.models import Product
 from apps.quotes.collaudi import collaudi_filename, prepare_collaudi, render_collaudi
 from apps.quotes.models import Quote, QuoteItem
 from apps.work_orders.models import PeriodicCheck, WorkOrder, WorkOrderItem
@@ -71,6 +72,16 @@ class WorkOrderItemListView(UnpaginatedListAPIView):
         )
         quote_ids = {item.id_item_preventivi for item in items if item.id_item_preventivi}
         quote_map = {quote.id: quote for quote in QuoteItem.objects.filter(id__in=quote_ids)}
+        # Attach each quote line's product so the serializer can render the
+        # nomenclatore code without a per-row lookup (a missing product stays None).
+        product_ids = {
+            quote_item.codice_nomenclatore
+            for quote_item in quote_map.values()
+            if quote_item.codice_nomenclatore
+        }
+        products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
+        for quote_item in quote_map.values():
+            quote_item.product = products.get(quote_item.codice_nomenclatore)
         for item in items:
             item.quote_item = quote_map.get(item.id_item_preventivi)
         return items

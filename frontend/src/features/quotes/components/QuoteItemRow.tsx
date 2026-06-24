@@ -57,9 +57,9 @@ export function NewItemButton({ disabled, onClick }: { disabled: boolean; onClic
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-[6px] rounded-[6px] bg-secondary px-[12px] py-[6px] font-body-sm text-body-sm font-medium text-on-secondary transition-colors hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed"
+      className="bg-secondary text-on-secondary font-label-caps text-label-caps px-4 py-2 rounded-lg flex items-center gap-2 border border-transparent transition-colors hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed"
     >
-      <Icon name="add" className="text-[18px]" />
+      <Icon name="add" className="text-sm" />
       Aggiungi
     </button>
   );
@@ -147,9 +147,9 @@ export function ItemDraftRow({
     <tr className="border-b border-surface-variant last:border-0 bg-secondary/5">
       <td className="py-3 px-4 align-top min-w-[200px]">
         <ProductSearchField
-          value={draft.productId}
-          inputMode="numeric"
+          value={draft.code}
           placeholder="Cerca codice…"
+          inputValueOf={(product) => product.code}
           onSelect={onProductSelect}
         />
       </td>
@@ -216,7 +216,7 @@ export function ItemEditRow({
   return (
     <tr className="border-b border-surface-variant last:border-0 bg-secondary/5">
       <td className="py-3 px-4 align-top whitespace-nowrap">
-        <FieldValue value={draft.productId} />
+        <FieldValue value={draft.code} />
       </td>
       <td className="py-3 px-4 align-top">
         <div className="max-w-[360px] whitespace-normal break-words">

@@ -39,7 +39,7 @@ const READ_COLUMNS: ReadonlyArray<{
   wrap?: boolean;
   format?: (raw: string) => string;
 }> = [
-  { key: 'productId', label: 'Codice Nomenclatore' },
+  { key: 'productCode', label: 'Codice Nomenclatore' },
   { key: 'productDescription', label: 'Prodotto', wrap: true },
   { key: 'quantity', label: 'Quantità', format: formatInteger },
   { key: 'price', label: 'Prezzo', format: formatEuro },
@@ -85,7 +85,13 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
   const selectProduct = (product: Product) =>
     setAddDraft((current) =>
       current
-        ? { ...current, productId: product.idProduct, description: product.description, price: product.price }
+        ? {
+            ...current,
+            productId: product.idProduct,
+            code: product.code,
+            description: product.description,
+            price: product.price,
+          }
         : current,
     );
 
@@ -246,7 +252,7 @@ function ReadRow({
   disabled: boolean;
 }) {
   return (
-    <tr className="border-b border-surface-variant last:border-0">
+    <tr className="border-b border-surface-variant last:border-0 hover:bg-surface-container-low transition-colors duration-300">
       {READ_COLUMNS.map((column) => {
         const raw = item[column.key];
         const value = column.format ? column.format(raw) : raw;
@@ -289,7 +295,7 @@ function ReadRow({
 }
 
 function renderReadValue(key: keyof QuoteItem, value: string, item: QuoteItem) {
-  if (key === 'productId' || key === 'productDescription') {
+  if (key === 'productCode' || key === 'productDescription') {
     return <ReferenceName name={value} id={item.productId} entity="product" />;
   }
   return <FieldValue value={value} />;

@@ -50,11 +50,13 @@ export type WorkOrder = {
  * A work order line (`item_lavorazioni`). `id` is the line's own id (the PATCH
  * target). The product/amount fields are joined from the linked quote line
  * (`item_preventivi`); `status`, `production` and the dates are the line's own.
- * All-strings like {@link WorkOrder}; `productId` is the raw `codice_nomenclatore`.
+ * All-strings like {@link WorkOrder}; `productId` is the raw `codice_nomenclatore`
+ * reference, while `productCode` is that product's display `codice`.
  */
 export type WorkOrderItem = {
   id: string;
   productId: string;
+  productCode: string;
   quantity: string;
   price: string;
   amount: string;

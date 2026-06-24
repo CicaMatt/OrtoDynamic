@@ -80,18 +80,24 @@ class QuoteItemSerializer(NullToEmptyMixin):
     """
     Read-only line item shown in the quote detail's items box. Exposes only the
     columns the view renders; `productId` is the raw `codice_nomenclatore`
-    reference (a `nomenclatore.id`) and `productDescription` is that product's
-    `descrizione`, read from the row attached by the view (absent for a product
-    that no longer exists). Values follow the all-strings contract.
+    reference (a `nomenclatore.id`), while `productCode` and `productDescription`
+    are that product's `codice`/`descrizione`, read from the row attached by the
+    view (absent for a product that no longer exists). Values follow the
+    all-strings contract.
     """
 
     id = serializers.CharField()
     productId = serializers.CharField(source="codice_nomenclatore")
+    productCode = serializers.SerializerMethodField()
     productDescription = serializers.SerializerMethodField()
     quantity = serializers.CharField(source="quantita")
     price = serializers.CharField(source="prezzo")
     amount = serializers.CharField(source="importo")
     discount = serializers.CharField(source="sconto")
+
+    def get_productCode(self, item):
+        product = getattr(item, "product", None)
+        return product.codice if product is not None else None
 
     def get_productDescription(self, item):
         product = getattr(item, "product", None)

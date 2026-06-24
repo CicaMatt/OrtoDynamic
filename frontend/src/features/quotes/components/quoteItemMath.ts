@@ -3,6 +3,7 @@ import type { QuoteItemDraft } from '../types';
 /** A blank line-item draft for the inline "Aggiungi" row. */
 export const EMPTY_ITEM_DRAFT: QuoteItemDraft = {
   productId: '',
+  code: '',
   description: '',
   price: '',
   quantity: '',
@@ -79,6 +80,7 @@ export function isAcceptableDiscountInput(value: string): boolean {
 /** Build a line-item draft from an existing item, for the inline edit row. */
 export function draftFromItem(item: {
   productId: string;
+  productCode: string;
   productDescription: string;
   price: string;
   quantity: string;
@@ -86,6 +88,7 @@ export function draftFromItem(item: {
 }): QuoteItemDraft {
   return {
     productId: item.productId,
+    code: item.productCode,
     description: item.productDescription,
     price: item.price,
     quantity: item.quantity,
