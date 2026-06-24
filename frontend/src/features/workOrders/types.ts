@@ -51,12 +51,14 @@ export type WorkOrder = {
  * target). The product/amount fields are joined from the linked quote line
  * (`item_preventivi`); `status`, `production` and the dates are the line's own.
  * All-strings like {@link WorkOrder}; `productId` is the raw `codice_nomenclatore`
- * reference, while `productCode` is that product's display `codice`.
+ * reference, while `productCode`/`productDescription` are that product's display
+ * `codice`/`descrizione`.
  */
 export type WorkOrderItem = {
   id: string;
   productId: string;
   productCode: string;
+  productDescription: string;
   quantity: string;
   price: string;
   amount: string;

@@ -297,7 +297,18 @@ function FilterSelect({
   );
 }
 
-const MAX_SUGGESTIONS = 8;
+/**
+ * Ranks how well an option matches a search term, lower being more relevant:
+ * 0 the option starts with the term, 1 a word inside it starts with the term,
+ * 2 the term appears somewhere inside. `null` means no match. Inputs must be
+ * lower-cased by the caller. The split is Unicode-aware so accented letters and
+ * digits count as word characters.
+ */
+function matchRank(option: string, term: string): number | null {
+  if (option.startsWith(term)) return 0;
+  if (option.split(/[^\p{L}\p{N}]+/u).some((word) => word.startsWith(term))) return 1;
+  return option.includes(term) ? 2 : null;
+}
 
 /**
  * A single column filter: a search box that suggests the column's existing
@@ -327,10 +338,18 @@ function FilterCombobox({
     // Nothing typed yet: offer no suggestions rather than the whole column.
     if (!term) return [];
     return options
-      .filter((option) => option.toLowerCase().includes(term))
-      // A value typed in full has nothing left to suggest.
-      .filter((option) => option.toLowerCase() !== term)
-      .slice(0, MAX_SUGGESTIONS);
+      .map((option) => ({ option, lower: option.toLowerCase() }))
+      .map((entry) => ({ ...entry, rank: matchRank(entry.lower, term) }))
+      .filter(
+        (entry): entry is { option: string; lower: string; rank: number } =>
+          // A value typed in full has nothing left to suggest.
+          entry.rank !== null && entry.lower !== term,
+      )
+      // Most relevant first: prefix, then word-start, then substring. `options`
+      // arrives alphabetically sorted and the sort is stable, so values keep
+      // that order within each rank.
+      .sort((a, b) => a.rank - b.rank)
+      .map(({ option, rank }) => ({ option, rank }));
   }, [draft, options]);
 
   const commit = (next: string) => {
@@ -374,18 +393,27 @@ function FilterCombobox({
         </button>
         {open && suggestions.length > 0 && (
           <ul className="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-surface-container-lowest rounded-lg border border-outline-variant/30 shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 z-10">
-            {suggestions.map((option) => (
-              <li key={option}>
-                <button
-                  type="button"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => commit(option)}
-                  className="w-full text-left px-3 py-1.5 text-body-sm text-on-surface hover:bg-surface-container-low transition-colors"
+            {suggestions.map((entry, index) => {
+              // A hairline rule splits values that start with the term (and
+              // word-start matches) from those that merely contain it.
+              const startsSubstringGroup =
+                entry.rank === 2 && index > 0 && suggestions[index - 1].rank < 2;
+              return (
+                <li
+                  key={entry.option}
+                  className={startsSubstringGroup ? 'mt-1 pt-1 border-t border-outline-variant/30' : undefined}
                 >
-                  {option}
-                </button>
-              </li>
-            ))}
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => commit(entry.option)}
+                    className="w-full text-left px-3 py-1.5 text-body-sm text-on-surface hover:bg-surface-container-low transition-colors"
+                  >
+                    {entry.option}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

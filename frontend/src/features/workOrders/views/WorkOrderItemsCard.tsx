@@ -33,6 +33,7 @@ const DATE_KEYS = ['cancellationDate', 'orderDate', 'partialDeliveryDate', 'deli
  */
 const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
   { key: 'productCode', label: 'Codice Nomenclatore' },
+  { key: 'productDescription', label: 'Prodotto' },
   { key: 'quantity', label: 'Quantità', render: formatInteger },
   { key: 'price', label: 'Prezzo', render: formatEuro },
   { key: 'amount', label: 'Importo', render: formatEuro },
@@ -138,7 +139,7 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
     });
   };
   const columns = itemColumns.map((column) =>
-    column.key === 'productCode'
+    column.key === 'productCode' || column.key === 'productDescription'
       ? {
           ...column,
           renderNode: (value: string, item: WorkOrderItem) => (
