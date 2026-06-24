@@ -5,7 +5,7 @@ export type HealthCompanyField = FieldConfig<HealthCompany>;
 
 /** Fields shown in the health-company detail/edit form. */
 export const healthCompanyFields: HealthCompanyField[] = [
-  { label: 'ID', key: 'id', readonly: true },
+  { label: 'ID', key: 'idHealthCompany', readonly: true },
   { label: 'Anno', key: 'year', type: 'number' },
   { label: 'Distretto', key: 'district' },
   { label: 'Codice Comune', key: 'municipalityCode' },
@@ -26,6 +26,6 @@ export const HEALTH_COMPANY_CREATE_REQUIRED = [
 
 /** Create form: drop the DB-assigned id, mark required fields. */
 export const healthCompanyCreateFields = markRequired(
-  healthCompanyFields.filter((field) => field.key !== 'id'),
+  healthCompanyFields.filter((field) => field.key !== 'idHealthCompany'),
   HEALTH_COMPANY_CREATE_REQUIRED,
 );

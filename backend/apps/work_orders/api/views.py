@@ -35,7 +35,7 @@ def attach_client(work_orders):
 
 class WorkOrderListView(UnpaginatedListAPIView):
     serializer_class = WorkOrderSerializer
-    queryset = WorkOrder.objects.order_by("-data_creazione_lavorazione", "-id")
+    queryset = WorkOrder.objects.order_by("-id")
 
     def get_queryset(self):
         return attach_client(super().get_queryset())

@@ -20,7 +20,7 @@ from apps.work_orders.models import WorkOrder, WorkOrderItem
 class WorkOrderSerializer(NullToEmptyMixin):
     """Full column set shown in both the Lavorazioni table and detail view."""
 
-    id = serializers.CharField()
+    idWorkOrder = serializers.CharField(source="id")
 
     # Links
     quoteId = serializers.CharField(source="id_preventivo")

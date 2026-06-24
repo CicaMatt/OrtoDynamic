@@ -4,7 +4,7 @@
  * same type drives the list, the detail view, and the edit draft.
  */
 export type Quote = {
-  id: string;
+  idQuote: string;
 
   // Links
   clientId: string;
@@ -78,7 +78,7 @@ export type QuoteItem = {
  * Editable draft of a line item. `productId`/`description`/`price` are filled
  * together from the chosen product (so the code and product fields always agree),
  * while `quantity` and `discount` are typed; `price` is shown read-only and the
- * importo is derived from it. Drives both the inline "Nuovo" row and the create
+ * importo is derived from it. Drives both the inline "Aggiungi" row and the create
  * form's pending-items list. All-strings, like the form values it backs.
  */
 export type QuoteItemDraft = {

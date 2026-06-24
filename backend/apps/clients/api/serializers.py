@@ -21,7 +21,7 @@ from apps.clients.models import Client
 class ClientListSerializer(NullToEmptyMixin):
     """Columns shown in the Clienti table."""
 
-    code = serializers.CharField(source="id")
+    idClient = serializers.CharField(source="id")
     name = serializers.CharField(source="nome")
     surname = serializers.CharField(source="cognome")
     fiscalCode = serializers.CharField(source="codice_fiscale")
@@ -36,7 +36,7 @@ class ClientListSerializer(NullToEmptyMixin):
 class ClientDetailSerializer(NullToEmptyMixin):
     """Full set of fields shown in the client detail view."""
 
-    code = serializers.CharField(source="id")
+    idClient = serializers.CharField(source="id")
     name = serializers.CharField(source="nome")
     surname = serializers.CharField(source="cognome")
     fiscalCode = serializers.CharField(source="codice_fiscale")
@@ -59,7 +59,7 @@ class ClientDetailSerializer(NullToEmptyMixin):
 class ClientOrthopedicSerializer(NullToEmptyMixin):
     """Orthopedic measurements and specifications shown in the Dati Ortopedici view."""
 
-    code = serializers.CharField(source="id")
+    idClient = serializers.CharField(source="id")
     name = serializers.CharField(source="nome")
     surname = serializers.CharField(source="cognome")
 

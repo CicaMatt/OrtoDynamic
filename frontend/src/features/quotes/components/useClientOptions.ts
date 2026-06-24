@@ -26,7 +26,7 @@ export function useClientOptions(enabled: boolean): AutocompleteOption[] {
       const fullName = `${client.name} ${client.surname}`.trim();
       const birth = formatBirthDate(client.birthDate);
       const label = birth ? `${fullName} — ${birth}` : fullName;
-      return { value: label, label, meta: { id: client.code } };
+      return { value: label, label, meta: { id: client.idClient } };
     });
   }, [data]);
 }

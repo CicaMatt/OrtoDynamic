@@ -28,7 +28,7 @@ from .serializers import (
 class ClientListView(UnpaginatedListCreateAPIView):
     serializer_class = ClientListSerializer
     create_serializer_class = ClientCreateSerializer
-    queryset = Client.objects.order_by("cognome", "nome", "id")
+    queryset = Client.objects.order_by("-id")
 
 
 class ClientDetailView(ReadUpdateDetailAPIView):

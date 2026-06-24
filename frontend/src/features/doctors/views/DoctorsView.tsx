@@ -4,7 +4,7 @@ import { useNavigation } from '../../../app/navigation/NavigationContext';
 import type { DoctorListItem } from '../types';
 
 const doctorColumns: ReadonlyArray<EntityColumn<DoctorListItem>> = [
-  { key: 'id', label: 'ID Medico', primary: true },
+  { key: 'idDoctor', label: 'ID Medico', primary: true, filterable: false  },
   { key: 'surname', label: 'Cognome' },
   { key: 'name', label: 'Nome' },
   { key: 'address', label: 'Indirizzo', muted: true },
@@ -20,8 +20,8 @@ export function DoctorsView() {
       title="Medici"
       columns={doctorColumns}
       fetchItems={fetchDoctors}
-      rowKey={(doctor) => doctor.id}
-      onRowClick={(doctor) => openDoctorDetail(doctor.id)}
+      rowKey={(doctor) => doctor.idDoctor}
+      onRowClick={(doctor) => openDoctorDetail(doctor.idDoctor)}
       onCreate={openDoctorCreate}
       loadingLabel="Caricamento medici..."
       emptyLabel="Nessun medico trovato."

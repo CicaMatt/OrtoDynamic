@@ -23,7 +23,7 @@ from apps.quotes.services import create_quote_item, update_quote_item
 class QuoteSerializer(NullToEmptyMixin):
     """Full column set shown in both the Preventivi table and detail view."""
 
-    id = serializers.CharField()
+    idQuote = serializers.CharField(source="id")
 
     # Links
     clientId = serializers.CharField(source="id_cliente")

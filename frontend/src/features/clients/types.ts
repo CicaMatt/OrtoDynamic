@@ -1,5 +1,5 @@
 export type Client = {
-  code: string;
+  idClient: string;
   name: string;
   surname: string;
   fiscalCode: string;
@@ -21,7 +21,7 @@ export type Client = {
 
 export type ClientListItem = Pick<
   Client,
-  | 'code'
+  | 'idClient'
   | 'name'
   | 'surname'
   | 'fiscalCode'
@@ -34,7 +34,7 @@ export type ClientListItem = Pick<
 >;
 
 export type ClientOrthopedic = {
-  code: string;
+  idClient: string;
   name: string;
   surname: string;
   shoeSize: string;

@@ -60,7 +60,7 @@ export function ClientDetailView() {
       return {
         ...action,
         active: isEditing,
-        onClick: !isEditing ? () => startClientEdit(data.code) : undefined,
+        onClick: !isEditing ? () => startClientEdit(data.idClient) : undefined,
       };
     }
     if (action.id === 'privacy') {
@@ -69,7 +69,7 @@ export function ClientDetailView() {
         label: generating === 'privacy' ? 'Generazione modulo…' : action.label,
         onClick:
           !isEditing && !generating
-            ? () => openDocument('privacy', () => fetchClientPrivacyForm(data.code))
+            ? () => openDocument('privacy', () => fetchClientPrivacyForm(data.idClient))
             : undefined,
       };
     }

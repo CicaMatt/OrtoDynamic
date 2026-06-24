@@ -14,6 +14,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 from apps.quotes.collaudi import (
+    _MATRICOLA_PITCH_MM,
+    _MATRICOLA_X0_MM,
+    _MATRICOLA_X_MAX_MM,
+    _matricola_pitch,
     collaudi_filename,
     prepare_collaudi,
     render_collaudi,
@@ -128,6 +132,22 @@ def test_product_ids_and_production_split():
     assert doc.product_ids == ("1", "2", "3")
     assert doc.internal_codes == ("1", "3")
     assert doc.external_codes == ("2",)
+
+
+# --- matricola strip pitch --------------------------------------------------
+
+def test_matricola_pitch_uses_default_for_short_strips():
+    # Up to 7 ids fit at the default pitch (last at 30 + 6*9 = 84), so it is kept.
+    for count in range(0, 8):
+        assert _matricola_pitch(count) == _MATRICOLA_PITCH_MM
+
+
+def test_matricola_pitch_tightens_to_avoid_cod_column():
+    # 9 ids would overrun at the default pitch, so the pitch is compressed and the
+    # last id lands exactly on the strip's right edge — never in the COD column.
+    pitch = _matricola_pitch(9)
+    assert pitch < _MATRICOLA_PITCH_MM
+    assert _MATRICOLA_X0_MM + pitch * 8 == pytest.approx(_MATRICOLA_X_MAX_MM)
 
 
 # --- page-2 tables ----------------------------------------------------------

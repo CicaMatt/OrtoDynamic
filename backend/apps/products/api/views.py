@@ -18,7 +18,7 @@ PRODUCT_SEARCH_LIMIT = 25
 class ProductListView(UnpaginatedListCreateAPIView):
     serializer_class = ProductSerializer
     create_serializer_class = ProductCreateSerializer
-    queryset = Product.objects.order_by("codice", "id")
+    queryset = Product.objects.order_by("-id")
 
 
 class ProductDetailView(ReadUpdateDetailAPIView):

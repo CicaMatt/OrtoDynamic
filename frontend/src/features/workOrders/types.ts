@@ -4,7 +4,7 @@
  * same type drives the list, the detail view, and the edit draft.
  */
 export type WorkOrder = {
-  id: string;
+  idWorkOrder: string;
 
   // Links
   quoteId: string;

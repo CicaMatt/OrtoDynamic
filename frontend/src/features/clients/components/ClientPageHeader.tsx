@@ -6,7 +6,7 @@ import { Icon } from '../../../shared/ui/Icon';
 type ClientHeaderData = {
   name: string;
   surname: string;
-  code: string;
+  idClient: string;
 };
 
 export function ClientPageHeader({
@@ -25,7 +25,7 @@ export function ClientPageHeader({
       title={`${client.name} ${client.surname}`.trim()}
       subtitle={
         <>
-          Codice: <span className="font-semibold text-on-surface">{client.code}</span>
+          Codice: <span className="font-semibold text-on-surface">{client.idClient}</span>
         </>
       }
       rightSlot={<ClientDataSwitchButton />}

@@ -4,7 +4,7 @@ import { fetchHealthCompanies } from '../api/healthCompanies';
 import type { HealthCompanyListItem } from '../types';
 
 const healthCompanyColumns: ReadonlyArray<EntityColumn<HealthCompanyListItem>> = [
-  { key: 'id', label: 'ID', primary: true },
+  { key: 'idHealthCompany', label: 'ID Azienda', primary: true, filterable: false },
   { key: 'municipalityCode', label: 'Codice Comune', muted: true },
   { key: 'municipality', label: 'Comune' },
   { key: 'regionCode', label: 'Codice Regione', muted: true },
@@ -22,8 +22,8 @@ export function HealthCompaniesView() {
       title="Aziende Sanitarie"
       columns={healthCompanyColumns}
       fetchItems={fetchHealthCompanies}
-      rowKey={(company) => company.id}
-      onRowClick={(company) => openHealthCompanyDetail(company.id)}
+      rowKey={(company) => company.idHealthCompany}
+      onRowClick={(company) => openHealthCompanyDetail(company.idHealthCompany)}
       onCreate={openHealthCompanyCreate}
       loadingLabel="Caricamento aziende sanitarie..."
       emptyLabel="Nessuna azienda sanitaria trovata."

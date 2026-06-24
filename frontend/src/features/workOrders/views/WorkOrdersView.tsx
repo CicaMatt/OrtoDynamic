@@ -12,7 +12,7 @@ import type { WorkOrder } from '../types';
  * columns are previewed and excluded from search.
  */
 const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
-  { key: 'id', label: 'ID', primary: true, filterable: false },
+  { key: 'idWorkOrder', label: 'ID Lavorazione', primary: true, filterable: false },
   { key: 'quoteId', label: 'ID Preventivo', muted: true, filterable: false },
   {
     key: 'clientName',
@@ -126,8 +126,8 @@ export function WorkOrdersView() {
       title="Lavorazioni"
       columns={workOrderColumns}
       fetchItems={fetchWorkOrders}
-      rowKey={(workOrder) => workOrder.id}
-      onRowClick={(workOrder) => openWorkOrderDetail(workOrder.id)}
+      rowKey={(workOrder) => workOrder.idWorkOrder}
+      onRowClick={(workOrder) => openWorkOrderDetail(workOrder.idWorkOrder)}
       loadingLabel="Caricamento lavorazioni..."
       emptyLabel="Nessuna lavorazione trovata."
     />

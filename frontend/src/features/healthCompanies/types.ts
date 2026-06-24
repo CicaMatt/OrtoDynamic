@@ -1,5 +1,5 @@
 export type HealthCompany = {
-  id: string;
+  idHealthCompany: string;
   municipalityCode: string;
   municipality: string;
   regionCode: string;
@@ -15,7 +15,7 @@ export type HealthCompany = {
 
 export type HealthCompanyListItem = Pick<
   HealthCompany,
-  | 'id'
+  | 'idHealthCompany'
   | 'municipalityCode'
   | 'municipality'
   | 'regionCode'

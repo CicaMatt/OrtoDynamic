@@ -1,6 +1,6 @@
 /** An employee account from the `tb_users` table. */
 export type Employee = {
-  id: string;
+  idEmployee: string;
   username: string;
   email: string;
   firstName: string;

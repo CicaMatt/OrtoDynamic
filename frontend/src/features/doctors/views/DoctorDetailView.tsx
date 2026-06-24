@@ -41,11 +41,11 @@ export function DoctorDetailView() {
     );
   }
 
-  const title = `${data.name} ${data.surname}`.trim() || `Medico ${data.id}`;
+  const title = `${data.name} ${data.surname}`.trim() || `Medico ${data.idDoctor}`;
   const actions = doctorActions.map((action) => ({
     ...action,
     active: isEditing,
-    onClick: !isEditing ? () => startDoctorEdit(data.id) : undefined,
+    onClick: !isEditing ? () => startDoctorEdit(data.idDoctor) : undefined,
   }));
 
   return (
@@ -60,7 +60,7 @@ export function DoctorDetailView() {
           title={title}
           subtitle={
             <>
-              ID Medico: <span className="font-semibold text-on-surface">{data.id}</span>
+              ID Medico: <span className="font-semibold text-on-surface">{data.idDoctor}</span>
             </>
           }
         />

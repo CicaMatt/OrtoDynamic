@@ -53,7 +53,7 @@ def attach_people(quotes):
 class QuoteListView(UnpaginatedListCreateAPIView):
     serializer_class = QuoteSerializer
     create_serializer_class = QuoteCreateSerializer
-    queryset = Quote.objects.order_by("-data_preventivo", "-id")
+    queryset = Quote.objects.order_by("-id")
 
     def get_queryset(self):
         return attach_people(super().get_queryset())

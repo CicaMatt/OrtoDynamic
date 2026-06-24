@@ -11,22 +11,20 @@ import type { Quote } from '../types';
  * searched; long clinical/notes columns are previewed and excluded from search.
  */
 const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
-  { key: 'id', label: 'ID', primary: true, filterable: false },
+  { key: 'idQuote', label: 'ID Preventivo', primary: true, filterable: false },
   { key: 'quoteNumber', label: 'Nº Preventivo', muted: true, filterable: false },
-  { key: 'quoteType', label: 'Tipologia' },
-  { key: 'status', label: 'Stato' },
+  { key: 'quoteType', label: 'Tipologia', searchable: false },
+  { key: 'status', label: 'Stato', searchable: false },
   {
     key: 'clientName',
     label: 'Cliente',
     muted: true,
-    filterable: false,
     renderCell: (quote) => <ReferenceName name={quote.clientName} id={quote.clientId} />,
   },
   {
     key: 'doctorName',
     label: 'Medico',
     muted: true,
-    filterable: false,
     renderCell: (quote) => <ReferenceName name={quote.doctorName} id={quote.doctorId} />,
   },
   {
@@ -47,7 +45,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   },
   { key: 'total', label: 'Totale', muted: true, filterable: false, render: formatEuro },
   { key: 'entryBy', label: 'Inserito Da', muted: true },
-  { key: 'authorizationNumber', label: 'Nº Autorizzazione', muted: true, filterable: false },
+  { key: 'authorizationNumber', label: 'Nº Autorizzazione', muted: true},
   {
     key: 'acceptanceDate',
     label: 'Data Accettazione',
@@ -58,7 +56,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   },
   {
     key: 'authorizationReceiptDate',
-    label: 'Ricezione Autorizzazione',
+    label: 'Data Ricezione Autorizzazione',
     muted: true,
     searchable: false,
     filterable: false,
@@ -66,12 +64,12 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   },
   { key: 'expiryDays', label: 'Giorni Scadenza', muted: true, filterable: false },
   { key: 'maxExpiry', label: 'Massima Scadenza', muted: true, filterable: false },
-  { key: 'measurementsOk', label: 'Misure OK' },
+  { key: 'measurementsOk', label: 'Misure OK', searchable: false },
   { key: 'commissionsPaid', label: 'Provvigioni Pagate' },
-  { key: 'orderNumber', label: 'Nº Ordine', muted: true, filterable: false },
+  { key: 'orderNumber', label: 'Nº Ordine', muted: true},
   { key: 'model', label: 'Modello', muted: true, filterable: false },
   { key: 'measurements', label: 'Misure', muted: true, filterable: false },
-  { key: 'invoiceNumber', label: 'Nº Fattura', muted: true, filterable: false },
+  { key: 'invoiceNumber', label: 'Nº Fattura', muted: true},
   {
     key: 'diagnosis',
     label: 'Diagnosi Circostanziata',
@@ -131,8 +129,8 @@ export function QuotesView() {
       title="Preventivi"
       columns={quoteColumns}
       fetchItems={fetchQuotes}
-      rowKey={(quote) => quote.id}
-      onRowClick={(quote) => openQuoteDetail(quote.id)}
+      rowKey={(quote) => quote.idQuote}
+      onRowClick={(quote) => openQuoteDetail(quote.idQuote)}
       onCreate={openQuoteCreate}
       loadingLabel="Caricamento preventivi..."
       emptyLabel="Nessun preventivo trovato."

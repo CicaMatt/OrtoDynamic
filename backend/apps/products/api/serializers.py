@@ -14,7 +14,7 @@ from apps.products.models import Product
 
 
 class ProductSerializer(NullToEmptyMixin):
-    id = serializers.CharField()
+    idProduct = serializers.CharField(source="id")
     code = serializers.CharField(source="codice")
     description = serializers.CharField(source="descrizione")
     price = serializers.CharField(source="prezzo")

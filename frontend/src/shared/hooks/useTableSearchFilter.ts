@@ -15,8 +15,11 @@ export type SearchFilterColumn<T> = {
 /**
  * Drives a `ViewToolbar`'s search box and column filters over an in-memory list:
  * holds the search/filter state, derives the available filter options from the
- * data, and returns the matching rows. Search is a case-insensitive substring
- * match across the searchable columns; filters are exact-value matches.
+ * data, and returns the matching rows. Free-text search is a case-insensitive
+ * substring match across the searchable columns. Each filterable column is
+ * filtered one of two ways: a free-text column (searchable) by a case-insensitive
+ * substring typeahead, a categorical column (`searchable === false`, e.g. status
+ * or a yes/no flag) by an exact pick from its distinct values.
  */
 export function useTableSearchFilter<T>(items: T[], columns: ReadonlyArray<SearchFilterColumn<T>>) {
   const [searchValue, setSearchValue] = useState('');
@@ -37,6 +40,10 @@ export function useTableSearchFilter<T>(items: T[], columns: ReadonlyArray<Searc
         key: column.key,
         label: column.label,
         options: uniqueValues(items.map((item) => column.getValue(item))),
+        // Categorical columns are picked from a fixed dropdown; free-text ones
+        // use a substring typeahead. Kept in sync with the matching in
+        // `filteredItems`.
+        fixedChoices: isCategorical(column),
       })),
     [filterableColumns, items],
   );
@@ -49,7 +56,10 @@ export function useTableSearchFilter<T>(items: T[], columns: ReadonlyArray<Searc
         searchableColumns.some((column) => normalize(column.getValue(item)).includes(term));
       const matchesFilters = filterableColumns.every((column) => {
         const activeValue = activeFilters[column.key];
-        return !activeValue || column.getValue(item) === activeValue;
+        if (!activeValue) return true;
+        return isCategorical(column)
+          ? column.getValue(item) === activeValue
+          : normalize(column.getValue(item)).includes(normalize(activeValue));
       });
       return matchesSearch && matchesFilters;
     });
@@ -68,6 +78,14 @@ export function useTableSearchFilter<T>(items: T[], columns: ReadonlyArray<Searc
     filterOptions,
     filteredItems,
   };
+}
+
+/**
+ * Columns excluded from free-text search are treated as categorical (status,
+ * type, yes/no): filtered by an exact dropdown pick rather than a typeahead.
+ */
+function isCategorical<T>(column: SearchFilterColumn<T>): boolean {
+  return column.searchable === false;
 }
 
 function uniqueValues(values: string[]): string[] {

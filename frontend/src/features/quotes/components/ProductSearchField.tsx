@@ -14,7 +14,7 @@ const SEARCH_DEBOUNCE_MS = 250;
 /** Human-readable line for a result: the id (what gets stored) plus its details. */
 function describe(product: Product): string {
   const details = [product.code, product.description].filter(Boolean).join(' — ');
-  return details ? `${product.id} · ${details}` : product.id;
+  return details ? `${product.idProduct} · ${details}` : product.idProduct;
 }
 
 /**
@@ -32,7 +32,7 @@ export function ProductSearchField({
   onSelect,
   placeholder = 'Cerca…',
   inputMode = 'text',
-  inputValueOf = (product) => product.id,
+  inputValueOf = (product) => product.idProduct,
 }: {
   /** Text currently shown in the input (the selected product's id or description). */
   value: string;
@@ -162,7 +162,7 @@ export function ProductSearchField({
             </li>
           ) : (
             results.map((product, index) => (
-              <li key={product.id}>
+              <li key={product.idProduct}>
                 <button
                   type="button"
                   onMouseDown={(event) => {

@@ -52,7 +52,7 @@ type EditState = { id: string; draft: QuoteItemDraft };
 
 /**
  * A quote's line items (`item_preventivi`), with inline add, edit, and delete.
- * "Nuovo" opens an empty draft row: the product is picked from the live
+ * "Aggiungi" opens an empty draft row: the product is picked from the live
  * `nomenclatore` lookup — by code or by description — and only quantity and
  * discount are typed, since prezzo and importo are derived by the backend.
  * Editing a row reopens its quantity/discount for the same recompute (sconto
@@ -85,7 +85,7 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
   const selectProduct = (product: Product) =>
     setAddDraft((current) =>
       current
-        ? { ...current, productId: product.id, description: product.description, price: product.price }
+        ? { ...current, productId: product.idProduct, description: product.description, price: product.price }
         : current,
     );
 
@@ -161,7 +161,7 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
         <NewItemButton disabled={!canAdd} onClick={() => setAddDraft({ ...EMPTY_ITEM_DRAFT })} />
       }
     >
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl border border-outline-variant/50">
         <table className="w-full text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>

@@ -28,7 +28,7 @@ const yesNoOptions = optionsFromValues(['Si', 'No']);
 // `Stato` is read-only here: it changes only via the guarded "Cambia Stato"
 // action, which follows the `stato_check` transition rules.
 const identityFields: QuoteField[] = [
-  { label: 'ID', key: 'id', readonly: true },
+  { label: 'ID', key: 'idQuote', readonly: true },
   { label: 'Nº Preventivo', key: 'quoteNumber' },
   { label: 'Data Creazione', key: 'creationDate', type: 'date' },
   { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
@@ -134,7 +134,7 @@ export function QuoteDetailView() {
     );
   }
 
-  const title = data.quoteNumber ? `Preventivo Nº ${data.quoteNumber}` : `Preventivo ${data.id}`;
+  const title = data.quoteNumber ? `Preventivo Nº ${data.quoteNumber}` : `Preventivo ${data.idQuote}`;
 
   const actions = [
     {
@@ -142,7 +142,7 @@ export function QuoteDetailView() {
       icon: 'edit',
       label: 'Modifica Dati Preventivo',
       active: isEditing,
-      onClick: !isEditing ? () => startQuoteEdit(data.id) : undefined,
+      onClick: !isEditing ? () => startQuoteEdit(data.idQuote) : undefined,
     },
     {
       id: 'status',
@@ -156,7 +156,7 @@ export function QuoteDetailView() {
       label: generating === 'consegna' ? 'Generazione modulo…' : 'Modulo di Consegna',
       onClick:
         !isEditing && !generating
-          ? () => openDocument('consegna', () => fetchQuoteDeliveryForm(data.id))
+          ? () => openDocument('consegna', () => fetchQuoteDeliveryForm(data.idQuote))
           : undefined,
     },
     {
@@ -171,7 +171,7 @@ export function QuoteDetailView() {
       label: generating === 'scheda' ? 'Generazione scheda…' : 'Scheda Progetto',
       onClick:
         !isEditing && !generating
-          ? () => openDocument('scheda', () => fetchQuoteScheda(data.id))
+          ? () => openDocument('scheda', () => fetchQuoteScheda(data.idQuote))
           : undefined,
     },
   ];
@@ -189,7 +189,7 @@ export function QuoteDetailView() {
             title={title}
             subtitle={
               <>
-                ID: <span className="font-semibold text-on-surface">{data.id}</span>
+                ID: <span className="font-semibold text-on-surface">{data.idQuote}</span>
                 {data.status && (
                   <>
                     {' · Stato: '}
@@ -226,13 +226,13 @@ export function QuoteDetailView() {
             editing={isEditing}
             onChange={setQuoteField}
           />
-          <QuoteItemsCard quoteId={data.id} />
+          <QuoteItemsCard quoteId={data.idQuote} />
         </div>
       </EntityDetailLayout>
 
       {statusDialogOpen && (
         <QuoteStatusDialog
-          quoteId={data.id}
+          quoteId={data.idQuote}
           currentStatus={data.status}
           onClose={() => setStatusDialogOpen(false)}
           onChanged={reload}
@@ -244,7 +244,7 @@ export function QuoteDetailView() {
           onClose={() => setDdtOptionsOpen(false)}
           onGenerate={(includePrices) => {
             setDdtOptionsOpen(false);
-            openDocument('ddt', () => fetchQuoteDdt(data.id, includePrices));
+            openDocument('ddt', () => fetchQuoteDdt(data.idQuote, includePrices));
           }}
         />
       )}

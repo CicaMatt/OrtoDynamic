@@ -5,7 +5,7 @@ import type { ClientListItem } from '../types';
 import { formatBirthDate } from '../../../shared/format/format';
 
 const clientColumns: ReadonlyArray<EntityColumn<ClientListItem>> = [
-  { key: 'code', label: 'Codice Cliente', primary: true },
+  { key: 'idClient', label: 'ID Cliente', primary: true, filterable: false },
   { key: 'name', label: 'Nome' },
   { key: 'surname', label: 'Cognome' },
   { key: 'fiscalCode', label: 'Codice Fiscale', muted: true },
@@ -32,8 +32,8 @@ export function ClientsView() {
       title="Clienti"
       columns={clientColumns}
       fetchItems={fetchClients}
-      rowKey={(client) => client.code}
-      onRowClick={(client) => openClientDetail(client.code)}
+      rowKey={(client) => client.idClient}
+      onRowClick={(client) => openClientDetail(client.idClient)}
       onCreate={openClientCreate}
       loadingLabel="Caricamento clienti..."
       emptyLabel="Nessun cliente trovato."

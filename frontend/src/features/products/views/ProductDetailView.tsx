@@ -40,11 +40,11 @@ export function ProductDetailView() {
     );
   }
 
-  const title = data.description || data.code || `Prodotto ${data.id}`;
+  const title = data.description || data.code || `Prodotto ${data.idProduct}`;
   const actions = productActions.map((action) => ({
     ...action,
     active: isEditing,
-    onClick: !isEditing ? () => startProductEdit(data.id) : undefined,
+    onClick: !isEditing ? () => startProductEdit(data.idProduct) : undefined,
   }));
 
   return (
@@ -59,7 +59,7 @@ export function ProductDetailView() {
           title={title}
           subtitle={
             <>
-              ID: <span className="font-semibold text-on-surface">{data.id}</span>
+              ID: <span className="font-semibold text-on-surface">{data.idProduct}</span>
             </>
           }
         />

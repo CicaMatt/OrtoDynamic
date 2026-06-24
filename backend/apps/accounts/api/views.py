@@ -18,7 +18,7 @@ from apps.accounts.models import User
 from apps.common.api.views import UnpaginatedListAPIView
 from apps.common.exceptions import ServiceError
 
-from .serializers import LoginSerializer, UserSerializer
+from .serializers import EmployeeSerializer, LoginSerializer, UserSerializer
 
 
 class InvalidCredentialsError(ServiceError):
@@ -69,12 +69,11 @@ class SessionView(APIView):
 
 
 class EmployeeListView(UnpaginatedListAPIView):
-    """Read-only list of employee accounts from `tb_users`, ordered by username.
+    """Read-only list of employee accounts from `tb_users`, newest first.
 
-    Reuses `UserSerializer` while the management view exposes the same fields as
-    the auth profile (username, email, names); it gains its own serializer once
-    the two contracts diverge.
+    Uses `EmployeeSerializer`, which exposes the account id as `idEmployee` (the
+    auth profile keeps its own `id` via `UserSerializer`).
     """
 
-    serializer_class = UserSerializer
-    queryset = User.objects.all().order_by("username")
+    serializer_class = EmployeeSerializer
+    queryset = User.objects.all().order_by("-id")

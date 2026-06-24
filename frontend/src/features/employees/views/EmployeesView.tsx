@@ -43,7 +43,7 @@ export function EmployeesView() {
         error={error}
         loadingLabel="Caricamento dipendenti..."
         emptyLabel="Nessun dipendente trovato."
-        rowKey={(employee) => employee.id}
+        rowKey={(employee) => employee.idEmployee}
       />
     </div>
   );

@@ -18,7 +18,7 @@ from apps.doctors.models import Doctor
 class DoctorListSerializer(NullToEmptyMixin):
     """Columns shown in the Medici table: every column except `note`."""
 
-    id = serializers.CharField()
+    idDoctor = serializers.CharField(source="id")
     surname = serializers.CharField(source="cognome")
     name = serializers.CharField(source="nome")
     address = serializers.CharField(source="indirizzo")

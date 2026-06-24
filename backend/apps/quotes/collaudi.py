@@ -40,6 +40,13 @@ _PROTESI_WRAP_AT = 45
 _PERIODIC_ROW_PITCH_MM = 8.6
 _MATERIAL_ROW_PITCH_MM = 8.0
 
+# The "MATRICOLA" product-id strip runs left-to-right from X = 30 mm at a default
+# 9 mm pitch. The pitch is tightened when needed so the strip stays within
+# [30, 84] mm and never overruns the "COD." column (whose value sits at X = 120).
+_MATRICOLA_X0_MM = 30.0
+_MATRICOLA_X_MAX_MM = 84.0
+_MATRICOLA_PITCH_MM = 9.0
+
 
 @dataclass(frozen=True)
 class CollaudiPeriodicCheck:
@@ -141,10 +148,12 @@ def _build_page1(document: CollaudiDocument) -> bytes:
     pdf.write_at(30, 44, document.nome)
     pdf.write_at(60, 44, document.cognome)
 
-    # Product-id strip, left to right, 9 mm pitch.
+    # Product-id strip ("MATRICOLA"), left to right. The pitch tightens when there
+    # are enough ids that the default would otherwise run into the "COD." column.
     pdf.set_font("", 6)
+    pitch = _matricola_pitch(len(document.product_ids))
     for index, product_id in enumerate(document.product_ids):
-        pdf.write_at(30 + 9 * index, 65, product_id)
+        pdf.write_at(_MATRICOLA_X0_MM + pitch * index, 65, product_id)
 
     pdf.set_font("", 9)
     pdf.write_at(120, 65, document.id_lavorazione)
@@ -206,6 +215,18 @@ def _build_page2(document: CollaudiDocument) -> bytes:
         pdf.write_at(150, 161.5 + g, material.lotto)
 
     return pdf.output()
+
+
+def _matricola_pitch(count: int) -> float:
+    """
+    Horizontal pitch (mm) for the matricola strip: the default 9 mm, tightened so
+    that `count` ids still fit within [30, 84] mm instead of overrunning the COD
+    column. Lists short enough to fit at the default pitch are left unchanged.
+    """
+    if count <= 1:
+        return _MATRICOLA_PITCH_MM
+    span = _MATRICOLA_X_MAX_MM - _MATRICOLA_X0_MM
+    return min(_MATRICOLA_PITCH_MM, span / (count - 1))
 
 
 def _protesi_lines(raw: str) -> tuple[str, ...]:

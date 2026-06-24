@@ -5,7 +5,7 @@ export type ProductField = FieldConfig<Product>;
 
 /** Fields shown in the product detail/edit form. */
 export const productFields: ProductField[] = [
-  { label: 'ID', key: 'id', readonly: true },
+  { label: 'ID', key: 'idProduct', readonly: true },
   { label: 'Codice', key: 'code' },
   { label: 'Prezzo', key: 'price', type: 'number' },
   { label: 'Anno', key: 'year' },
@@ -19,6 +19,6 @@ export const PRODUCT_CREATE_REQUIRED = [
 
 /** Create form: drop the DB-assigned id, mark required fields. */
 export const productCreateFields = markRequired(
-  productFields.filter((field) => field.key !== 'id'),
+  productFields.filter((field) => field.key !== 'idProduct'),
   PRODUCT_CREATE_REQUIRED,
 );

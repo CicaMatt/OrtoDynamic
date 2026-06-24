@@ -45,11 +45,11 @@ export function HealthCompanyDetailView() {
     );
   }
 
-  const title = data.companyName || data.municipality || `Azienda sanitaria ${data.id}`;
+  const title = data.companyName || data.municipality || `Azienda sanitaria ${data.idHealthCompany}`;
   const actions = healthCompanyActions.map((action) => ({
     ...action,
     active: isEditing,
-    onClick: !isEditing ? () => startHealthCompanyEdit(data.id) : undefined,
+    onClick: !isEditing ? () => startHealthCompanyEdit(data.idHealthCompany) : undefined,
   }));
 
   return (
@@ -64,7 +64,7 @@ export function HealthCompanyDetailView() {
           title={title}
           subtitle={
             <>
-              ID: <span className="font-semibold text-on-surface">{data.id}</span>
+              ID: <span className="font-semibold text-on-surface">{data.idHealthCompany}</span>
             </>
           }
         />

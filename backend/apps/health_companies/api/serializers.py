@@ -17,7 +17,7 @@ from apps.health_companies.models import HealthCompany
 class HealthCompanyListSerializer(NullToEmptyMixin):
     """Columns shown in the Aziende Sanitarie table."""
 
-    id = serializers.CharField()
+    idHealthCompany = serializers.CharField(source="id")
     municipalityCode = serializers.CharField(source="codice_comune")
     municipality = serializers.CharField(source="comune")
     regionCode = serializers.CharField(source="codice_regione")

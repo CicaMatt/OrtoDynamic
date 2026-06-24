@@ -57,10 +57,10 @@ export function NewItemButton({ disabled, onClick }: { disabled: boolean; onClic
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-[6px] rounded-[6px] bg-primary-container px-[12px] py-[6px] font-body-sm text-body-sm font-medium text-on-primary transition-colors hover:bg-on-primary-fixed-variant disabled:opacity-40 disabled:cursor-not-allowed"
+      className="inline-flex items-center gap-[6px] rounded-[6px] bg-secondary px-[12px] py-[6px] font-body-sm text-body-sm font-medium text-on-secondary transition-colors hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <Icon name="add" className="text-[18px]" />
-      Nuovo
+      Aggiungi
     </button>
   );
 }

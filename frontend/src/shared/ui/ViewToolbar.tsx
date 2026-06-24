@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 
 export type ToolbarFilter = {
   key: string;
   label: string;
   options: string[];
+  /** Render a fixed-choice dropdown instead of the free-text typeahead. */
+  fixedChoices?: boolean;
 };
 
 export type ToolbarFilters = Record<string, string>;
@@ -50,7 +52,7 @@ export function ViewToolbar({
       {onCreate && (
         <button
           onClick={onCreate}
-          className="bg-primary-container text-on-primary font-label-caps text-label-caps px-4 py-2 rounded-lg hover:bg-on-primary-fixed-variant transition-colors"
+          className="bg-secondary text-on-secondary font-label-caps text-label-caps px-4 py-2 rounded-lg hover:bg-secondary-hover transition-colors"
         >
           Crea Nuovo
         </button>
@@ -237,27 +239,156 @@ function FilterMenu({
             )}
           </div>
           <div className="flex flex-col gap-3">
-            {filters.map((filter) => (
-              <label key={filter.key} className="flex flex-col gap-1">
-                <span className="font-body-sm text-body-sm text-on-surface-variant">{filter.label}</span>
-                <select
+            {filters.map((filter) =>
+              filter.fixedChoices ? (
+                <FilterSelect
+                  key={filter.key}
+                  label={filter.label}
                   value={activeFilters[filter.key] ?? ''}
-                  onChange={(event) => onFilterChange(filter.key, event.target.value)}
-                  className="border border-outline-variant rounded-lg bg-surface px-3 py-2 text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">Tutti</option>
-                  {filter.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
+                  options={filter.options}
+                  onChange={(value) => onFilterChange(filter.key, value)}
+                />
+              ) : (
+                <FilterCombobox
+                  key={filter.key}
+                  label={filter.label}
+                  value={activeFilters[filter.key] ?? ''}
+                  options={filter.options}
+                  onCommit={(value) => onFilterChange(filter.key, value)}
+                />
+              ),
+            )}
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/** A column filter over a small, fixed set of values (status, type, yes/no). */
+function FilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="font-body-sm text-body-sm text-on-surface-variant">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="border border-outline-variant rounded-lg bg-surface px-3 py-2 text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+      >
+        <option value="">Tutti</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+const MAX_SUGGESTIONS = 8;
+
+/**
+ * A single column filter: a search box that suggests the column's existing
+ * values as the user types, and applies a substring filter on submit (Enter,
+ * the search button, or picking a suggestion) so partial phrases match too.
+ */
+function FilterCombobox({
+  label,
+  value,
+  options,
+  onCommit,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onCommit: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const [open, setOpen] = useState(false);
+
+  // Mirror the committed value when it changes outside the input — notably when
+  // "Rimuovi" clears every filter at once.
+  useEffect(() => setDraft(value), [value]);
+
+  const suggestions = useMemo(() => {
+    const term = draft.trim().toLowerCase();
+    // Nothing typed yet: offer no suggestions rather than the whole column.
+    if (!term) return [];
+    return options
+      .filter((option) => option.toLowerCase().includes(term))
+      // A value typed in full has nothing left to suggest.
+      .filter((option) => option.toLowerCase() !== term)
+      .slice(0, MAX_SUGGESTIONS);
+  }, [draft, options]);
+
+  const commit = (next: string) => {
+    setDraft(next);
+    setOpen(false);
+    onCommit(next);
+  };
+
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="font-body-sm text-body-sm text-on-surface-variant">{label}</span>
+      <div className="relative">
+        <input
+          type="text"
+          value={draft}
+          placeholder="Tutti"
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              commit(draft);
+            } else if (event.key === 'Escape') {
+              setOpen(false);
+            }
+          }}
+          className="w-full border border-outline-variant rounded-lg bg-surface pl-3 pr-9 py-2 text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+        />
+        <button
+          type="button"
+          aria-label={`Cerca ${label}`}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => commit(draft)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors"
+        >
+          <Icon name="search" className="text-base" />
+        </button>
+        {open && suggestions.length > 0 && (
+          <ul className="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-surface-container-lowest rounded-lg border border-outline-variant/30 shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 z-10">
+            {suggestions.map((option) => (
+              <li key={option}>
+                <button
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => commit(option)}
+                  className="w-full text-left px-3 py-1.5 text-body-sm text-on-surface hover:bg-surface-container-low transition-colors"
+                >
+                  {option}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </label>
   );
 }
 

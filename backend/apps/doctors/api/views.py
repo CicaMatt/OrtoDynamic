@@ -13,7 +13,7 @@ from .serializers import (
 class DoctorListView(UnpaginatedListCreateAPIView):
     serializer_class = DoctorListSerializer
     create_serializer_class = DoctorCreateSerializer
-    queryset = Doctor.objects.order_by("cognome", "nome", "id")
+    queryset = Doctor.objects.order_by("-id")
 
 
 class DoctorDetailView(ReadUpdateDetailAPIView):

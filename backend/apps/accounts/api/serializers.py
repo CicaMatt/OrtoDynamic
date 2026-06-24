@@ -21,3 +21,18 @@ class UserSerializer(NullToEmptyMixin):
     email = serializers.CharField()
     firstName = serializers.CharField(source="first_name")
     lastName = serializers.CharField(source="last_name")
+
+
+class EmployeeSerializer(UserSerializer):
+    """
+    Same account fields as the auth profile, but the management view exposes the
+    account id as `idEmployee` (consistent with the other entities' `id<Entity>`),
+    so the auth profile keeps its `id` while this view does not carry both.
+    """
+
+    idEmployee = serializers.CharField(source="id")
+
+    def get_fields(self):
+        fields = super().get_fields()
+        fields.pop("id", None)
+        return fields

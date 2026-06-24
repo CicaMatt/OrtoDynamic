@@ -13,12 +13,7 @@ from .serializers import (
 class HealthCompanyListView(UnpaginatedListCreateAPIView):
     serializer_class = HealthCompanyListSerializer
     create_serializer_class = HealthCompanyCreateSerializer
-    queryset = HealthCompany.objects.order_by(
-        "denominazione_regione",
-        "denominazione_azienda",
-        "comune",
-        "id",
-    )
+    queryset = HealthCompany.objects.order_by("-id")
 
 
 class HealthCompanyDetailView(ReadUpdateDetailAPIView):

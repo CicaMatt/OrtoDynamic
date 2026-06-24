@@ -177,7 +177,7 @@ function buildCreatePayload<T extends object>(
 /** A blank client used to seed the creation form. */
 function makeEmptyClient(): Client {
   return {
-    code: '', name: '', surname: '', fiscalCode: '', phone: '', mobile: '', email: '',
+    idClient: '', name: '', surname: '', fiscalCode: '', phone: '', mobile: '', email: '',
     birthDate: '', birthMunicipality: '', address: '', city: '', province: '', postalCode: '',
     country: '', district: '', doctorId: '', gender: '', note: '',
   };
@@ -185,26 +185,26 @@ function makeEmptyClient(): Client {
 
 /** A blank doctor used to seed the creation form. */
 function makeEmptyDoctor(): Doctor {
-  return { id: '', surname: '', name: '', address: '', phone: '', email: '', note: '' };
+  return { idDoctor: '', surname: '', name: '', address: '', phone: '', email: '', note: '' };
 }
 
 /** A blank health company used to seed the creation form. */
 function makeEmptyHealthCompany(): HealthCompany {
   return {
-    id: '', municipalityCode: '', municipality: '', regionCode: '', regionName: '',
+    idHealthCompany: '', municipalityCode: '', municipality: '', regionCode: '', regionName: '',
     companyCode: '', companyName: '', year: '', males: '', females: '', total: '', district: '',
   };
 }
 
 /** A blank product used to seed the creation form. */
 function makeEmptyProduct(): Product {
-  return { id: '', code: '', description: '', price: '', year: '' };
+  return { idProduct: '', code: '', description: '', price: '', year: '' };
 }
 
 /** A blank quote used to seed the creation form (status is server-assigned). */
 function makeEmptyQuote(): Quote {
   return {
-    id: '', clientId: '', doctorId: '', clientName: '', doctorName: '', quoteNumber: '', quoteType: '', status: '',
+    idQuote: '', clientId: '', doctorId: '', clientName: '', doctorName: '', quoteNumber: '', quoteType: '', status: '',
     creationDate: '', quoteDate: '', total: '', entryBy: '', diagnosis: '',
     therapeuticProgram: '', detailedPrescription: '', authorizationNumber: '',
     acceptanceDate: '', authorizationReceiptDate: '', expiryDays: '', maxExpiry: '',
@@ -560,27 +560,27 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
           const created = await createClient(
             normalizeClientPayload(buildCreatePayload(clientDraft, EDITABLE_CLIENT_KEYS) as ClientUpdate),
           );
-          createdId = created.code;
+          createdId = created.idClient;
         } else if (editTarget.type === 'doctor') {
           const created = await createDoctor(
             buildCreatePayload(doctorDraft, EDITABLE_DOCTOR_KEYS) as DoctorUpdate,
           );
-          createdId = created.id;
+          createdId = created.idDoctor;
         } else if (editTarget.type === 'healthCompany') {
           const created = await createHealthCompany(
             normalizeHealthCompanyPayload(
               buildCreatePayload(healthCompanyDraft, EDITABLE_HEALTH_COMPANY_KEYS) as HealthCompanyUpdate,
             ),
           );
-          createdId = created.id;
+          createdId = created.idHealthCompany;
         } else if (editTarget.type === 'product') {
           const created = await createProduct(
             normalizeProductPayload(buildCreatePayload(productDraft, EDITABLE_PRODUCT_KEYS) as ProductUpdate),
           );
-          createdId = created.id;
+          createdId = created.idProduct;
         } else if (editTarget.type === 'quote') {
           const created = await createQuote(buildQuoteCreatePayload(quoteDraft, quoteItemDrafts));
-          createdId = created.id;
+          createdId = created.idQuote;
         } else {
           setSaveError('Creazione non supportata per questa entità.');
           return { ok: false };

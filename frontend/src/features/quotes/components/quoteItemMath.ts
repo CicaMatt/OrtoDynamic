@@ -1,6 +1,6 @@
 import type { QuoteItemDraft } from '../types';
 
-/** A blank line-item draft for the inline "Nuovo" row. */
+/** A blank line-item draft for the inline "Aggiungi" row. */
 export const EMPTY_ITEM_DRAFT: QuoteItemDraft = {
   productId: '',
   description: '',

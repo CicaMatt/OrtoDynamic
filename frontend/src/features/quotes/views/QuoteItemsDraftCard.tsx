@@ -18,7 +18,7 @@ import {
  * Pending line items for a quote being created. The quote has no id yet, so
  * these are held in the edit session (not posted per row) and sent together with
  * the quote on Save, which the backend inserts in one transaction. The UI mirrors
- * the detail view's items card: "Nuovo" opens a draft row picked from the live
+ * the detail view's items card: "Aggiungi" opens a draft row picked from the live
  * `nomenclatore` lookup; confirmed rows are listed and can be removed before
  * saving. Importo is previewed locally (prezzo × quantità less the sconto %).
  */
@@ -33,7 +33,7 @@ export function QuoteItemsDraftCard() {
   const selectProduct = (product: Product) =>
     setDraft((current) =>
       current
-        ? { ...current, productId: product.id, description: product.description, price: product.price }
+        ? { ...current, productId: product.idProduct, description: product.description, price: product.price }
         : current,
     );
 
@@ -57,7 +57,7 @@ export function QuoteItemsDraftCard() {
         <NewItemButton disabled={draft !== null} onClick={() => setDraft({ ...EMPTY_ITEM_DRAFT })} />
       }
     >
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl border border-outline-variant/50">
         <table className="w-full text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>
@@ -74,7 +74,7 @@ export function QuoteItemsDraftCard() {
           <tbody>
             {quoteItemDrafts.length === 0 && draft === null && (
               <MessageRow colSpan={ITEM_COLUMN_COUNT}>
-                Nessun articolo. Aggiungine uno con «Nuovo».
+                Nessun articolo. Aggiungine uno con «Aggiungi».
               </MessageRow>
             )}
             {quoteItemDrafts.map((item, index) => (

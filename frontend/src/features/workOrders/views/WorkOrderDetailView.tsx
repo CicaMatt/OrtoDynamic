@@ -30,7 +30,7 @@ const deviceOptions = optionsFromValues(['INTERNO', 'ESTERNO']);
 
 // `Stato` is read-only here: it changes only via the "Cambia Stato" action.
 const lifecycleFields: WorkOrderField[] = [
-  { label: 'ID', key: 'id', readonly: true },
+  { label: 'ID', key: 'idWorkOrder', readonly: true },
   { label: 'Stato', key: 'status', readonly: true },
   { label: 'Data Creazione', key: 'creationDate', type: 'date' },
   { label: 'Data Fine Lavorazione', key: 'completionDate', type: 'date' },
@@ -125,14 +125,14 @@ export function WorkOrderDetailView() {
     );
   }
 
-  const title = `Lavorazione ${data.id}`;
+  const title = `Lavorazione ${data.idWorkOrder}`;
   const actions = [
     {
       id: 'edit',
       icon: 'edit',
       label: 'Modifica Dati Lavorazione',
       active: isEditing,
-      onClick: !isEditing ? () => startWorkOrderEdit(data.id) : undefined,
+      onClick: !isEditing ? () => startWorkOrderEdit(data.idWorkOrder) : undefined,
     },
     {
       id: 'status',
@@ -146,7 +146,7 @@ export function WorkOrderDetailView() {
       label: generating === 'collaudi' ? 'Generazione scheda…' : 'Scheda Rischi e Collaudi',
       onClick:
         !isEditing && !generating
-          ? () => openDocument('collaudi', () => fetchWorkOrderCollaudi(data.id))
+          ? () => openDocument('collaudi', () => fetchWorkOrderCollaudi(data.idWorkOrder))
           : undefined,
     },
   ];
@@ -164,7 +164,7 @@ export function WorkOrderDetailView() {
             title={title}
             subtitle={
               <>
-                ID: <span className="font-semibold text-on-surface">{data.id}</span>
+                ID: <span className="font-semibold text-on-surface">{data.idWorkOrder}</span>
                 {data.status && (
                   <>
                     {' · Stato: '}
@@ -201,13 +201,13 @@ export function WorkOrderDetailView() {
             editing={isEditing}
             onChange={setWorkOrderField}
           />
-          <WorkOrderItemsCard workOrderId={data.id} />
+          <WorkOrderItemsCard workOrderId={data.idWorkOrder} />
         </div>
       </EntityDetailLayout>
 
       {statusDialogOpen && (
         <WorkOrderStatusDialog
-          workOrderId={data.id}
+          workOrderId={data.idWorkOrder}
           currentStatus={data.status}
           onClose={() => setStatusDialogOpen(false)}
           onChanged={reload}
