@@ -21,7 +21,19 @@ export type SearchFilterColumn<T> = {
  * substring typeahead, a categorical column (`searchable === false`, e.g. status
  * or a yes/no flag) by an exact pick from its distinct values.
  */
-export function useTableSearchFilter<T>(items: T[], columns: ReadonlyArray<SearchFilterColumn<T>>) {
+type UseTableSearchFilterOptions = {
+  /**
+   * List the exact-pick (categorical) filters before the free-text ones in the
+   * derived filter menu, regardless of column order. Off by default.
+   */
+  categoricalFiltersFirst?: boolean;
+};
+
+export function useTableSearchFilter<T>(
+  items: T[],
+  columns: ReadonlyArray<SearchFilterColumn<T>>,
+  { categoricalFiltersFirst = false }: UseTableSearchFilterOptions = {},
+) {
   const [searchValue, setSearchValue] = useState('');
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
@@ -29,10 +41,15 @@ export function useTableSearchFilter<T>(items: T[], columns: ReadonlyArray<Searc
     () => columns.filter((column) => column.searchable !== false),
     [columns],
   );
-  const filterableColumns = useMemo(
-    () => columns.filter((column) => column.filterable !== false),
-    [columns],
-  );
+  const filterableColumns = useMemo(() => {
+    const filterable = columns.filter((column) => column.filterable !== false);
+    if (!categoricalFiltersFirst) return filterable;
+    // Stable sort keeps each group's column order; categorical (exact-pick)
+    // columns move ahead of the free-text ones.
+    return [...filterable].sort(
+      (a, b) => Number(isCategorical(b)) - Number(isCategorical(a)),
+    );
+  }, [columns, categoricalFiltersFirst]);
 
   const filterOptions = useMemo(
     () =>

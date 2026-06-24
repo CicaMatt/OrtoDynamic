@@ -1,4 +1,5 @@
 import { FieldValue } from '../ui/FieldValue';
+import { ScrollableTable } from './ScrollableTable';
 import { TableMessageRow } from './TableMessageRow';
 
 /** A read-only table column: its header label and a plain-text cell accessor. */
@@ -32,7 +33,7 @@ export function DataTable<T>({
   rowKey,
 }: DataTableProps<T>) {
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl shadow-sm overflow-x-auto">
+    <ScrollableTable>
       <table className="w-full text-left font-body-md text-body-md">
         <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
           <tr>
@@ -68,6 +69,6 @@ export function DataTable<T>({
           )}
         </tbody>
       </table>
-    </div>
+    </ScrollableTable>
   );
 }

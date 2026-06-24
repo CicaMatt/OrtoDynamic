@@ -7,9 +7,10 @@ import type { WorkOrder } from '../types';
 
 /**
  * Every column of `lavorazioni` is shown. The bounded categorical columns
- * (status, trial/check, technical service, complaint, device, warranty) are
- * filterable; dates render in Italian and are not searched; the long free-text
- * columns are previewed and excluded from search.
+ * (status, trial/check, technical service, complaint, device, warranty,
+ * technician signature) are exact-pick filters excluded from free-text search
+ * (`searchable: false`); dates render in Italian and are not searched; the long
+ * free-text columns are previewed and excluded from search.
  */
 const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
   { key: 'idWorkOrder', label: 'ID Lavorazione', primary: true, filterable: false },
@@ -21,7 +22,7 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     filterable: false,
     renderCell: (workOrder) => <ReferenceName name={workOrder.clientName} id={workOrder.clientId} />,
   },
-  { key: 'status', label: 'Stato' },
+  { key: 'status', label: 'Stato', searchable: false },
   {
     key: 'creationDate',
     label: 'Data Creazione',
@@ -55,8 +56,8 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     render: formatBirthDate,
   },
   { key: 'maxExpiry', label: 'Massima Scadenza', muted: true, filterable: false },
-  { key: 'clientTrial', label: 'Prova Cliente' },
-  { key: 'clientTrialOutcome', label: 'Esito Prova' },
+  { key: 'clientTrial', label: 'Prova Cliente', searchable: false },
+  { key: 'clientTrialOutcome', label: 'Esito Prova', searchable: false },
   {
     key: 'clientTrialDate',
     label: 'Data Prova Cliente',
@@ -65,8 +66,8 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     filterable: false,
     render: formatBirthDate,
   },
-  { key: 'clientCheck', label: 'Verifica Cliente' },
-  { key: 'clientCheckOutcome', label: 'Esito Verifica' },
+  { key: 'clientCheck', label: 'Verifica Cliente', searchable: false },
+  { key: 'clientCheckOutcome', label: 'Esito Verifica', searchable: false },
   {
     key: 'clientCheckDate',
     label: 'Data Verifica Cliente',
@@ -76,11 +77,11 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     render: formatBirthDate,
   },
   { key: 'doctorSignature', label: 'Firma Medico', muted: true, filterable: false },
-  { key: 'technicalService', label: 'Assistenza Tecnica' },
+  { key: 'technicalService', label: 'Assistenza Tecnica', searchable: false },
   { key: 'serviceStatus', label: 'Stato Lavorazione Assistenza', muted: true, filterable: false },
-  { key: 'complaintReason', label: 'Ragione Reclamo' },
-  { key: 'device', label: 'Presidio' },
-  { key: 'warranty', label: 'Garanzia' },
+  { key: 'complaintReason', label: 'Ragione Reclamo', searchable: false },
+  { key: 'device', label: 'Presidio', searchable: false },
+  { key: 'warranty', label: 'Garanzia', searchable: false },
   {
     key: 'serviceDeliveryDate',
     label: 'Data Consegna Assistenza',
@@ -99,7 +100,7 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     render: formatBirthDate,
   },
   { key: 'serviceDoctorSignature', label: 'Firma Medico Assistenza', muted: true, filterable: false },
-  { key: 'technicianSignature', label: 'Firma Tecnico', muted: true },
+  { key: 'technicianSignature', label: 'Firma Tecnico', muted: true, searchable: false },
   {
     key: 'interventionDescription',
     label: 'Descrizione Intervento',

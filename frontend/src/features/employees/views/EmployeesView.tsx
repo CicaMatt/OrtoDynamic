@@ -24,7 +24,7 @@ export function EmployeesView() {
 
   return (
     <div>
-      <header className="flex justify-between items-center mb-8">
+      <header className="flex flex-col items-start gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between lg:gap-0">
         <h2 className="font-headline-lg text-headline-lg font-bold text-primary">Gestione Dipendenti</h2>
         <ViewToolbar
           searchValue={searchValue}

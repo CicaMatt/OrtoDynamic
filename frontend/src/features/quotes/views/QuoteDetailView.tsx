@@ -83,8 +83,6 @@ const supplyFields: QuoteField[] = [
   { label: 'Misure', key: 'measurements' },
 ];
 
-const quoteTextFields: QuoteField[] = [{ label: 'Preventivo', key: 'quote', type: 'textarea' }];
-
 const noteFields: QuoteField[] = [
   { label: 'Note', key: 'note', type: 'textarea' },
   { label: 'Note Private', key: 'privateNote', type: 'textarea' },
@@ -97,7 +95,6 @@ const quoteSections: FieldSectionConfig<Quote>[] = [
   { icon: 'clinical_notes', title: 'Dati Clinici', fields: clinicalFields, columns: 1 },
   { icon: 'fact_check', title: 'Autorizzazione e Scadenze', fields: authorizationFields },
   { icon: 'receipt_long', title: 'Fornitura e Fatturazione', fields: supplyFields },
-  { icon: 'description', title: 'Dettaglio Preventivo', fields: quoteTextFields, columns: 1 },
   { icon: 'sticky_note_2', title: 'Note', fields: noteFields, columns: 1 },
 ];
 

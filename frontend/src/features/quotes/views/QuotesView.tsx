@@ -132,6 +132,7 @@ export function QuotesView() {
       rowKey={(quote) => quote.idQuote}
       onRowClick={(quote) => openQuoteDetail(quote.idQuote)}
       onCreate={openQuoteCreate}
+      categoricalFiltersFirst
       loadingLabel="Caricamento preventivi..."
       emptyLabel="Nessun preventivo trovato."
     />

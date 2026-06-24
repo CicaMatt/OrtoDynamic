@@ -5,6 +5,7 @@ import { ViewToolbar } from '../ui/ViewToolbar';
 import { useApiData } from '../hooks/useApiData';
 import { usePagination } from '../hooks/usePagination';
 import { useTableSearchFilter, type SearchFilterColumn } from '../hooks/useTableSearchFilter';
+import { ScrollableTable } from './ScrollableTable';
 import { TableMessageRow } from './TableMessageRow';
 
 export type EntityColumn<T> = {
@@ -29,6 +30,8 @@ type EntityListViewProps<T extends object> = {
   emptyLabel: string;
   /** When provided, shows the toolbar's "Crea Nuovo" button. */
   onCreate?: () => void;
+  /** Surface the exact-pick (only-filterable) filters before the searchable ones. */
+  categoricalFiltersFirst?: boolean;
 };
 
 export function EntityListView<T extends object>({
@@ -40,6 +43,7 @@ export function EntityListView<T extends object>({
   loadingLabel,
   emptyLabel,
   onCreate,
+  categoricalFiltersFirst = false,
 }: EntityListViewProps<T>) {
   const { data, loading, error } = useApiData(() => fetchItems(), []);
   const items = useMemo(() => data ?? [], [data]);
@@ -66,14 +70,14 @@ export function EntityListView<T extends object>({
     clearFilters,
     filterOptions,
     filteredItems,
-  } = useTableSearchFilter(items, searchFilterColumns);
+  } = useTableSearchFilter(items, searchFilterColumns, { categoricalFiltersFirst });
 
   const { pageItems, page, totalPages, totalItems, rangeStart, rangeEnd, setPage } =
     usePagination(filteredItems);
 
   return (
     <div>
-      <header className="flex justify-between items-center mb-8">
+      <header className="flex flex-col items-start gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between lg:gap-0">
         <h2 className="font-headline-lg text-headline-lg font-bold text-primary">{title}</h2>
         <ViewToolbar
           searchValue={searchValue}
@@ -86,7 +90,7 @@ export function EntityListView<T extends object>({
         />
       </header>
 
-      <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl shadow-sm overflow-x-auto">
+      <ScrollableTable>
         <table className="w-full text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>
@@ -113,7 +117,7 @@ export function EntityListView<T extends object>({
             />
           </tbody>
         </table>
-      </div>
+      </ScrollableTable>
 
       <Pagination
         page={page}
