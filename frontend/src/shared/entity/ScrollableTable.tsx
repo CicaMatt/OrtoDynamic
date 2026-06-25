@@ -1,15 +1,27 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useDragScroll } from '../hooks/useDragScroll';
 
-const CONTAINER_CLASS =
-  'bg-surface-container-lowest border border-outline-variant/50 rounded-xl shadow-sm overflow-x-auto';
+const DEFAULT_SURFACE_CLASS =
+  'bg-surface-container-lowest border border-outline-variant/50 rounded-xl shadow-sm';
 
 /**
- * The shared horizontally-scrollable table surface: it supplies the list/table
- * styling, click-and-drag panning (see `useDragScroll`), and a subtle shadow at
- * whichever edge still hides content, so it's clear there is more to scroll to.
+ * The shared horizontally-scrollable table surface: it supplies click-and-drag
+ * panning (see `useDragScroll`) and a subtle shadow at whichever edge still
+ * hides content, so it's clear there is more to scroll to.
+ *
+ * `surfaceClassName` overrides the visual styling of the scroll container (its
+ * border/background/radius) for callers that sit on a different surface, e.g.
+ * the item tables embedded in a `DataCard`. The edge shadows assume a rounded
+ * 1px-bordered box, which any override should keep. `overflow-x-auto` is always
+ * applied and is not overridable.
  */
-export function ScrollableTable({ children }: { children: ReactNode }) {
+export function ScrollableTable({
+  children,
+  surfaceClassName = DEFAULT_SURFACE_CLASS,
+}: {
+  children: ReactNode;
+  surfaceClassName?: string;
+}) {
   const scrollRef = useDragScroll<HTMLDivElement>();
   const [edges, setEdges] = useState({ left: false, right: false });
 
@@ -43,7 +55,7 @@ export function ScrollableTable({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative">
-      <div ref={scrollRef} className={CONTAINER_CLASS}>
+      <div ref={scrollRef} className={`${surfaceClassName} overflow-x-auto`}>
         {children}
       </div>
       <EdgeShadow side="left" visible={edges.left} />

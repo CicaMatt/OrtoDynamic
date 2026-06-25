@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DataCard } from '../../../shared/entity/DataCard';
+import { ScrollableTable } from '../../../shared/entity/ScrollableTable';
 import { formatEuro } from '../../../shared/format/format';
 import { FieldValue } from '../../../shared/ui/FieldValue';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
@@ -63,7 +64,7 @@ export function QuoteItemsDraftCard() {
         <NewItemButton disabled={draft !== null} onClick={() => setDraft({ ...EMPTY_ITEM_DRAFT })} />
       }
     >
-      <div className="overflow-x-auto rounded-xl border border-outline-variant/50">
+      <ScrollableTable surfaceClassName="rounded-xl border border-outline-variant/50">
         <table className="w-full text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>
@@ -102,7 +103,7 @@ export function QuoteItemsDraftCard() {
             )}
           </tbody>
         </table>
-      </div>
+      </ScrollableTable>
 
       {actionError && <p className="mt-[16px] font-body-sm text-body-sm text-error">{actionError}</p>}
     </DataCard>

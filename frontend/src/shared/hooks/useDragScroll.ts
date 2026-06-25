@@ -33,6 +33,12 @@ export function useDragScroll<T extends HTMLElement>() {
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0) return; // primary button only
+      // Leave presses that start on a text-entry control alone, so the user can
+      // click into and select within inputs (e.g. the item tables' inline edit
+      // fields) instead of the press being read as a pan.
+      if ((event.target as Element | null)?.closest('input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
       pointerId = event.pointerId;
       startX = event.clientX;
       startScrollLeft = el.scrollLeft;

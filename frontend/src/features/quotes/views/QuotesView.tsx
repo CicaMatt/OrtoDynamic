@@ -12,7 +12,6 @@ import type { Quote } from '../types';
  */
 const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   { key: 'idQuote', label: 'ID Preventivo', primary: true, filterable: false },
-  { key: 'quoteNumber', label: 'Nº Preventivo', muted: true, filterable: false },
   { key: 'quoteType', label: 'Tipologia', searchable: false },
   { key: 'status', label: 'Stato', searchable: false },
   {
@@ -20,6 +19,30 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     label: 'Cliente',
     muted: true,
     renderCell: (quote) => <ReferenceName name={quote.clientName} id={quote.clientId} />,
+  },
+  {
+    key: 'diagnosis',
+    label: 'Diagnosi Circostanziata',
+    muted: true,
+    searchable: false,
+    filterable: false,
+    render: previewText,
+  },
+  {
+    key: 'therapeuticProgram',
+    label: 'Programma Terapeutico',
+    muted: true,
+    searchable: false,
+    filterable: false,
+    render: previewText,
+  },
+  {
+    key: 'detailedPrescription',
+    label: 'Prescrizione Dettagliata Protesi',
+    muted: true,
+    searchable: false,
+    filterable: false,
+    render: previewText,
   },
   {
     key: 'doctorName',
@@ -71,30 +94,6 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   { key: 'measurements', label: 'Misure', muted: true, filterable: false },
   { key: 'invoiceNumber', label: 'Nº Fattura', muted: true},
   {
-    key: 'diagnosis',
-    label: 'Diagnosi Circostanziata',
-    muted: true,
-    searchable: false,
-    filterable: false,
-    render: previewText,
-  },
-  {
-    key: 'therapeuticProgram',
-    label: 'Programma Terapeutico',
-    muted: true,
-    searchable: false,
-    filterable: false,
-    render: previewText,
-  },
-  {
-    key: 'detailedPrescription',
-    label: 'Prescrizione Dettagliata Protesi',
-    muted: true,
-    searchable: false,
-    filterable: false,
-    render: previewText,
-  },
-  {
     key: 'quote',
     label: 'Preventivo',
     muted: true,
@@ -102,6 +101,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     filterable: false,
     render: previewText,
   },
+  { key: 'quoteNumber', label: 'Nº Preventivo', muted: true, filterable: false },
   { key: 'note', label: 'Note', muted: true, searchable: false, filterable: false, render: previewText },
   {
     key: 'privateNote',
