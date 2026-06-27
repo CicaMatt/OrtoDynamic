@@ -16,6 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
 
 from apps.quotes.fpdf_canvas import FpdfCanvas
 from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
@@ -24,6 +25,38 @@ from apps.quotes.pdf_layout import label_value, section, table_empty, table_row
 # Lab/accreditation code shown in the header.
 _LAB_CODE = "ITCA01059027"
 _VAT_RATE = 0.04
+
+# Closing block reproduced from the pre-printed sheet (assets/scheda.pdf): the
+# conformity statement, the technician's name and albo registration, and the
+# stamp-and-signature area with the technician's facsimile signature.
+_CONFORMITY_STATEMENT = "Prodotti corrispondenti alle certificazioni e normative vigenti."
+_TECNICO_LINE = "Tecnico ortopedico Francesco Pepe - Iscrizione all'albo N.48."
+_SIGNATURE_LABEL = "Timbro e firma"
+
+# Facsimile of the technician's signature, lifted from the pre-printed sheet. The box
+# width matches the original (~15 mm); the height preserves the image's aspect ratio
+# (69x90 px) so it is never distorted. The right edge sits at the 200 mm page margin.
+SIGNATURE_PATH = Path(__file__).resolve().parent / "assets" / "firma.png"
+_SIGNATURE_W_MM = 15.0
+_SIGNATURE_H_MM = 19.6
+_RIGHT_MARGIN_MM = 200.0
+
+# Row heights making up the closing block. They drive both how it is drawn and the
+# total height used to decide whether it still fits below the totals or must move to a
+# fresh page (the conformity statement, technician line and signature stay together).
+_FOOTER_GAP_MM = 8.0          # separation from the totals above
+_FOOTER_STATEMENT_MM = 5.0    # conformity and technician rows (9 pt)
+_FOOTER_INNER_GAP_MM = 4.0    # gap before the signature label
+_FOOTER_LABEL_MM = 6.0        # "Timbro e firma" row (10 pt)
+_FOOTER_SIGNATURE_GAP_MM = 1.0  # gap between the label and the signature
+_FOOTER_HEIGHT_MM = (
+    _FOOTER_GAP_MM
+    + 2 * _FOOTER_STATEMENT_MM
+    + _FOOTER_INNER_GAP_MM
+    + _FOOTER_LABEL_MM
+    + _FOOTER_SIGNATURE_GAP_MM
+    + _SIGNATURE_H_MM
+)
 
 # Items table: column widths (mm, summing to the 190 mm usable width), headers and
 # alignments, and the per-line height used when a description wraps.
@@ -168,12 +201,42 @@ def render_scheda(document: SchedaDocument) -> bytes:
     pdf.cell(150, 6, "Totale (IVA 4% inclusa):", 0, 0, "R")
     pdf.cell(40, 6, f"{document.totale} €", 0, 1, "R")
 
+    _conformity_footer(pdf)
+
     return pdf.output()
 
 
 def _field(pdf: FpdfCanvas, label: str, value: str) -> None:
     """This sheet's 46 mm label / bold-value row."""
     label_value(pdf, label, value, label_w=46)
+
+
+def _conformity_footer(pdf: FpdfCanvas) -> None:
+    """The closing block from the pre-printed sheet: the conformity statement, the
+    technician's albo registration, then the stamp-and-signature area carrying the
+    technician's facsimile signature.
+
+    The block is kept whole: if it would not fit below the totals on the current page
+    it moves to a fresh one rather than being split or pushed past the bottom margin.
+    """
+    if pdf.fits(_FOOTER_HEIGHT_MM):
+        pdf.ln(_FOOTER_GAP_MM)
+    else:
+        pdf.add_page()
+
+    pdf.set_font("", 9)
+    pdf.cell(0, _FOOTER_STATEMENT_MM, _CONFORMITY_STATEMENT, 0, 1)
+    pdf.cell(0, _FOOTER_STATEMENT_MM, _TECNICO_LINE, 0, 1)
+
+    pdf.ln(_FOOTER_INNER_GAP_MM)
+    pdf.set_font("", 10)
+    pdf.cell(0, _FOOTER_LABEL_MM, _SIGNATURE_LABEL, 0, 1, "R")
+
+    if SIGNATURE_PATH.exists():
+        x = _RIGHT_MARGIN_MM - _SIGNATURE_W_MM
+        pdf.image(SIGNATURE_PATH, x, pdf.get_y() + _FOOTER_SIGNATURE_GAP_MM,
+                  _SIGNATURE_W_MM, _SIGNATURE_H_MM)
+        pdf.ln(_FOOTER_SIGNATURE_GAP_MM + _SIGNATURE_H_MM)
 
 
 def _items_table(pdf: FpdfCanvas, document: SchedaDocument) -> None:

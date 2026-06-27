@@ -150,6 +150,21 @@ class FpdfCanvas:
         self.x = _MARGIN_MM
         self.y += h
 
+    def fits(self, height: float) -> bool:
+        """True if a block `height` mm tall fits below the cursor before the bottom margin."""
+        page_height_mm = _PAGE_H_PT / _MM_TO_PT
+        return self.y + height <= page_height_mm - _MARGIN_MM
+
+    def add_page(self) -> None:
+        """Finalize the current page and start a fresh one with the cursor back at the
+        top-left margin. reportlab's ``showPage`` resets the graphics state, so the line
+        width and current font are re-applied to keep drawing consistent across pages."""
+        self._canvas.showPage()
+        self._canvas.setLineWidth(_BORDER_WIDTH_MM * _MM_TO_PT)
+        self._canvas.setFont(self._font, self._size)
+        self.x = _MARGIN_MM
+        self.y = _MARGIN_MM
+
     def output(self) -> bytes:
         self._canvas.showPage()
         self._canvas.save()

@@ -201,3 +201,31 @@ def test_render_keeps_long_free_text():
 
 def test_render_empty_items_shows_placeholder():
     assert "Nessuna voce disponibile" in _text(render_scheda(document(items=())))
+
+
+def test_render_includes_conformity_footer():
+    text = _text(render_scheda(document()))
+    for value in ("certificazioni e normative vigenti", "Francesco Pepe",
+                  "all'albo N.48", "Timbro e firma"):
+        assert value in text
+
+
+def test_render_embeds_technician_signature():
+    pdf = render_scheda(document())
+    sizes = {image.image.size for image in PdfReader(BytesIO(pdf)).pages[0].images}
+    assert (69, 90) in sizes  # the facsimile signature lifted from the pre-printed sheet
+
+
+def test_footer_moves_to_next_page_when_it_does_not_fit():
+    # A long items table fills the first page; the closing block must stay whole and
+    # move to a second page rather than be split or pushed past the bottom margin.
+    items = tuple(SchedaItem(f"C{i}", f"Voce {i}", "1", "10", "", False, "10") for i in range(20))
+    reader = PdfReader(BytesIO(render_scheda(document(items=items))))
+    assert len(reader.pages) == 2
+
+    first, last = reader.pages[0].extract_text(), reader.pages[1].extract_text()
+    assert "Timbro e firma" not in first
+    for value in ("certificazioni e normative vigenti", "Francesco Pepe", "Timbro e firma"):
+        assert value in last
+    # the facsimile signature travels with the block.
+    assert (69, 90) in {image.image.size for image in reader.pages[1].images}
