@@ -44,6 +44,37 @@ export function formatInteger(value: string): string {
   return String(Math.round(amount));
 }
 
+/**
+ * Today's date as an ISO `YYYY-MM-DD` string in the local timezone — the format
+ * `date` inputs bind to and the API's DateFields parse. Built from local parts
+ * (not `toISOString`, which is UTC) so it never lands on the wrong day near
+ * midnight in timezones behind UTC.
+ */
+export function todayIso(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Add `days` to an ISO `YYYY-MM-DD` date, returning the result as ISO. Computed
+ * with local `Date` arithmetic so month/year rollovers are handled and the result
+ * stays on the intended day regardless of timezone. Returns '' for an unparseable
+ * base date.
+ */
+export function addDaysIso(baseIso: string, days: number): string {
+  const [year, month, day] = baseIso.split('-').map(Number);
+  if (!year || !month || !day) return '';
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  const resultYear = date.getFullYear();
+  const resultMonth = String(date.getMonth() + 1).padStart(2, '0');
+  const resultDay = String(date.getDate()).padStart(2, '0');
+  return `${resultYear}-${resultMonth}-${resultDay}`;
+}
+
 /** Trim long table cells while keeping the full value available in detail views. */
 export function previewText(value: string): string {
   const maxLength = 60;

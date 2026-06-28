@@ -25,7 +25,7 @@ from apps.quotes.delivery_form import (
 )
 from apps.quotes.models import Quote, QuoteItem
 from apps.quotes.scheda import prepare_scheda, render_scheda, scheda_filename
-from apps.quotes.services import change_quote_status
+from apps.quotes.services import change_quote_status, delete_quote_item
 from apps.statuses.services import allowed_target_states
 from .serializers import (
     QuoteCreateSerializer,
@@ -110,6 +110,10 @@ class QuoteItemDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
 
     def get_queryset(self):
         return QuoteItem.objects.filter(id_preventivo=self.kwargs["pk"])
+
+    def perform_destroy(self, instance):
+        # Remove the line and re-derive the quote's total from those that remain.
+        delete_quote_item(instance)
 
 
 class QuoteStatusTransitionsView(generics.RetrieveAPIView):

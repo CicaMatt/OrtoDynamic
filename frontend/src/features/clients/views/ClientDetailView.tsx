@@ -10,6 +10,7 @@ import { useApiData } from '../../../shared/hooks/useApiData';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useClientDoctorAutocomplete } from '../components/useClientDoctorAutocomplete';
 import { useClientMunicipalityAutocomplete } from '../components/useClientMunicipalityAutocomplete';
 
 const clientActions = [
@@ -32,6 +33,7 @@ export function ClientDetailView() {
   });
 
   const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditing);
+  const doctorFields = useClientDoctorAutocomplete(isEditing);
   const { generating, error: docError, clearError, open: openDocument } = useInlineDocument<'privacy'>();
   const doctorId = data?.doctorId?.trim() ?? '';
   const { data: doctor } = useApiData(
@@ -112,7 +114,7 @@ export function ClientDetailView() {
         editing={isEditing}
         onChange={setClientField}
         doctorName={doctorName}
-        autocompleteFields={municipalityFields}
+        autocompleteFields={{ ...municipalityFields, ...doctorFields }}
       />
     </EntityDetailLayout>
   );

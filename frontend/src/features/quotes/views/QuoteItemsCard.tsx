@@ -59,8 +59,12 @@ type EditState = { id: string; draft: QuoteItemDraft };
  * Editing a row reopens its quantity/discount for the same recompute (sconto
  * being a 1–100 discount applied to the importo). Each mutation persists
  * immediately and refetches the list so the table always reflects the server.
+ *
+ * `onChanged` fires after a successful add/edit/delete so the parent can refresh
+ * data derived from the items — the quote's Totale, which the server recomputes
+ * from them.
  */
-export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
+export function QuoteItemsCard({ quoteId, onChanged }: { quoteId: string; onChanged?: () => void }) {
   const [reloadKey, setReloadKey] = useState(0);
   const { data, loading, error } = useApiData(
     () => fetchQuoteItems(quoteId),
@@ -116,6 +120,7 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
       });
       setAddDraft(null);
       setReloadKey((key) => key + 1);
+      onChanged?.();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Creazione articolo non riuscita.');
     } finally {
@@ -139,6 +144,7 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
       });
       setEdit(null);
       setReloadKey((key) => key + 1);
+      onChanged?.();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Modifica articolo non riuscita.');
     } finally {
@@ -153,6 +159,7 @@ export function QuoteItemsCard({ quoteId }: { quoteId: string }) {
     try {
       await deleteQuoteItem(quoteId, id);
       setReloadKey((key) => key + 1);
+      onChanged?.();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Eliminazione articolo non riuscita.');
     } finally {

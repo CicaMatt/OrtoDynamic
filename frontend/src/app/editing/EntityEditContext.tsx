@@ -22,6 +22,7 @@ import {
   type QuoteUpdate,
 } from '../../features/quotes/api/quotes';
 import { toNullableNumber } from '../../features/quotes/components/quoteItemMath';
+import { addDaysIso, todayIso } from '../../shared/format/format';
 import { updateWorkOrder, type WorkOrderUpdate } from '../../features/workOrders/api/workOrders';
 import type { Client, ClientOrthopedic } from '../../features/clients/types';
 import type { Doctor } from '../../features/doctors/types';
@@ -57,13 +58,16 @@ const EDITABLE_PRODUCT_KEYS = [
 ] as const satisfies readonly (keyof Product)[];
 
 // `status` is intentionally excluded: it changes only through the guarded
-// transition endpoint, never as a free-form field edit or on create.
+// transition endpoint, never as a free-form field edit or on create. `total` is
+// excluded too: the server derives it from the line items' importi, so it is
+// never sent from here. `quote` (preventivo) is excluded as well: it has no form
+// field, so it is never set on create and left untouched on edit.
 const EDITABLE_QUOTE_KEYS = [
   'clientId', 'doctorId', 'quoteNumber', 'quoteType', 'creationDate', 'quoteDate',
-  'total', 'entryBy', 'diagnosis', 'therapeuticProgram', 'detailedPrescription',
+  'entryBy', 'diagnosis', 'therapeuticProgram', 'detailedPrescription',
   'authorizationNumber', 'acceptanceDate', 'authorizationReceiptDate', 'expiryDays', 'maxExpiry',
   'measurementsOk', 'commissionsPaid', 'orderNumber', 'model', 'measurements', 'invoiceNumber',
-  'quote', 'note', 'privateNote', 'finalNote',
+  'note', 'privateNote', 'finalNote',
 ] as const satisfies readonly (keyof Quote)[];
 
 // `status` is intentionally excluded: it changes only through the status
@@ -211,6 +215,17 @@ function makeEmptyQuote(): Quote {
     measurementsOk: '', commissionsPaid: '', orderNumber: '', model: '', measurements: '',
     invoiceNumber: '', quote: '', note: '', privateNote: '', finalNote: '',
   };
+}
+
+/**
+ * Quote's "Data Massima Scadenza" derived from "Giorni Massima Scadenza": today
+ * plus that many days, as an ISO date. Blank when the days are missing or not a
+ * non-negative whole number, so the field clears rather than showing a bad date.
+ */
+function maxExpiryFromDays(days: string): string {
+  const count = Number(days);
+  if (days.trim() === '' || !Number.isInteger(count) || count < 0) return '';
+  return addDaysIso(todayIso(), count);
 }
 
 /** Shared client conversions: blank birth date → null, doctor id → number/null. */
@@ -392,7 +407,8 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
   const startQuoteCreate = useCallback(
     (requiredKeys: ReadonlyArray<keyof Quote>) => {
       reset();
-      const empty = makeEmptyQuote();
+      // New quotes default their creation date to today (overridable in the form).
+      const empty: Quote = { ...makeEmptyQuote(), creationDate: todayIso() };
       setQuoteDraft(empty);
       setQuoteOriginal(empty);
       setRequiredFields(requiredKeys.map(String));
@@ -472,7 +488,16 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setQuoteField = useCallback((key: keyof Quote, value: string) => {
-    setQuoteDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+    // Giorni Massima Scadenza accepts only non-negative integers; reject any other
+    // input so the field — and the date derived from it — stays valid.
+    if (key === 'expiryDays' && !/^\d*$/.test(value)) return;
+    setQuoteDraft((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, [key]: value };
+      // Data Massima Scadenza is derived from Giorni Massima Scadenza, never typed.
+      if (key === 'expiryDays') next.maxExpiry = maxExpiryFromDays(value);
+      return next;
+    });
     setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
   }, []);
 
@@ -791,9 +816,6 @@ function buildQuotePayload(quoteChanges: Record<string, unknown>): QuoteUpdate {
   }
   if ('doctorId' in payload) {
     payload.doctorId = payload.doctorId === '' ? null : Number(payload.doctorId);
-  }
-  if ('total' in payload) {
-    payload.total = payload.total === '' ? null : Number(payload.total);
   }
   return payload;
 }

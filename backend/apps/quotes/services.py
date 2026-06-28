@@ -1,7 +1,9 @@
 """Quote business operations that go beyond plain field updates."""
+from django.db.models import Sum
+
 from apps.common.exceptions import ConflictError, ServiceError
 from apps.products.models import Product
-from apps.quotes.models import QuoteItem
+from apps.quotes.models import Quote, QuoteItem
 from apps.statuses.services import allowed_target_states
 from apps.work_orders.services import (
     WORK_ORDER_TRIGGER_STATES,
@@ -25,6 +27,22 @@ def line_amount(price, quantity, discount):
     if discount is not None:
         amount *= 1 - discount / 100
     return round(amount, 2)
+
+
+def recompute_quote_total(quote_id):
+    """
+    Set a quote's `totale` to the sum of its line items' `importo` and persist it.
+
+    The total is always derived from the items, never set directly, so this runs
+    after any change to a quote's lines (and on quote creation). A quote with no
+    lines (or none carrying an amount) totals 0. Returns the stored total.
+    """
+    total = (
+        QuoteItem.objects.filter(id_preventivo=quote_id).aggregate(total=Sum("importo"))["total"]
+    )
+    total = round(total, 2) if total is not None else 0.0
+    Quote.objects.filter(pk=quote_id).update(totale=total)
+    return total
 
 
 def create_quote_item(*, quote_id, product_id, quantity, discount):
@@ -51,6 +69,7 @@ def create_quote_item(*, quote_id, product_id, quantity, discount):
         sconto=discount,
     )
     item.product = product
+    recompute_quote_total(quote_id)
     return item
 
 
@@ -68,7 +87,18 @@ def update_quote_item(*, quote_item, quantity, discount):
     quote_item.sconto = discount
     quote_item.importo = line_amount(quote_item.prezzo, quantity, discount)
     quote_item.save(update_fields=["quantita", "sconto", "importo"])
+    recompute_quote_total(quote_item.id_preventivo)
     return quote_item
+
+
+def delete_quote_item(quote_item):
+    """
+    Delete a line and recompute its quote's `totale` from the remaining lines, so
+    the total stays the sum of its items (see `recompute_quote_total`).
+    """
+    quote_id = quote_item.id_preventivo
+    quote_item.delete()
+    recompute_quote_total(quote_id)
 
 
 def change_quote_status(quote, target_status, *, note=None):

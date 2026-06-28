@@ -27,7 +27,8 @@ export const contactFields: ClientField[] = [
   { label: 'Numero cellulare', key: 'mobile' },
   { label: 'Email', key: 'email' },
   { label: 'Distretto appartenenza', key: 'district' },
-  { label: 'ID Medico', key: 'doctorId', type: 'number' },
+  // Stored as the doctor's id, but searched and shown by name (see useClientDoctorAutocomplete).
+  { label: 'Medico', key: 'doctorId', type: 'autocomplete' },
 ];
 
 /** Fields required by the creation form (UX-level only; the DB stays permissive). */

@@ -16,6 +16,8 @@ import { Icon } from '../../../shared/ui/Icon';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchQuote, fetchQuoteDdt, fetchQuoteDeliveryForm, fetchQuoteScheda } from '../api/quotes';
+import { useClientAutocomplete } from '../../clients/components/useClientAutocomplete';
+import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocomplete';
 import type { Quote } from '../types';
 import { QuoteItemsCard } from './QuoteItemsCard';
 import { QuoteStatusDialog } from './QuoteStatusDialog';
@@ -38,23 +40,27 @@ const identityFields: QuoteField[] = [
     label: 'Totale',
     key: 'total',
     type: 'number',
+    // Derived from the sum of the line items' importi (kept in sync server-side),
+    // so it is shown but never edited here.
+    readonly: true,
     renderValue: (raw) => <FieldValue value={formatEuro(raw)} />,
   },
 ];
 
 // In read mode the client/doctor show by name with their id revealed on hover;
-// edit mode keeps the numeric id input, since references are still set by id.
+// both are edited via a name search (the autocomplete configs are supplied at
+// render time), though each is still stored as the referenced id.
 const referenceFields: QuoteField[] = [
   {
     label: 'Cliente',
     key: 'clientId',
-    type: 'number',
+    type: 'autocomplete',
     renderValue: (id, quote) => <ReferenceName name={quote.clientName} id={id} entity="client" />,
   },
   {
     label: 'Medico',
     key: 'doctorId',
-    type: 'number',
+    type: 'autocomplete',
     renderValue: (id, quote) => <ReferenceName name={quote.doctorName} id={id} entity="doctor" />,
   },
   { label: 'Inserito Da', key: 'entryBy' },
@@ -70,8 +76,9 @@ const authorizationFields: QuoteField[] = [
   { label: 'Nº Autorizzazione', key: 'authorizationNumber' },
   { label: 'Data Accettazione', key: 'acceptanceDate', type: 'date' },
   { label: 'Data Ricezione Autorizzazione', key: 'authorizationReceiptDate', type: 'date' },
-  { label: 'Giorni Scadenza', key: 'expiryDays' },
-  { label: 'Massima Scadenza', key: 'maxExpiry' },
+  { label: 'Giorni Massima Scadenza', key: 'expiryDays' },
+  // Derived from Giorni Massima Scadenza (today + that many days), so not editable.
+  { label: 'Data Massima Scadenza', key: 'maxExpiry', type: 'date', readonly: true },
 ];
 
 const supplyFields: QuoteField[] = [
@@ -115,6 +122,8 @@ export function QuoteDetailView() {
   const [ddtOptionsOpen, setDdtOptionsOpen] = useState(false);
   const { generating, error: docError, clearError, open: openDocument } =
     useInlineDocument<'consegna' | 'ddt' | 'scheda'>();
+  const clientAutocomplete = useClientAutocomplete(isEditing);
+  const doctorAutocomplete = useDoctorAutocomplete(isEditing);
 
   if (loading) {
     return (
@@ -222,8 +231,9 @@ export function QuoteDetailView() {
             sections={quoteSections}
             editing={isEditing}
             onChange={setQuoteField}
+            autocompleteFields={{ clientId: clientAutocomplete, doctorId: doctorAutocomplete }}
           />
-          <QuoteItemsCard quoteId={data.idQuote} />
+          <QuoteItemsCard quoteId={data.idQuote} onChanged={reload} />
         </div>
       </EntityDetailLayout>
 

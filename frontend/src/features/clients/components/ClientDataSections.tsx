@@ -28,13 +28,14 @@ export function ClientDataSections({
   onChange,
 }: ClientDataSectionsProps) {
   const fields = create ? clientCreateFieldGroups : clientFieldGroups;
+  // In read mode the doctor is shown by name (a link to the doctor); in edit mode
+  // it is picked via the doctorId autocomplete (see useClientDoctorAutocomplete).
   const contactFields = create
     ? fields.contact
     : fields.contact.map((field) =>
         field.key === 'doctorId'
           ? {
               ...field,
-              label: 'Medico',
               renderValue: (id: string) => <ReferenceName name={doctorName} id={id} entity="doctor" />,
             }
           : field,
@@ -75,6 +76,7 @@ export function ClientDataSections({
           editing={editing}
           onChange={onChange}
           invalidKeys={invalidKeys}
+          autocompleteFields={autocompleteFields}
           className="min-h-[300px]"
         />
       </div>

@@ -45,7 +45,7 @@ export function HealthCompanyDetailView() {
     );
   }
 
-  const title = data.companyName || data.municipality || `Azienda sanitaria ${data.idHealthCompany}`;
+  const title =  data.municipality || data.companyName || `Azienda sanitaria ${data.idHealthCompany}`;
   const actions = healthCompanyActions.map((action) => ({
     ...action,
     active: isEditing,

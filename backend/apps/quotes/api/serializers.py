@@ -17,7 +17,11 @@ from apps.common.api.serializers import (
     person_display_name,
 )
 from apps.quotes.models import Quote
-from apps.quotes.services import create_quote_item, update_quote_item
+from apps.quotes.services import (
+    create_quote_item,
+    recompute_quote_total,
+    update_quote_item,
+)
 
 
 class QuoteSerializer(NullToEmptyMixin):
@@ -168,7 +172,9 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
     quoteType = nullable_text("tipologia_preventivo")
     creationDate = serializers.DateField(source="data_creazione", required=False, allow_null=True)
     quoteDate = serializers.DateField(source="data_preventivo", required=False, allow_null=True)
-    total = serializers.FloatField(source="totale", required=False, allow_null=True)
+    # `total` (totale) is intentionally not writable: it is always derived from the
+    # sum of the quote's line items' importi (see `recompute_quote_total`), kept in
+    # sync whenever those items change, and never set directly by the client.
     entryBy = nullable_text("entry_by")
 
     # Clinical data
@@ -230,6 +236,10 @@ class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
             quote = super().create(validated_data)
             for item_data in items_data:
                 create_quote_item(quote_id=quote.id, **item_data)
+            # Each create_quote_item already derived the running total; a quote with
+            # no lines still needs its total initialised to 0.
+            if not items_data:
+                recompute_quote_total(quote.id)
         return quote
 
 

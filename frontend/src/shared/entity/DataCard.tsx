@@ -21,6 +21,20 @@ export type AutocompleteFieldConfig = {
   onSelect?: (option: AutocompleteOption) => void;
   /** Message shown when the query matches no option. */
   emptyLabel?: string;
+  /** Placeholder for the search input (defaults to the {@link Autocomplete} default). */
+  placeholder?: string;
+  /**
+   * Value persisted to the field when an option is picked. Defaults to the
+   * option's `value`. Use for id-referenced fields, where the field stores a
+   * reference id (carried in the option's `meta`) rather than the shown text.
+   */
+  selectValue?: (option: AutocompleteOption) => string;
+  /**
+   * Maps the field's raw stored value to the text shown in the search input.
+   * Defaults to the raw value. Pair with `valueOf` so an id-referenced field
+   * displays the referenced entity's name, not its id.
+   */
+  displayValue?: (raw: string) => string;
 };
 
 const baseInputClass =
@@ -263,12 +277,13 @@ export function FieldGrid<T extends object>({
         const control =
           canEdit && autocomplete ? (
             <Autocomplete
-              value={raw}
+              value={autocomplete.displayValue ? autocomplete.displayValue(raw) : raw}
               options={autocomplete.options}
               invalid={invalid}
+              placeholder={autocomplete.placeholder}
               emptyLabel={autocomplete.emptyLabel}
               onSelect={(option) => {
-                onChange(field.key, option.value);
+                onChange(field.key, autocomplete.selectValue ? autocomplete.selectValue(option) : option.value);
                 autocomplete.onSelect?.(option);
               }}
             />

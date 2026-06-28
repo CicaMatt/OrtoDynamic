@@ -56,6 +56,21 @@ export function previewAmount(price: string, quantity: string, discount: string)
 }
 
 /**
+ * Live preview of a quote's total: the sum of its pending items' importi (each
+ * via {@link previewAmount}). Blank when there are no items, so the create form
+ * shows "N/D" until the first line is added; the backend derives the stored total
+ * authoritatively on save (see `recompute_quote_total`).
+ */
+export function draftItemsTotal(drafts: ReadonlyArray<QuoteItemDraft>): string {
+  if (drafts.length === 0) return '';
+  const total = drafts.reduce((sum, item) => {
+    const amount = Number(previewAmount(item.price, item.quantity, item.discount));
+    return Number.isFinite(amount) ? sum + amount : sum;
+  }, 0);
+  return String(Math.round(total * 100) / 100);
+}
+
+/**
  * Validate a discount input. A discount is optional; when given it must be a
  * percentage between 1 and 100. Returns an error message, or `null` when valid —
  * the backend enforces the same bound as the source of truth.

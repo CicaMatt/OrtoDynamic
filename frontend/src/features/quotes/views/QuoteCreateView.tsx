@@ -7,13 +7,15 @@ import { DataCard, InfoBlock } from '../../../shared/entity/DataCard';
 import { FieldSectionList } from '../../../shared/entity/FieldSectionCard';
 import { Autocomplete } from '../../../shared/ui/Autocomplete';
 import { QUOTE_CREATE_REQUIRED, quoteCreateSections } from '../components/quoteCreateFields';
-import { useClientOptions } from '../components/useClientOptions';
+import { draftItemsTotal } from '../components/quoteItemMath';
+import { useClientAutocomplete } from '../../clients/components/useClientAutocomplete';
+import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocomplete';
 import { QuoteItemsDraftCard } from './QuoteItemsDraftCard';
 import type { Quote } from '../types';
 
 export function QuoteCreateView() {
   const { navigate } = useNavigation();
-  const { editing, mode, editTarget, quoteDraft, invalidFields, startQuoteCreate, setQuoteField } =
+  const { editing, mode, editTarget, quoteDraft, quoteItemDrafts, invalidFields, startQuoteCreate, setQuoteField } =
     useEntityEdit();
 
   const isCreating = editing && mode === 'create' && editTarget?.type === 'quote';
@@ -22,14 +24,17 @@ export function QuoteCreateView() {
     if (!isCreating) startQuoteCreate(QUOTE_CREATE_REQUIRED);
   }, [isCreating, startQuoteCreate]);
 
-  const clientOptions = useClientOptions(isCreating);
+  const clientAutocomplete = useClientAutocomplete(isCreating);
+  const doctorAutocomplete = useDoctorAutocomplete(isCreating);
 
   if (!isCreating || !quoteDraft) return null;
 
   const invalidKeys = invalidFields as Array<keyof Quote>;
   const clientInvalid = invalidKeys.includes('clientId');
-  const selectedClientLabel =
-    clientOptions.find((option) => option.meta?.id === quoteDraft.clientId)?.value ?? '';
+  const selectedClientLabel = clientAutocomplete.displayValue?.(quoteDraft.clientId) ?? '';
+  const selectedDoctorLabel = doctorAutocomplete.displayValue?.(quoteDraft.doctorId) ?? '';
+  // Totale is derived: previewed from the pending items, set on the server on save.
+  const quoteWithTotal = { ...quoteDraft, total: draftItemsTotal(quoteItemDrafts) };
 
   return (
     <EntityDetailLayout
@@ -54,20 +59,31 @@ export function QuoteCreateView() {
               control={
                 <Autocomplete
                   value={selectedClientLabel}
-                  options={clientOptions}
+                  options={clientAutocomplete.options}
                   invalid={clientInvalid}
-                  onSelect={(option) => setQuoteField('clientId', option.meta?.id ?? '')}
-                  placeholder="Cerca cliente per nome o cognome…"
-                  emptyLabel="Nessun cliente trovato."
+                  onSelect={(option) =>
+                    setQuoteField('clientId', clientAutocomplete.selectValue?.(option) ?? option.value)
+                  }
+                  placeholder={clientAutocomplete.placeholder}
+                  emptyLabel={clientAutocomplete.emptyLabel}
                 />
               }
             />
             <InfoBlock
-              label="ID Medico"
-              value={quoteDraft.doctorId}
+              label="Medico"
+              value={selectedDoctorLabel}
               editing
-              inputType="number"
-              onChange={(value) => setQuoteField('doctorId', value)}
+              control={
+                <Autocomplete
+                  value={selectedDoctorLabel}
+                  options={doctorAutocomplete.options}
+                  onSelect={(option) =>
+                    setQuoteField('doctorId', doctorAutocomplete.selectValue?.(option) ?? option.value)
+                  }
+                  placeholder={doctorAutocomplete.placeholder}
+                  emptyLabel={doctorAutocomplete.emptyLabel}
+                />
+              }
             />
             <InfoBlock
               label="Inserito Da"
@@ -79,7 +95,7 @@ export function QuoteCreateView() {
         </DataCard>
 
         <FieldSectionList
-          data={quoteDraft}
+          data={quoteWithTotal}
           sections={quoteCreateSections}
           editing
           onChange={setQuoteField}

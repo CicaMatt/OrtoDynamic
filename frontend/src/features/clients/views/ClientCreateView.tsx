@@ -5,6 +5,7 @@ import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
 import { ClientDataSections } from '../components/ClientDataSections';
 import { CLIENT_CREATE_REQUIRED } from '../components/clientFields';
+import { useClientDoctorAutocomplete } from '../components/useClientDoctorAutocomplete';
 import { useClientMunicipalityAutocomplete } from '../components/useClientMunicipalityAutocomplete';
 import type { Client } from '../types';
 
@@ -20,6 +21,7 @@ export function ClientCreateView() {
   }, [isCreatingClient, startClientCreate]);
 
   const municipalityFields = useClientMunicipalityAutocomplete(setClientField, true);
+  const doctorFields = useClientDoctorAutocomplete(true);
 
   if (!isCreatingClient || !clientDraft) return null;
 
@@ -41,7 +43,7 @@ export function ClientCreateView() {
         editing
         onChange={setClientField}
         invalidKeys={invalidKeys}
-        autocompleteFields={municipalityFields}
+        autocompleteFields={{ ...municipalityFields, ...doctorFields }}
         create
       />
     </EntityDetailLayout>

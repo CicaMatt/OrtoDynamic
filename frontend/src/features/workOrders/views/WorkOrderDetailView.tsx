@@ -55,7 +55,6 @@ const referenceFields: WorkOrderField[] = [
       <ReferenceName name={workOrder.clientName} id={id} entity="client" />
     ),
   },
-  { label: 'Massima Scadenza', key: 'maxExpiry' },
 ];
 
 const trialFields: WorkOrderField[] = [

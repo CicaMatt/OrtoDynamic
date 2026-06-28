@@ -1,8 +1,18 @@
-import { markRequired, optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
+import {
+  formatFieldValue,
+  markRequired,
+  optionsFromValues,
+  type FieldConfig,
+} from '../../../shared/entity/DataCard';
 import type { FieldSectionConfig } from '../../../shared/entity/FieldSectionCard';
+import { formatEuro } from '../../../shared/format/format';
 import type { Quote } from '../types';
 
 type QuoteField = FieldConfig<Quote>;
+
+/** Euro-format the read-only Totale; other fields keep their default display. */
+const formatIdentity = (field: QuoteField, raw: string) =>
+  field.key === 'total' ? formatEuro(raw) : formatFieldValue(field, raw);
 
 // Stored verbatim in `tipologia_preventivo` — values must match the database exactly.
 const typeOptions = optionsFromValues(['Asl', 'Inail', 'Privato']);
@@ -27,7 +37,9 @@ const identityFields: QuoteField[] = markRequired(
     { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
     { label: 'Data Creazione', key: 'creationDate', type: 'date' },
     { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
-    { label: 'Totale', key: 'total', type: 'number' },
+    // Derived from the items' importi (previewed live in the create form, set on
+    // the server on save) — never typed.
+    { label: 'Totale', key: 'total', type: 'number', readonly: true },
   ],
   ['quoteType'],
 );
@@ -45,8 +57,9 @@ const authorizationFields: QuoteField[] = [
   { label: 'Nº Autorizzazione', key: 'authorizationNumber' },
   { label: 'Data Accettazione', key: 'acceptanceDate', type: 'date' },
   { label: 'Data Ricezione Autorizzazione', key: 'authorizationReceiptDate', type: 'date' },
-  { label: 'Giorni Scadenza', key: 'expiryDays' },
-  { label: 'Massima Scadenza', key: 'maxExpiry' },
+  { label: 'Giorni Massima Scadenza', key: 'expiryDays' },
+  // Derived from Giorni Massima Scadenza (today + that many days), so not editable.
+  { label: 'Data Massima Scadenza', key: 'maxExpiry', type: 'date', readonly: true },
 ];
 
 const supplyFields: QuoteField[] = [
@@ -57,8 +70,6 @@ const supplyFields: QuoteField[] = [
   { label: 'Misure', key: 'measurements' },
   { label: 'Nº Fattura', key: 'invoiceNumber' },
 ];
-
-const quoteTextFields: QuoteField[] = [{ label: 'Preventivo', key: 'quote', type: 'textarea' }];
 
 const noteFields: QuoteField[] = [
   { label: 'Note', key: 'note', type: 'textarea' },
@@ -72,10 +83,9 @@ const noteFields: QuoteField[] = [
  * are not part of these sections.
  */
 export const quoteCreateSections: FieldSectionConfig<Quote>[] = [
-  { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields },
+  { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields, format: formatIdentity },
   { icon: 'clinical_notes', title: 'Dati Clinici', fields: clinicalFields, columns: 1 },
   { icon: 'fact_check', title: 'Autorizzazione e Scadenze', fields: authorizationFields },
   { icon: 'receipt_long', title: 'Fornitura e Fatturazione', fields: supplyFields },
-  { icon: 'description', title: 'Dettaglio Preventivo', fields: quoteTextFields, columns: 1 },
   { icon: 'sticky_note_2', title: 'Note', fields: noteFields, columns: 1 },
 ];
