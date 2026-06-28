@@ -129,11 +129,11 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
-    # Cookie-based session auth (CSRF-protected). Every endpoint requires an
-    # authenticated user by default; views that must stay open (login, session
-    # bootstrap) opt out with an explicit `AllowAny`.
+    # Stateless bearer-token auth (no cookies, so no CSRF). Every endpoint
+    # requires an authenticated user by default; views that must stay open
+    # (login, session bootstrap) opt out with an explicit `AllowAny`.
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "apps.accounts.api.authentication.SessionAuthentication",
+        "apps.accounts.api.authentication.BearerTokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -141,20 +141,24 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.common.exceptions.api_exception_handler",
 }
 
-# --- Authentication & sessions ----------------------------------------------
+# --- Authentication ---------------------------------------------------------
 # Credentials are checked against the legacy `tb_users` table by a custom backend;
 # Django's default ModelBackend (which queries the absent `auth_user` table) is
-# removed. The application owns no Django tables, so sessions live in a signed,
-# tamper-proof cookie rather than a `django_session` table.
+# removed. `login` issues a stateless signed token (see `apps.accounts.tokens`);
+# the app owns no Django tables, so there is no session store to configure.
 AUTHENTICATION_BACKENDS = ["apps.accounts.backends.LegacyUserBackend"]
+
+# The API uses no sessions, but the session/messages middleware stay enabled for
+# the Django admin. A cookie-based store keeps that dependency off the database,
+# which owns no `django_session` table.
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
-# The React frontend is served from its own origin, so the browser must be
-# allowed to send the session/CSRF cookies cross-origin, and that origin must be
-# trusted for CSRF on unsafe requests. Both are env-driven (see CORS below).
-CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+# Lifetime of an auth token. Kept short because a stateless token cannot be
+# revoked server-side — expiry is its only bound. Env-driven; default 12 hours.
+AUTH_TOKEN_TTL_SECONDS = env.int("DJANGO_AUTH_TOKEN_TTL_SECONDS", default=12 * 60 * 60)
 
 # --- CORS -------------------------------------------------------------------
-# The React dev server / deployed frontend origins are env-driven.
+# The frontend is served from its own origin and authenticates with a bearer
+# token (not cookies), so the only cross-origin requirement is that its origin be
+# allowed. Credentials/cookies are deliberately not used. Origins are env-driven.
 CORS_ALLOWED_ORIGINS = env.list("DJANGO_CORS_ALLOWED_ORIGINS", default=[])

@@ -4,8 +4,13 @@ from .base import env
 
 DEBUG = False
 
-# Must be provided explicitly in production — no permissive default.
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
+# Allowed hosts come from the environment, plus the hostname Render injects for
+# the service (`RENDER_EXTERNAL_HOSTNAME`) so the public URL works without being
+# hardcoded. At least one source must resolve — an empty list rejects all hosts.
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
+_render_hostname = env("RENDER_EXTERNAL_HOSTNAME", default=None)
+if _render_hostname:
+    ALLOWED_HOSTS.append(_render_hostname)
 
 # --- Security hardening -----------------------------------------------------
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)

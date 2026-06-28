@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
+const TOKEN_STORAGE_KEY = 'ortodynamic.authToken';
 
 /**
  * Called when the API reports the session is no longer valid (HTTP 401) so the
@@ -9,34 +10,54 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
   onUnauthorized = handler;
 }
 
-/** Read a readable (non-HttpOnly) cookie — used for Django's CSRF token. */
-function readCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+/**
+ * The bearer token sent on every request. Kept in memory and mirrored to
+ * localStorage so a reload restores the session. Reads/writes to storage are
+ * guarded: in private-mode browsers it may be unavailable, and the in-memory
+ * copy still works for the current page.
+ */
+let authToken: string | null = readStoredToken();
+
+function readStoredToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
+export function setAuthToken(token: string | null): void {
+  authToken = token;
+  try {
+    if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    else localStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch {
+    // Persisting failed; the in-memory token remains valid for this session.
+  }
 }
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 /**
- * Core request: sends the session cookie (`credentials: 'include'`), attaches the
- * CSRF token on unsafe methods, and normalises the backend's
- * `{ "error": { "message" } }` envelope into a thrown Error. A 401 means the
- * session is gone, so it notifies the auth layer before surfacing the error.
+ * Core request: attaches the bearer token, sets the JSON content type when there
+ * is a body, and normalises the backend's `{ "error": { "message" } }` envelope
+ * into a thrown Error. A 401 means the token is gone or expired, so it notifies
+ * the auth layer before surfacing the error.
  */
 async function performRequest(method: Method, path: string, body?: unknown): Promise<Response> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  if (method !== 'GET') {
-    const csrfToken = readCookie('csrftoken');
-    if (csrfToken) headers['X-CSRFToken'] = csrfToken;
-  }
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
-      credentials: 'include',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {

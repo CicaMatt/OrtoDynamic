@@ -1,20 +1,20 @@
 """
-Authentication endpoints: login, logout, and current-session lookup.
+Authentication endpoints: login, logout, and current-user lookup.
 
-Authentication is session based: a successful login establishes a Django session
-(stored in a signed cookie) and rotates the CSRF token. The session cookie is
-HttpOnly; the CSRF token is exposed to JavaScript so the frontend can echo it back
-on unsafe requests.
+Authentication is token based: a successful login returns a stateless, signed
+token (see `apps.accounts.tokens`) that the frontend stores and sends back in the
+`Authorization: Bearer` header. There is no server-side session and no cookie, so
+logout is a client-side discard and the API needs no CSRF protection.
 """
-from django.contrib.auth import authenticate, login, logout
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import update_last_login
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
+from apps.accounts.tokens import issue_token
 from apps.common.api.views import UnpaginatedListAPIView
 from apps.common.exceptions import ServiceError
 
@@ -41,24 +41,25 @@ class LoginView(APIView):
         )
         if user is None:
             raise InvalidCredentialsError()
-        login(request, user)
-        return Response(UserSerializer(user).data)
+        update_last_login(None, user)
+        return Response({"token": issue_token(user), "user": UserSerializer(user).data})
 
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        logout(request)
+        # Tokens are stateless, so there is nothing to revoke server-side; the
+        # frontend discards its copy. The endpoint stays authenticated-only for a
+        # consistent client contract and so it can grow real revocation later.
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@method_decorator(ensure_csrf_cookie, name="dispatch")
 class SessionView(APIView):
-    """Report the current user (or null) and seed the CSRF cookie.
+    """Report the current user (or null) on app start-up.
 
-    Called on app start-up: it restores an existing session and gives the
-    frontend the CSRF token it needs for subsequent unsafe requests.
+    The frontend calls this with its stored token to restore the signed-in user;
+    an absent token yields `null`, an invalid or expired one yields 401.
     """
 
     permission_classes = [AllowAny]

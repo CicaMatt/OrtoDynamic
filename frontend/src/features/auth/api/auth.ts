@@ -1,18 +1,26 @@
-import { apiGet, apiPost } from '../../../shared/api/http';
+import { apiGet, apiPost, setAuthToken } from '../../../shared/api/http';
 import type { AuthUser } from '../types';
 
-/** Restore an existing session and seed the CSRF cookie. Resolves to the user or null. */
+type LoginResponse = { token: string; user: AuthUser };
+
+/** Restore the current user from the stored token. Resolves to the user or null. */
 export async function fetchSession(): Promise<AuthUser | null> {
   const data = await apiGet<{ user: AuthUser | null }>('/auth/session/');
   return data.user;
 }
 
-/** Authenticate with username + password; resolves to the signed-in user. */
-export function login(username: string, password: string): Promise<AuthUser> {
-  return apiPost<AuthUser>('/auth/login/', { username, password });
+/** Authenticate with username + password; stores the token and resolves to the user. */
+export async function login(username: string, password: string): Promise<AuthUser> {
+  const { token, user } = await apiPost<LoginResponse>('/auth/login/', { username, password });
+  setAuthToken(token);
+  return user;
 }
 
-/** End the current session. */
+/** End the session: notify the server, then discard the token regardless. */
 export async function logout(): Promise<void> {
-  await apiPost<void>('/auth/logout/');
+  try {
+    await apiPost<void>('/auth/logout/');
+  } finally {
+    setAuthToken(null);
+  }
 }

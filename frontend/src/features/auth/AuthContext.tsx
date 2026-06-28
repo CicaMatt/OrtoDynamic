@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { setUnauthorizedHandler } from '../../shared/api/http';
+import { getAuthToken, setAuthToken, setUnauthorizedHandler } from '../../shared/api/http';
 import type { AuthUser } from './types';
 import { fetchSession, login as loginRequest, logout as logoutRequest } from './api/auth';
 
@@ -26,8 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
 
-  // Restore any existing session on first load.
+  // Restore an existing session on first load. With no stored token there is
+  // nothing to restore, so skip the network round-trip and show the login screen.
   useEffect(() => {
+    if (!getAuthToken()) {
+      setStatus('unauthenticated');
+      return;
+    }
     let active = true;
     fetchSession()
       .then((restored) => {
@@ -45,9 +50,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // When any API call reports the session is gone, drop back to the login screen.
+  // When any API call reports the token is gone or expired, clear it and drop
+  // back to the login screen.
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      setAuthToken(null);
       setUser(null);
       setStatus('unauthenticated');
     });

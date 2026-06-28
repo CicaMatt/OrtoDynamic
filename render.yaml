@@ -1,0 +1,43 @@
+# Render Blueprint for the OrtoDynamic API (temporary client-demo deploy).
+#
+# Defines a single Python web service running Django under gunicorn. The frontend
+# is deployed separately to GitHub Pages (.github/workflows/deploy-frontend.yml),
+# and the database is the local MySQL exposed over an ngrok tunnel (deploy/),
+# whose host/port/credentials are supplied as the `sync: false` vars below.
+services:
+  - type: web
+    name: ortodynamic-api
+    runtime: python
+    region: frankfurt
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements/production.txt"
+    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      # Generated and held by Render; stable across deploys, so issued tokens
+      # remain valid until they expire.
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_TIME_ZONE
+        value: Europe/Rome
+      # Origin of the GitHub Pages frontend (scheme + host, no path).
+      - key: DJANGO_CORS_ALLOWED_ORIGINS
+        value: https://cicamatt.github.io
+      - key: DJANGO_DB_ENGINE
+        value: django.db.backends.mysql
+      # Filled in the Render dashboard at deploy time (see deploy/README.md):
+      # the ngrok tunnel host/port and the dedicated demo DB credentials.
+      - key: DJANGO_DB_NAME
+        sync: false
+      - key: DJANGO_DB_USER
+        sync: false
+      - key: DJANGO_DB_PASSWORD
+        sync: false
+      - key: DJANGO_DB_HOST
+        sync: false
+      - key: DJANGO_DB_PORT
+        sync: false
