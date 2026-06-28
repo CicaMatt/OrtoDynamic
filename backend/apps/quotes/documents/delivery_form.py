@@ -12,9 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from apps.quotes.fpdf_canvas import FpdfCanvas
-from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
-from apps.quotes.pdf_layout import label_value, signature_footer
+from .fpdf_canvas import FpdfCanvas
+from .pdf_layout import label_value, new_titled_document, signature_footer
 
 
 @dataclass(frozen=True)
@@ -58,12 +57,7 @@ def delivery_form_filename(quote, today: date) -> str:
 
 def render_delivery_form(fields: DeliveryFormFields) -> bytes:
     """Lay the delivery form out on a code-drawn A4 page and return the PDF bytes."""
-    pdf = FpdfCanvas()
-    write_letterhead(pdf)
-    pdf.set_xy(10, CONTENT_TOP_MM)
-
-    pdf.set_font("B", 14)
-    pdf.cell(0, 8, "Modulo di Consegna", 0, 1, "C")
+    pdf = new_titled_document("Modulo di Consegna")
     pdf.ln(8)
 
     pdf.set_font("", 11)

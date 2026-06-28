@@ -11,7 +11,7 @@ from apps.common.api.views import (
     UnpaginatedListCreateAPIView,
 )
 from apps.common.exceptions import NotFoundError, TemplateAssetMissing
-from apps.quotes.privacy_form import (
+from apps.quotes.documents import (
     prepare_privacy_form_fields,
     privacy_form_filename,
     render_privacy_form,
@@ -47,7 +47,7 @@ class ClientPrivacyFormView(APIView):
     Stream a client's "Modulo di privacy" consent form as an inline PDF.
 
     The first name, surname and today's date are stamped onto a pre-printed
-    template (see `apps.quotes.privacy_form`). The body is a raw PDF rather than
+    template (see `apps.quotes.documents.privacy_form`). The body is a raw PDF rather than
     the JSON envelope, so the view returns a Django `HttpResponse` directly; a
     missing template asset is reported through the standard error envelope.
     """

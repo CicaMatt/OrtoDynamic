@@ -18,15 +18,20 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
-from apps.quotes.fpdf_canvas import FpdfCanvas
-from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
-from apps.quotes.pdf_layout import label_value, section, table_empty, table_row
+from .fpdf_canvas import FpdfCanvas
+from .pdf_layout import (
+    label_value,
+    new_titled_document,
+    section,
+    table_empty,
+    table_row,
+)
 
 # Lab/accreditation code shown in the header.
 _LAB_CODE = "ITCA01059027"
 _VAT_RATE = 0.04
 
-# Closing block reproduced from the pre-printed sheet (assets/scheda.pdf): the
+# Closing block reproduced from the legacy pre-printed Scheda Progetto sheet: the
 # conformity statement, the technician's name and albo registration, and the
 # stamp-and-signature area with the technician's facsimile signature.
 _CONFORMITY_STATEMENT = "Prodotti corrispondenti alle certificazioni e normative vigenti."
@@ -156,12 +161,7 @@ def scheda_filename(quote) -> str:
 
 def render_scheda(document: SchedaDocument) -> bytes:
     """Lay the project sheet out on a code-drawn A4 page and return the PDF bytes."""
-    pdf = FpdfCanvas()
-    write_letterhead(pdf)
-    pdf.set_xy(10, CONTENT_TOP_MM)
-
-    pdf.set_font("B", 14)
-    pdf.cell(0, 8, "Scheda Progetto", 0, 1, "C")
+    pdf = new_titled_document("Scheda Progetto")
     pdf.ln(4)
 
     # Project header.

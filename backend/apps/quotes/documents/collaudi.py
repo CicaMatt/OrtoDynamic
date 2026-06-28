@@ -21,8 +21,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from apps.quotes.fpdf_canvas import FpdfCanvas
-from apps.quotes.pdf_background import overlay_full_size
+from .fpdf_canvas import FpdfCanvas
+from .pdf_background import overlay_full_size
 
 TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "schedacollaudi.pdf"
 

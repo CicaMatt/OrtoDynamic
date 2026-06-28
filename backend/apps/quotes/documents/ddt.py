@@ -18,10 +18,15 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from apps.quotes.fpdf_canvas import FpdfCanvas
-from apps.quotes.letterhead import CONTENT_TOP_MM, write_letterhead
-from apps.quotes.pdf_background import compose_on_template
-from apps.quotes.pdf_layout import section, signature_footer, table_empty, table_row
+from .fpdf_canvas import FpdfCanvas
+from .pdf_background import compose_on_template
+from .pdf_layout import (
+    new_titled_document,
+    section,
+    signature_footer,
+    table_empty,
+    table_row,
+)
 
 # Optional background template; absent in the current system, so the default path
 # normally does not exist and the document renders on a blank page.
@@ -114,25 +119,18 @@ def render_ddt(document: DdtDocument, *, template_path: Path = TEMPLATE_PATH) ->
 
 
 def _build_content(document: DdtDocument) -> bytes:
-    pdf = FpdfCanvas()
-
-    # 1. Letterhead, shared by all the generated documents.
-    write_letterhead(pdf)
-    pdf.set_xy(10, CONTENT_TOP_MM)
-
-    # 2. Title.
-    pdf.set_font("B", 14)
-    pdf.cell(0, 8, "Documento di trasporto", 0, 1, "C")
+    # 1. Letterhead + centered title, shared by the code-drawn documents.
+    pdf = new_titled_document("Documento di trasporto")
     pdf.ln(2)
 
-    # 3. Header line 1: DDT number and today's date.
+    # 2. Header line 1: DDT number and today's date.
     pdf.set_font("", 10)
     pdf.cell(35, 6, "DDT n°:", 0, 0)
     pdf.cell(80, 6, document.ddt_number, 0, 0)
     pdf.cell(35, 6, "Data:", 0, 0)
     pdf.cell(0, 6, document.generated_date, 0, 1)
 
-    # 4. Header line 2: authorization number when present, else a blank line to
+    # 3. Header line 2: authorization number when present, else a blank line to
     #    keep the vertical rhythm.
     if document.numero_autorizzazione:
         pdf.cell(35, 6, "Autorizzazione:", 0, 0)
@@ -141,7 +139,7 @@ def _build_content(document: DdtDocument) -> bytes:
         pdf.ln(6)
     pdf.ln(2)
 
-    # 5. Recipient block.
+    # 4. Recipient block.
     section(pdf, "Destinatario")
     pdf.set_font("", 10)
     pdf.cell(0, 6, document.destinatario, 0, 1)
@@ -149,10 +147,10 @@ def _build_content(document: DdtDocument) -> bytes:
         pdf.cell(0, 6, document.indirizzo_completo, 0, 1)
     pdf.ln(4)
 
-    # 6. Items table header.
+    # 5. Items table header.
     _write_items_header(pdf, show_prices=document.show_prices)
 
-    # 7. Items, or the empty state.
+    # 6. Items, or the empty state.
     pdf.set_font("", 9)
     if document.items:
         for item in document.items:
@@ -160,7 +158,7 @@ def _build_content(document: DdtDocument) -> bytes:
     else:
         table_empty(pdf, _TABLE_WIDTH_MM)
 
-    # 8. Footer: date and signature line.
+    # 7. Footer: date and signature line.
     pdf.ln(12)
     signature_footer(pdf, date_text=document.generated_date, sign_label="FIRMA:")
 
@@ -212,16 +210,20 @@ def _truncate(text: str, limit: int = _DESCRIPTION_LIMIT, marker: str = _TRIM_MA
     return text[: limit - len(marker)] + marker
 
 
+def _italian_decimals(value: float) -> str:
+    """`value` with Italian separators: '.' for thousands, ',' for decimals (1.234,50)."""
+    integer_part, decimal_part = f"{value:,.2f}".split(".")
+    return f"{integer_part.replace(',', '.')},{decimal_part}"
+
+
 def _format_quantity(value) -> str:
-    """Whole numbers as plain integers; otherwise Italian format (1.234,50)."""
+    """Whole numbers as plain integers; otherwise Italian decimals (1.234,50)."""
     quantity = float(value) if value not in (None, "") else 0.0
     if quantity == int(quantity):
         return str(int(quantity))
-    integer_part, decimal_part = f"{quantity:,.2f}".split(".")
-    return f"{integer_part.replace(',', '.')},{decimal_part}"
+    return _italian_decimals(quantity)
 
 
 def _format_money(value) -> str:
     amount = float(value) if value not in (None, "") else 0.0
-    integer_part, decimal_part = f"{amount:,.2f}".split(".")
-    return f"{integer_part.replace(',', '.')},{decimal_part} €"
+    return f"{_italian_decimals(amount)} €"

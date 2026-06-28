@@ -13,7 +13,7 @@ from pypdf import PdfReader
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-from apps.quotes.collaudi import (
+from apps.quotes.documents.collaudi import (
     _MATRICOLA_PITCH_MM,
     _MATRICOLA_X0_MM,
     _MATRICOLA_X_MAX_MM,

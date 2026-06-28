@@ -39,9 +39,9 @@ class ConflictError(ServiceError):
 class TemplateAssetMissing(ServiceError):
     """A required pre-printed PDF template asset is not installed — a server-side error.
 
-    Raised by the document generators (consegna, scheda, privacy) when their
-    background template is absent, so the client sees a clear message instead of an
-    unhandled 500.
+    Raised by the template-backed document generators (privacy form, collaudi sheet)
+    when their background template is absent, so the client sees a clear message
+    instead of an unhandled 500.
     """
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR

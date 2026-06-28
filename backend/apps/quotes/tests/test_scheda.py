@@ -13,7 +13,7 @@ import pytest
 from pypdf import PdfReader
 from reportlab.lib.pagesizes import A4
 
-from apps.quotes.scheda import (
+from apps.quotes.documents.scheda import (
     SchedaDocument,
     SchedaItem,
     prepare_scheda,

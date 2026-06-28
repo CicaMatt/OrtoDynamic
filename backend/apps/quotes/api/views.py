@@ -1,7 +1,5 @@
 """Thin endpoints for the Quote resource."""
 
-from types import SimpleNamespace
-
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import generics
@@ -17,14 +15,19 @@ from apps.common.api.views import (
 from apps.common.exceptions import NotFoundError
 from apps.doctors.models import Doctor
 from apps.products.models import Product
-from apps.quotes.ddt import ddt_filename, prepare_ddt, render_ddt
-from apps.quotes.delivery_form import (
+from apps.quotes.documents import (
+    ddt_filename,
     delivery_form_filename,
+    prepare_ddt,
     prepare_delivery_form_fields,
+    prepare_scheda,
+    render_ddt,
     render_delivery_form,
+    render_scheda,
+    scheda_filename,
 )
 from apps.quotes.models import Quote, QuoteItem
-from apps.quotes.scheda import prepare_scheda, render_scheda, scheda_filename
+from apps.quotes.selectors import ddt_item_rows, scheda_item_rows
 from apps.quotes.services import change_quote_status, delete_quote_item
 from apps.statuses.services import allowed_target_states
 from .serializers import (
@@ -160,7 +163,7 @@ class QuoteDeliveryFormView(APIView):
     Stream a quote's "Modulo di consegna" as an inline PDF.
 
     The five stamped values come from the quote and its client (see
-    `apps.quotes.delivery_form`). The body is a raw PDF rather than the JSON
+    `apps.quotes.documents.delivery_form`). The body is a raw PDF rather than the JSON
     envelope, so the view returns a Django `HttpResponse` directly; a missing
     template asset is reported through the standard error envelope.
     """
@@ -181,39 +184,13 @@ class QuoteDeliveryFormView(APIView):
         return response
 
 
-def _ddt_item_rows(quote_id):
-    """
-    The quote's line items merged with their catalogue product, as plain rows
-    carrying the fields the DDT prints (`codice`, `descrizione`, `quantita`, plus
-    optional price columns). Products are loaded in one query; a line whose
-    product is gone keeps null code/description (the LEFT JOIN in the original).
-    """
-    items = list(QuoteItem.objects.filter(id_preventivo=quote_id).order_by("id"))
-    product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
-    products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
-
-    rows = []
-    for item in items:
-        product = products.get(item.codice_nomenclatore)
-        rows.append(
-            SimpleNamespace(
-                codice=product.codice if product else None,
-                descrizione=product.descrizione if product else None,
-                quantita=item.quantita,
-                prezzo=item.prezzo,
-                importo=item.importo,
-            )
-        )
-    return rows
-
-
 class QuoteDdtView(APIView):
     """
     Stream a quote's DDT (delivery note) as an inline PDF.
 
     The recipient comes from the quote's client (the original query inner-joins
     `clienti`, so a quote with no client resolves to "not found"), and the table
-    from its line items. See `apps.quotes.ddt`.
+    from its line items. See `apps.quotes.documents.ddt`.
     """
 
     def get(self, request, pk):
@@ -227,7 +204,7 @@ class QuoteDdtView(APIView):
         document = prepare_ddt(
             quote,
             client,
-            _ddt_item_rows(quote.id),
+            ddt_item_rows(quote.id),
             today=today,
             show_prices=show_prices,
         )
@@ -238,42 +215,13 @@ class QuoteDdtView(APIView):
         return response
 
 
-def _scheda_item_rows(quote_id):
-    """
-    The quote's line items joined to their catalogue product, as plain rows for the
-    Scheda Progetto table (`codice`/`descrizione` from the product, the money
-    columns from the line). The original query inner-joins `nomenclatore`, so a
-    line whose product is missing is dropped.
-    """
-    items = QuoteItem.objects.filter(id_preventivo=quote_id).order_by("id")
-    product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
-    products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
-
-    rows = []
-    for item in items:
-        product = products.get(item.codice_nomenclatore)
-        if product is None:
-            continue
-        rows.append(
-            SimpleNamespace(
-                codice=product.codice,
-                descrizione=product.descrizione,
-                prezzo=item.prezzo,
-                quantita=item.quantita,
-                importo=item.importo,
-                sconto=item.sconto,
-            )
-        )
-    return rows
-
-
 class QuoteSchedaView(APIView):
     """
     Stream a quote's "Scheda Progetto" as an inline PDF.
 
     Header data comes from the quote and its client (the original query inner-joins
     `clienti`, so a quote with no client resolves to "not found"); the items table
-    from its line items. The page is drawn entirely in code. See `apps.quotes.scheda`.
+    from its line items. The page is drawn entirely in code. See `apps.quotes.documents.scheda`.
     """
 
     def get(self, request, pk):
@@ -282,7 +230,7 @@ class QuoteSchedaView(APIView):
         if quote is None or client is None:
             raise NotFoundError("Preventivo non trovato.")
 
-        document = prepare_scheda(quote, client, _scheda_item_rows(quote.id))
+        document = prepare_scheda(quote, client, scheda_item_rows(quote.id))
         pdf = render_scheda(document)
 
         response = HttpResponse(pdf, content_type="application/pdf")

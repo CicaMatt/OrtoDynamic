@@ -2,21 +2,45 @@
 Shared layout primitives for the code-drawn PDF documents.
 
 The consegna form, the DDT and the Scheda Progetto are all laid out with the same
-`FpdfCanvas` box model and reuse a handful of identical building blocks: a bold
-section title, a label/value row, the bordered-table mechanics, and the
-date/signature footer. Those live here so each generator keeps only its own
+`FpdfCanvas` box model and reuse a handful of identical building blocks: the
+letterheaded page head with its centered title, a bold section title, a label/value
+row, the bordered-table mechanics, and the date/signature footer. Those live here
+so each generator keeps only its own
 document-specific logic. Callers set the font (face/size) before drawing where the
 size varies between documents; the helpers own the geometry that is genuinely shared.
 """
 from __future__ import annotations
 
-from apps.quotes.fpdf_canvas import FpdfCanvas
+from .fpdf_canvas import FpdfCanvas
+from .letterhead import CONTENT_TOP_MM, write_letterhead
 
 # A drawn signature rule, shared by the footers.
 SIGNATURE_RULE = "_" * 30
 
 # Placeholder shown in a table whose body is empty.
 EMPTY_TABLE_TEXT = "Nessuna voce disponibile"
+
+# Shared head of every code-drawn document: the left margin its content starts at
+# and the centered title's font size / box height.
+_CONTENT_LEFT_MM = 10.0
+_TITLE_SIZE = 14.0
+_TITLE_HEIGHT_MM = 8.0
+
+
+def new_titled_document(title: str) -> FpdfCanvas:
+    """
+    Start a letterheaded A4 page with `title` centered below the company header, and
+    the cursor left at the content area underneath it.
+
+    Shared by the code-drawn documents (consegna, DDT, scheda); each caller adds its
+    own vertical spacing after the title.
+    """
+    pdf = FpdfCanvas()
+    write_letterhead(pdf)
+    pdf.set_xy(_CONTENT_LEFT_MM, CONTENT_TOP_MM)
+    pdf.set_font("B", _TITLE_SIZE)
+    pdf.cell(0, _TITLE_HEIGHT_MM, title, 0, 1, "C")
+    return pdf
 
 
 def section(pdf: FpdfCanvas, title: str) -> None:

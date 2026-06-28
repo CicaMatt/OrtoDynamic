@@ -13,7 +13,7 @@ from pypdf import PdfReader
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-from apps.quotes.privacy_form import (
+from apps.quotes.documents.privacy_form import (
     PrivacyFormFields,
     prepare_privacy_form_fields,
     privacy_form_filename,

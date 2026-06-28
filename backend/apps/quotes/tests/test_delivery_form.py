@@ -14,7 +14,7 @@ import pytest
 from pypdf import PdfReader
 from reportlab.lib.pagesizes import A4
 
-from apps.quotes.delivery_form import (
+from apps.quotes.documents.delivery_form import (
     DeliveryFormFields,
     delivery_form_filename,
     prepare_delivery_form_fields,

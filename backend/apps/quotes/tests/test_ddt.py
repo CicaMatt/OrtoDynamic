@@ -15,7 +15,13 @@ from pypdf import PdfReader
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-from apps.quotes.ddt import DdtDocument, DdtItem, ddt_filename, prepare_ddt, render_ddt
+from apps.quotes.documents.ddt import (
+    DdtDocument,
+    DdtItem,
+    ddt_filename,
+    prepare_ddt,
+    render_ddt,
+)
 
 TODAY = date(2026, 6, 19)
 
