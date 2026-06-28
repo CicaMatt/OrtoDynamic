@@ -1,4 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
+// Fall back on a blank/whitespace value, not just an absent one: an empty
+// VITE_API_BASE_URL would otherwise make every request a same-origin relative
+// path (which silently hits the static host, not the API).
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE_URL = configuredApiBaseUrl || 'http://localhost:8000/api/v1';
 const TOKEN_STORAGE_KEY = 'ortodynamic.authToken';
 
 /**

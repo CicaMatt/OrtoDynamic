@@ -38,9 +38,15 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-          # Project sites are served under /<repo>/; must match the repo name.
+          # VITE_API_BASE_URL is read from the committed frontend/.env.production
+          # so the build is deterministic. It is deliberately NOT set here: an
+          # empty shell value would override the file. Base path is specific to
+          # this deploy target, so it stays.
           VITE_BASE_PATH: /OrtoDynamic/
+      - name: Verify the API URL was baked into the bundle
+        run: |
+          grep -rq "ortodynamic.onrender.com" dist/assets/*.js \
+            || { echo "::error::API URL missing from build — check frontend/.env.production"; exit 1; }
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist
