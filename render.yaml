@@ -2,7 +2,7 @@
 #
 # Defines a single Python web service running Django under gunicorn. The frontend
 # is deployed separately to GitHub Pages (.github/workflows/deploy-frontend.yml),
-# and the database is the local MySQL exposed over an ngrok tunnel (deploy/),
+# and the database is the local MySQL exposed over an ngrok tunnel (scripts/demo/),
 # whose host/port/credentials are supplied as the `sync: false` vars below.
 services:
   - type: web
@@ -29,7 +29,7 @@ services:
         value: https://cicamatt.github.io
       - key: DJANGO_DB_ENGINE
         value: django.db.backends.mysql
-      # Filled in the Render dashboard at deploy time (see deploy/README.md):
+      # Filled in the Render dashboard at deploy time (see scripts/demo/README.md):
       # the ngrok tunnel host/port and the dedicated demo DB credentials.
       - key: DJANGO_DB_NAME
         sync: false

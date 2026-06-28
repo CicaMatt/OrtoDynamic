@@ -16,14 +16,14 @@ cross-site frontend/backend split works in every browser.
 
 ### 1. Database account (this machine)
 ```bash
-./deploy/create-demo-db-user.sh           # prints the DB env vars for Render
+./scripts/demo/create-db-user.sh          # prints the DB env vars for Render
 ```
 Creates a least-privilege `ortodynamic_demo` MySQL user. Note the printed
 password — it is shown only once.
 
 ### 2. Backend on Render
 1. Push this branch to GitHub (Render and Pages both deploy from the repo).
-2. In Render: **New → Blueprint**, pick this repo. It reads [`render.yaml`](../render.yaml)
+2. In Render: **New → Blueprint**, pick this repo. It reads [`render.yaml`](../../render.yaml)
    and creates the `ortodynamic-api` web service.
 3. When prompted, fill the `sync: false` vars with the output of step 1
    (`DJANGO_DB_NAME/USER/PASSWORD`) and the tunnel host/port from step 3 below
@@ -32,7 +32,7 @@ password — it is shown only once.
 
 ### 3. Database tunnel (this machine — keep running during the demo)
 ```bash
-./deploy/start-db-tunnel.sh               # requires: brew install ngrok + authtoken
+./scripts/demo/tunnel.sh                  # requires: brew install ngrok + authtoken
 ```
 Copy the `Forwarding` host and port into Render's `DJANGO_DB_HOST` /
 `DJANGO_DB_PORT`. The address changes on every restart — update Render and
@@ -49,16 +49,24 @@ multiple sessions.)
 
 > If the Render service name or the GitHub Pages URL differ from the defaults,
 > keep them in sync: the Pages origin must match `DJANGO_CORS_ALLOWED_ORIGINS`
-> in [`render.yaml`](../render.yaml), and `VITE_BASE_PATH` in the workflow must
+> in [`render.yaml`](../../render.yaml), and `VITE_BASE_PATH` in the workflow must
 > match the repo name.
 
 ## Each demo session
-1. `./deploy/start-db-tunnel.sh` and confirm the host/port still match Render.
-2. Keep the terminal open and the machine awake.
-3. Share `https://cicamatt.github.io/OrtoDynamic/`.
+Run the all-in-one launcher — it checks MySQL, verifies the demo account, opens
+the tunnel, and prints the `DJANGO_DB_HOST` / `DJANGO_DB_PORT` to set on Render
+(or sets them automatically if `RENDER_API_KEY` + `RENDER_SERVICE_ID` are set):
+```bash
+./scripts/demo/start.sh
+```
+Then keep the terminal open and the Mac awake, and share
+`https://cicamatt.github.io/OrtoDynamic/`.
+
+`tunnel.sh` and `create-db-user.sh` remain for one-off/manual use.
 
 ## Teardown
-- Stop the tunnel (Ctrl-C).
+- Close the tunnel: Ctrl-C, or `./scripts/demo/stop.sh` (add `--with-mysql` to
+  stop the local MySQL too).
 - Drop the demo account:
   `mysql -u root -p -e "DROP USER 'ortodynamic_demo'@'127.0.0.1';"`
 - Suspend or delete the Render service.

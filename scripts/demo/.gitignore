@@ -1,0 +1,2 @@
+# Local-only demo secret — the dedicated DB account's password. Never commit.
+.demo-db-password

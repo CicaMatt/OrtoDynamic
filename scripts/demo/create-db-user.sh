@@ -4,13 +4,13 @@
 # demo and prints the credentials to paste into the Render service. Run once.
 #
 # The Render backend reaches this database through the ngrok tunnel
-# (start-db-tunnel.sh), which forwards to 127.0.0.1 — so the account only needs
+# (tunnel.sh), which forwards to 127.0.0.1 — so the account only needs
 # to be reachable from localhost. The account has data-only privileges (no DDL,
 # no GRANT) on a single schema. Drop it after the demo:
 #
 #     mysql -u root -p -e "DROP USER 'ortodynamic_demo'@'127.0.0.1';"
 #
-# Usage: ./create-demo-db-user.sh [DB_NAME]   (DB_NAME defaults to ORTODYNAMIC)
+# Usage: ./scripts/demo/create-db-user.sh [DB_NAME]   (DB_NAME defaults to ORTODYNAMIC)
 set -euo pipefail
 
 DB_NAME="${1:-ORTODYNAMIC}"
@@ -35,8 +35,8 @@ Done. Set these in the Render dashboard (ortodynamic-api → Environment):
   DJANGO_DB_NAME      = ${DB_NAME}
   DJANGO_DB_USER      = ${DB_USER}
   DJANGO_DB_PASSWORD  = ${DB_PASS}
-  DJANGO_DB_HOST      = <ngrok host, e.g. 0.tcp.eu.ngrok.io>   (from start-db-tunnel.sh)
-  DJANGO_DB_PORT      = <ngrok port, e.g. 12345>               (from start-db-tunnel.sh)
+  DJANGO_DB_HOST      = <ngrok host, e.g. 0.tcp.eu.ngrok.io>   (from tunnel.sh)
+  DJANGO_DB_PORT      = <ngrok port, e.g. 12345>               (from tunnel.sh)
 
 This password is shown only once. Re-run this script to rotate it.
 INFO
