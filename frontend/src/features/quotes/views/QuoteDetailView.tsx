@@ -31,7 +31,6 @@ const yesNoOptions = optionsFromValues(['Si', 'No']);
 // action, which follows the `stato_check` transition rules.
 const identityFields: QuoteField[] = [
   { label: 'ID', key: 'idQuote', readonly: true },
-  { label: 'Nº Preventivo', key: 'quoteNumber' },
   { label: 'Data Creazione', key: 'creationDate', type: 'date' },
   { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
   { label: 'Stato', key: 'status', readonly: true },
@@ -68,7 +67,6 @@ const referenceFields: QuoteField[] = [
 
 const clinicalFields: QuoteField[] = [
   { label: 'Diagnosi Circostanziata', key: 'diagnosis', type: 'textarea' },
-  { label: 'Programma Terapeutico', key: 'therapeuticProgram', type: 'textarea' },
   { label: 'Prescrizione Dettagliata Protesi', key: 'detailedPrescription', type: 'textarea' },
 ];
 

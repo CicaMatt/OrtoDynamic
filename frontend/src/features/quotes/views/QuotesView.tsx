@@ -7,8 +7,8 @@ import type { Quote } from '../types';
 
 /**
  * Every column of `preventivi` is shown. Categorical columns (type, status,
- * yes/no flags, operator) are filterable; dates render in Italian and are not
- * searched; long clinical/notes columns are previewed and excluded from search.
+ * yes/no flags, operator, notes) are filterable; dates render in Italian and are
+ * not searched; long clinical columns are previewed and excluded from search.
  */
 const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   { key: 'idQuote', label: 'ID Preventivo', primary: true, filterable: false },
@@ -23,14 +23,6 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   {
     key: 'diagnosis',
     label: 'Diagnosi Circostanziata',
-    muted: true,
-    searchable: false,
-    filterable: false,
-    render: previewText,
-  },
-  {
-    key: 'therapeuticProgram',
-    label: 'Programma Terapeutico',
     muted: true,
     searchable: false,
     filterable: false,
@@ -96,10 +88,10 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   },
   { key: 'measurementsOk', label: 'Misure OK', searchable: false },
   { key: 'commissionsPaid', label: 'Provvigioni Pagate' },
-  { key: 'orderNumber', label: 'Nº Ordine', muted: true},
+  { key: 'orderNumber', label: 'Nº Ordine', muted: true, filterable: false },
   { key: 'model', label: 'Modello', muted: true, filterable: false },
   { key: 'measurements', label: 'Misure', muted: true, filterable: false },
-  { key: 'invoiceNumber', label: 'Nº Fattura', muted: true},
+  { key: 'invoiceNumber', label: 'Nº Fattura', muted: true, filterable: false },
   {
     key: 'quote',
     label: 'Preventivo',
@@ -108,8 +100,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     filterable: false,
     render: previewText,
   },
-  { key: 'quoteNumber', label: 'Nº Preventivo', muted: true, filterable: false },
-  { key: 'note', label: 'Note', muted: true, searchable: false, filterable: false, render: previewText },
+  { key: 'note', label: 'Note', muted: true, searchable: false, render: previewText },
   {
     key: 'privateNote',
     label: 'Note Private',

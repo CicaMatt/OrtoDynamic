@@ -27,13 +27,11 @@ export const QUOTE_CREATE_REQUIRED = [
   'clientId',
   'quoteType',
   'diagnosis',
-  'therapeuticProgram',
   'detailedPrescription',
 ] as const satisfies readonly (keyof Quote)[];
 
 const identityFields: QuoteField[] = markRequired(
   [
-    { label: 'Nº Preventivo', key: 'quoteNumber' },
     { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
     { label: 'Data Creazione', key: 'creationDate', type: 'date' },
     { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
@@ -47,10 +45,9 @@ const identityFields: QuoteField[] = markRequired(
 const clinicalFields: QuoteField[] = markRequired(
   [
     { label: 'Diagnosi Circostanziata', key: 'diagnosis', type: 'textarea' },
-    { label: 'Programma Terapeutico', key: 'therapeuticProgram', type: 'textarea' },
     { label: 'Prescrizione Dettagliata Protesi', key: 'detailedPrescription', type: 'textarea' },
   ],
-  ['diagnosis', 'therapeuticProgram', 'detailedPrescription'],
+  ['diagnosis', 'detailedPrescription'],
 );
 
 const authorizationFields: QuoteField[] = [

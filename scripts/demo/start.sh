@@ -44,13 +44,13 @@ trap cleanup EXIT INT TERM
 port_open() { (exec 3<>"/dev/tcp/$1/$2") 2>/dev/null; }
 
 # --- 1. Local MySQL ----------------------------------------------------------
-log "Checking local MySQL on $DB_HOST:$DB_PORT…"
+log "Checking local MySQL on ${DB_HOST}:${DB_PORT}..."
 if ! port_open "$DB_HOST" "$DB_PORT"; then
   command -v brew >/dev/null || die "MySQL isn't running and Homebrew isn't available to start it."
-  log "Not running — starting it with Homebrew…"
+  log "Not running - starting it with Homebrew..."
   brew services start mysql >/dev/null || die "Could not start MySQL via Homebrew."
   for _ in $(seq 1 30); do port_open "$DB_HOST" "$DB_PORT" && break; sleep 1; done
-  port_open "$DB_HOST" "$DB_PORT" || die "MySQL did not come up on $DB_HOST:$DB_PORT."
+  port_open "$DB_HOST" "$DB_PORT" || die "MySQL did not come up on ${DB_HOST}:${DB_PORT}."
 fi
 ok "MySQL is up."
 
@@ -58,7 +58,7 @@ ok "MySQL is up."
 DEMO_DB_PASSWORD="${DEMO_DB_PASSWORD:-$(cat "$PASS_FILE" 2>/dev/null || true)}"
 [ -n "$DEMO_DB_PASSWORD" ] || die "No demo DB password. Run ./scripts/demo/create-db-user.sh and save it to $PASS_FILE."
 
-log "Verifying the '$DB_USER' account can read the database…"
+log "Verifying the '$DB_USER' account can read the database..."
 MYSQL_PWD="$DEMO_DB_PASSWORD" mysql -u "$DB_USER" -h "$DB_HOST" -P "$DB_PORT" \
   --connect-timeout=5 -N -e "SELECT 1 FROM ${DB_NAME}.tb_users LIMIT 1;" >/dev/null 2>&1 \
   || die "The '$DB_USER' account can't connect. (Re)create it with ./scripts/demo/create-db-user.sh and update $PASS_FILE."
@@ -73,7 +73,7 @@ if [ -n "$(tunnel_address)" ]; then
   ok "Reusing the ngrok tunnel already running on this machine."
 else
   command -v ngrok >/dev/null || die "ngrok isn't installed. Run: brew install ngrok  (then: ngrok config add-authtoken <token>)."
-  log "Opening ngrok TCP tunnel to $DB_HOST:$DB_PORT…"
+  log "Opening ngrok TCP tunnel to ${DB_HOST}:${DB_PORT}..."
   ngrok tcp "$DB_HOST:$DB_PORT" --log stdout >"$NGROK_LOG" 2>&1 &
   NGROK_PID=$!
   for _ in $(seq 1 20); do [ -n "$(tunnel_address)" ] && break; sleep 1; done
@@ -88,14 +88,14 @@ ok "Tunnel live: $PUBLIC"
 
 # --- 4. Hand the address to Render ------------------------------------------
 if [ -n "${RENDER_API_KEY:-}" ] && [ -n "${RENDER_SERVICE_ID:-}" ]; then
-  log "Updating Render env vars over the API…"
+  log "Updating Render env vars over the API..."
   render_set() {
     curl -fsS -X PUT "https://api.render.com/v1/services/$RENDER_SERVICE_ID/env-vars/$1" \
       -H "Authorization: Bearer $RENDER_API_KEY" -H "Content-Type: application/json" \
       -d "{\"value\":\"$2\"}" >/dev/null
   }
   if render_set DJANGO_DB_HOST "$RENDER_DB_HOST" && render_set DJANGO_DB_PORT "$RENDER_DB_PORT"; then
-    ok "Render updated — it will redeploy with the new address."
+    ok "Render updated - it will redeploy with the new address."
   else
     warn "Could not update Render automatically; set the values below by hand."
   fi
