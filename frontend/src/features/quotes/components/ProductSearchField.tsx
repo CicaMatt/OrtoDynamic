@@ -132,7 +132,7 @@ export function ProductSearchField({
   const showDropdown = open && query.trim() !== '';
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative min-w-[360px]" ref={containerRef}>
       <input
         type="text"
         role="combobox"
@@ -150,7 +150,7 @@ export function ProductSearchField({
         className={inputClass}
       />
       {showDropdown && (
-        <ul className="absolute z-20 mt-1 max-h-[260px] w-full overflow-auto rounded-[6px] border border-outline-variant bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+        <ul className="mt-1 max-h-[320px] min-w-[560px] overflow-auto rounded-[6px] border border-outline-variant bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
           {loading ? (
             <li className="px-[11px] py-[8px] font-body-sm text-body-sm text-outline">Ricerca…</li>
           ) : error ? (
