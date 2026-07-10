@@ -32,8 +32,8 @@ const DATE_KEYS = ['cancellationDate', 'orderDate', 'partialDeliveryDate', 'deli
  * matching status.
  */
 const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
-  { key: 'productCode', label: 'Codice Nomenclatore' },
-  { key: 'productDescription', label: 'Prodotto' },
+  { key: 'productCode', label: 'Codice Prodotto' },
+  { key: 'productDescription', label: 'Descrizione' },
   { key: 'quantity', label: 'Quantità', render: formatInteger },
   { key: 'price', label: 'Prezzo', render: formatEuro },
   { key: 'amount', label: 'Importo', render: formatEuro },

@@ -40,8 +40,8 @@ const READ_COLUMNS: ReadonlyArray<{
   wrap?: boolean;
   format?: (raw: string) => string;
 }> = [
-  { key: 'productCode', label: 'Codice Nomenclatore' },
-  { key: 'productDescription', label: 'Prodotto', wrap: true },
+  { key: 'productCode', label: 'Codice Prodotto' },
+  { key: 'productDescription', label: 'Descrizione', wrap: true },
   { key: 'quantity', label: 'Quantità', format: formatInteger },
   { key: 'price', label: 'Prezzo', format: formatEuro },
   { key: 'amount', label: 'Importo', format: formatEuro },
