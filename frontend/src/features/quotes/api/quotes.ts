@@ -60,8 +60,12 @@ export function createQuote(values: QuoteCreatePayload): Promise<Quote> {
 }
 
 /** Fetch the quote's "Modulo di consegna" delivery form as an inline PDF blob. */
-export function fetchQuoteDeliveryForm(id: string): Promise<{ blob: Blob; filename: string | null }> {
-  return apiGetBlob(`/quotes/${id}/delivery-form/`);
+export function fetchQuoteDeliveryForm(
+  id: string,
+  deliveryDate?: string,
+): Promise<{ blob: Blob; filename: string | null }> {
+  const query = deliveryDate ? `?delivery_date=${encodeURIComponent(deliveryDate)}` : '';
+  return apiGetBlob(`/quotes/${id}/delivery-form/${query}`);
 }
 
 /** Fetch the quote's DDT (delivery note) as an inline PDF blob. */

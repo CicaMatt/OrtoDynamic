@@ -1,6 +1,7 @@
 """Thin endpoints for the Quote resource."""
 
 from django.http import HttpResponse
+from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.response import Response
@@ -12,7 +13,7 @@ from apps.common.api.views import (
     UnpaginatedListCreateAPIView,
     attach_related,
 )
-from apps.common.exceptions import NotFoundError
+from apps.common.exceptions import ServiceError, NotFoundError
 from apps.doctors.models import Doctor
 from apps.products.models import Product
 from apps.quotes.documents import (
@@ -175,13 +176,23 @@ class QuoteDeliveryFormView(APIView):
 
         client = Client.objects.filter(pk=quote.id_cliente).first()
         today = timezone.localdate()
-        fields = prepare_delivery_form_fields(quote, client, today=today)
+        delivery_date = _delivery_form_date(request.query_params.get("delivery_date"), today)
+        fields = prepare_delivery_form_fields(quote, client, today=delivery_date)
         pdf = render_delivery_form(fields)
 
         response = HttpResponse(pdf, content_type="application/pdf")
         filename = delivery_form_filename(quote, today)
         response["Content-Disposition"] = f'inline; filename="{filename}"'
         return response
+
+
+def _delivery_form_date(raw: str | None, fallback):
+    if not raw:
+        return fallback
+    parsed = parse_date(raw)
+    if parsed is None:
+        raise ServiceError("Data modulo di consegna non valida.")
+    return parsed
 
 
 class QuoteDdtView(APIView):

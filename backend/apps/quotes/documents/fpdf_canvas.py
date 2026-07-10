@@ -79,6 +79,15 @@ class FpdfCanvas:
             mask="auto",
         )
 
+    def hline(self, x1: float, y: float, x2: float) -> None:
+        """Draw a horizontal line using top-left millimetre coordinates."""
+        self._canvas.line(
+            x1 * _MM_TO_PT,
+            _PAGE_H_PT - y * _MM_TO_PT,
+            x2 * _MM_TO_PT,
+            _PAGE_H_PT - y * _MM_TO_PT,
+        )
+
     def cell(self, w: float, h: float, text: str = "", border: int = 0, ln: int = 0,
              align: str = "L") -> None:
         if w == 0:

@@ -38,16 +38,25 @@ def make_quote(**overrides):
 
 def test_names_are_uppercased():
     fields = prepare_delivery_form_fields(
-        make_quote(), SimpleNamespace(cognome="rossi", nome="mario"), today=TODAY
+        make_quote(), SimpleNamespace(cognome="rossi", nome="mario", data_nascita=None), today=TODAY
     )
     assert fields.cognome == "ROSSI"
     assert fields.nome == "MARIO"
 
 
+def test_birth_date_is_day_month_two_digit_year():
+    fields = prepare_delivery_form_fields(
+        make_quote(),
+        SimpleNamespace(cognome="r", nome="m", data_nascita=date(1970, 1, 1)),
+        today=TODAY,
+    )
+    assert fields.data_nascita == "01/01/70"
+
+
 def test_acceptance_date_is_day_month_two_digit_year():
     fields = prepare_delivery_form_fields(
         make_quote(data_accettazione=date(2024, 3, 7)),
-        SimpleNamespace(cognome="r", nome="m"),
+        SimpleNamespace(cognome="r", nome="m", data_nascita=None),
         today=TODAY,
     )
     assert fields.data_accettazione == "07/03/24"
@@ -55,7 +64,7 @@ def test_acceptance_date_is_day_month_two_digit_year():
 
 def test_generation_date_is_day_month_four_digit_year():
     fields = prepare_delivery_form_fields(
-        make_quote(), SimpleNamespace(cognome="r", nome="m"), today=TODAY
+        make_quote(), SimpleNamespace(cognome="r", nome="m", data_nascita=None), today=TODAY
     )
     assert fields.data_generazione == "18/06/2026"
 
@@ -63,7 +72,7 @@ def test_generation_date_is_day_month_four_digit_year():
 def test_missing_acceptance_date_is_blank():
     fields = prepare_delivery_form_fields(
         make_quote(data_accettazione=None),
-        SimpleNamespace(cognome="r", nome="m"),
+        SimpleNamespace(cognome="r", nome="m", data_nascita=None),
         today=TODAY,
     )
     assert fields.data_accettazione == ""
@@ -80,11 +89,12 @@ def test_missing_client_yields_empty_names():
 def test_blank_client_fields_become_empty_strings():
     fields = prepare_delivery_form_fields(
         make_quote(numero_autorizzazione=None),
-        SimpleNamespace(cognome=None, nome=None),
+        SimpleNamespace(cognome=None, nome=None, data_nascita=None),
         today=TODAY,
     )
     assert fields.cognome == ""
     assert fields.nome == ""
+    assert fields.data_nascita == ""
     assert fields.numero_autorizzazione == ""
 
 
@@ -107,7 +117,7 @@ def test_filename_falls_back_to_today_without_quote_date():
 # --- render_delivery_form ----------------------------------------------------
 
 def test_render_produces_single_a4_pdf():
-    fields = DeliveryFormFields("ROSSI", "MARIO", "AUT-12345", "07/03/24", "18/06/2026")
+    fields = DeliveryFormFields("ROSSI", "MARIO", "01/01/70", "AUT-12345", "07/03/24", "18/06/2026")
     pdf = render_delivery_form(fields)
 
     assert pdf.startswith(b"%PDF")
@@ -119,14 +129,17 @@ def test_render_produces_single_a4_pdf():
 
 
 def test_render_includes_letterhead_title_and_fields():
-    fields = DeliveryFormFields("ROSSI", "MARIO", "AUT-12345", "07/03/24", "18/06/2026")
+    fields = DeliveryFormFields("ROSSI", "MARIO", "01/01/70", "AUT-12345", "07/03/24", "18/06/2026")
     text = PdfReader(BytesIO(render_delivery_form(fields))).pages[0].extract_text()
     for value in (
         "Ortodynamic srl",
-        "Modulo di Consegna",
+        "Spett. Asl",
+        "Ufficio Riabilitazione",
+        "Oggetto: fornitura Ortopedica",
         "ROSSI MARIO",
         "AUT-12345",
-        "07/03/24",
+        "01/01/70",
+        "Letto integralmente, confermato e sottoscritto:",
         "18/06/2026",
     ):
         assert value in text

@@ -118,6 +118,7 @@ export function QuoteDetailView() {
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [ddtOptionsOpen, setDdtOptionsOpen] = useState(false);
+  const [deliveryFormOptionsOpen, setDeliveryFormOptionsOpen] = useState(false);
   const { generating, error: docError, clearError, open: openDocument } =
     useInlineDocument<'consegna' | 'ddt' | 'scheda'>();
   const clientAutocomplete = useClientAutocomplete(isEditing);
@@ -158,10 +159,7 @@ export function QuoteDetailView() {
       id: 'delivery-form',
       icon: 'picture_as_pdf',
       label: generating === 'consegna' ? 'Generazione modulo…' : 'Modulo di Consegna',
-      onClick:
-        !isEditing && !generating
-          ? () => openDocument('consegna', () => fetchQuoteDeliveryForm(data.idQuote))
-          : undefined,
+      onClick: !isEditing && !generating ? () => setDeliveryFormOptionsOpen(true) : undefined,
     },
     {
       id: 'ddt',
@@ -253,7 +251,88 @@ export function QuoteDetailView() {
           }}
         />
       )}
+      {deliveryFormOptionsOpen && (
+        <DeliveryFormOptionsDialog
+          generating={generating === 'consegna'}
+          onClose={() => setDeliveryFormOptionsOpen(false)}
+          onGenerate={(deliveryDate) => {
+            setDeliveryFormOptionsOpen(false);
+            openDocument('consegna', () => fetchQuoteDeliveryForm(data.idQuote, deliveryDate));
+          }}
+        />
+      )}
     </>
+  );
+}
+
+function todayInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function DeliveryFormOptionsDialog({
+  generating,
+  onClose,
+  onGenerate,
+}: {
+  generating: boolean;
+  onClose: () => void;
+  onGenerate: (deliveryDate: string) => void;
+}) {
+  const [deliveryDate, setDeliveryDate] = useState(todayInputValue);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delivery-form-options-title"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-[460px] max-w-full rounded-[12px] bg-white p-[28px] shadow-[0_16px_48px_rgba(0,0,0,0.22)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h3 id="delivery-form-options-title" className="font-headline-md text-headline-md font-bold text-black">
+          Modulo di Consegna
+        </h3>
+        <p className="mt-[10px] font-body-md text-body-md text-on-surface-variant">
+          Scegli la data da stampare in fondo al documento.
+        </p>
+
+        <label className="mt-[22px] block">
+          <span className="font-label-caps text-label-caps font-bold uppercase text-outline">Data</span>
+          <input
+            type="date"
+            value={deliveryDate}
+            onChange={(event) => setDeliveryDate(event.target.value)}
+            className="mt-[8px] h-[42px] w-full rounded-[6px] border border-outline-variant bg-white px-[11px] font-body-md text-body-md text-on-surface focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
+          />
+        </label>
+
+        <div className="mt-[24px] flex justify-end gap-[10px]">
+          <button
+            type="button"
+            disabled={generating}
+            onClick={onClose}
+            className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+          >
+            Annulla
+          </button>
+          <button
+            type="button"
+            disabled={generating || !deliveryDate}
+            onClick={() => onGenerate(deliveryDate)}
+            className="h-[40px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
+          >
+            Genera
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -2,7 +2,11 @@
 // VITE_API_BASE_URL would otherwise make every request a same-origin relative
 // path (which silently hits the static host, not the API).
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
-const API_BASE_URL = configuredApiBaseUrl || 'http://localhost:8000/api/v1';
+const isLocalFrontendHost =
+  typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const API_BASE_URL = isLocalFrontendHost
+  ? 'http://127.0.0.1:8000/api/v1'
+  : configuredApiBaseUrl || 'http://127.0.0.1:8000/api/v1';
 const TOKEN_STORAGE_KEY = 'ortodynamic.authToken';
 
 /**

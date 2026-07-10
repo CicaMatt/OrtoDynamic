@@ -1,27 +1,29 @@
-"""
-Build the "Modulo di consegna" delivery form for a quote.
-
-A single A4 page generated entirely in code: the shared company letterhead followed
-by the recipient and the delivery details. The public functions are pure and free
-of HTTP/DB concerns, so the view stays thin and both can be unit tested in
-isolation: `prepare_delivery_form_fields` turns a quote and its client into the
-display strings, and `render_delivery_form` lays them out and returns the PDF bytes.
-"""
+"""Build the "Modulo di consegna" delivery form for a quote."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
 
 from .fpdf_canvas import FpdfCanvas
-from .pdf_layout import label_value, new_titled_document, signature_footer
+from .letterhead import CONTENT_TOP_MM, write_letterhead
+
+BODY_LEFT = 20.0
+BODY_WIDTH = 170.0
+RECIPIENT_LEFT = 142.0
+SUBJECT_TOP = 94.0
+BODY_TOP = 118.0
+BODY_FONT_SIZE = 11.0
+SIGNATURE_TITLE_FONT_SIZE = 11.0
+STATIC_AUTHORIZATION_DATE = "01/01/70"
 
 
 @dataclass(frozen=True)
 class DeliveryFormFields:
-    """The five display strings stamped onto the form, already formatted."""
+    """Display strings stamped onto the form, already formatted."""
 
     cognome: str
     nome: str
+    data_nascita: str    # "DD/MM/YY", or "" when unset
     numero_autorizzazione: str
     data_accettazione: str  # "DD/MM/YY", or "" when unset
     data_generazione: str   # today as "DD/MM/YYYY"
@@ -31,16 +33,22 @@ def prepare_delivery_form_fields(quote, client, *, today: date) -> DeliveryFormF
     """
     Map a quote and its client onto the form's display strings.
 
-    Names are upper-cased (empty when the client row is missing); the acceptance
-    date renders as ``DD/MM/YY`` (empty when unset) and the generation date as
+    Names are upper-cased (empty when the client row is missing); dates render as
+    ``DD/MM/YY`` where they fill legacy blanks, and the generation date as
     ``DD/MM/YYYY``. `today` is passed in so the caller owns the clock
     (``timezone.localdate()`` in the view), keeping this function pure.
     """
     cognome = (client.cognome or "").upper() if client is not None else ""
     nome = (client.nome or "").upper() if client is not None else ""
+    data_nascita = (
+        client.data_nascita.strftime("%d/%m/%y")
+        if client is not None and client.data_nascita
+        else ""
+    )
     return DeliveryFormFields(
         cognome=cognome,
         nome=nome,
+        data_nascita=data_nascita,
         numero_autorizzazione=quote.numero_autorizzazione or "",
         data_accettazione=(
             quote.data_accettazione.strftime("%d/%m/%y") if quote.data_accettazione else ""
@@ -56,26 +64,125 @@ def delivery_form_filename(quote, today: date) -> str:
 
 
 def render_delivery_form(fields: DeliveryFormFields) -> bytes:
-    """Lay the delivery form out on a code-drawn A4 page and return the PDF bytes."""
-    pdf = new_titled_document("Modulo di Consegna")
-    pdf.ln(8)
-
-    pdf.set_font("", 11)
-    pdf.cell(0, 6, "Si attesta la consegna della fornitura ortopedica a:", 0, 1)
-    pdf.ln(2)
-
-    full_name = f"{fields.cognome} {fields.nome}".strip()
-    _field_row(pdf, "Cognome e Nome:", full_name, value_bold=True)
-    _field_row(pdf, "Nº Autorizzazione:", fields.numero_autorizzazione)
-    _field_row(pdf, "Data Accettazione:", fields.data_accettazione)
-
-    pdf.ln(24)
-    signature_footer(pdf, date_text=fields.data_generazione,
-                     sign_label="Firma per ricevuta:", size=11)
-
+    """Lay the delivery form out as regular document text."""
+    pdf = FpdfCanvas()
+    write_letterhead(pdf)
+    _write_delivery_form(pdf, fields)
     return pdf.output()
 
 
-def _field_row(pdf: FpdfCanvas, label: str, value: str, *, value_bold: bool = False) -> None:
-    """This form's wider (48 mm / 11 pt) label/value row."""
-    label_value(pdf, label, value, label_w=48, size=11, height=7, value_bold=value_bold)
+def _write_delivery_form(pdf: FpdfCanvas, fields: DeliveryFormFields) -> None:
+    _write_recipient(pdf)
+    _write_subject(pdf, fields)
+    _write_body(pdf)
+    _write_signature_area(pdf, fields)
+
+
+def _write_recipient(pdf: FpdfCanvas) -> None:
+    pdf.set_font("", BODY_FONT_SIZE)
+    pdf.set_xy(RECIPIENT_LEFT, CONTENT_TOP_MM + 2)
+    pdf.cell(28, 7, "Spett. Asl", 0, 0)
+    pdf.cell(0, 7, "distretto", 0, 1)
+    pdf.set_xy(RECIPIENT_LEFT + 4, CONTENT_TOP_MM + 13)
+    pdf.cell(0, 7, "Ufficio Riabilitazione", 0, 1)
+
+
+def _write_subject(pdf: FpdfCanvas, fields: DeliveryFormFields) -> None:
+    full_name = f"{fields.cognome} {fields.nome}".strip()
+    authorization = fields.numero_autorizzazione or ""
+
+    pdf.set_font("", BODY_FONT_SIZE)
+    pdf.set_xy(BODY_LEFT, SUBJECT_TOP)
+    _line_with_centered_field(
+        pdf,
+        "Oggetto: fornitura Ortopedica del paziente",
+        full_name,
+        field_width=92,
+    )
+    _authorization_line(pdf, authorization)
+
+
+def _write_body(pdf: FpdfCanvas) -> None:
+    pdf.set_font("", BODY_FONT_SIZE)
+    pdf.set_xy(BODY_LEFT, BODY_TOP)
+    paragraphs = [
+        (
+            "Comunicasi ai sensi del D.M. 02/03/1984, che in data odierna è stato "
+            "consegnato il presidio di cui autorizzazione in oggetto. Pertanto "
+            "trascorsi 20 g. da oggi, nulla ricevendo ai sensi del D.L. 15/02/1984, "
+            "emetteremo fattura per la liquidazione. L’assistito cui la presente è "
+            "stata consegnata, unitamente al presidio dichiara, sottoscrivendo, di "
+            "non aver versato alcuna somma a nessun titolo, di essere a conoscenza "
+            "e di autorizzare l’immissione del suo nominativo in archivio clienti "
+            "e di aver ricevuto l’attestato di conformità e le istruzioni uso e "
+            "manutenzione del presidio."
+        ),
+        (
+            "Egli si impegna, inoltre, ad effettuare il collaudo entro 5gg ai sensi "
+            "del D.L. 15/02/1984."
+        ),
+        (
+            "Ortodynamic srl tratterà i dati secondo i diritti previsti dall’art. 7 "
+            "del D.Lgs 196/2003. Il cliente potrà in ogni momento chiedere rettifica, "
+            "accesso, integrazione, cancellazione o opposizione formulando richiesta "
+            "scritta ad ORTODYNAMIC srl via Filettine,12-14 Pagani 84016 SA"
+        ),
+    ]
+    for index, paragraph in enumerate(paragraphs):
+        pdf.set_xy(BODY_LEFT, pdf.get_y())
+        pdf.multi_cell(BODY_WIDTH, 6, paragraph)
+        pdf.ln(3 if index != 2 else 10)
+
+
+def _write_signature_area(pdf: FpdfCanvas, fields: DeliveryFormFields) -> None:
+    pdf.ln(10)
+    pdf.set_font("B", SIGNATURE_TITLE_FONT_SIZE)
+    _line(pdf, "Letto integralmente, confermato e sottoscritto:")
+    pdf.set_font("", BODY_FONT_SIZE)
+    pdf.ln(12)
+    _line(pdf, "L’assistito o chi ne fa le veci_______________________________")
+    pdf.ln(12)
+    _line(pdf, "Grado di parentela__________________________________________")
+    pdf.ln(10)
+    _line_with_centered_field(pdf, "Pagani", fields.data_generazione, field_width=38)
+
+
+def _line(pdf: FpdfCanvas, text: str) -> None:
+    pdf.set_xy(BODY_LEFT, pdf.get_y())
+    pdf.cell(BODY_WIDTH, 7, text, 0, 1)
+
+
+def _line_with_centered_field(
+    pdf: FpdfCanvas,
+    label: str,
+    value: str,
+    *,
+    field_width: float,
+) -> None:
+    pdf.set_xy(BODY_LEFT, pdf.get_y())
+    pdf.cell(BODY_WIDTH - field_width, 7, label, 0, 0)
+    field_x = pdf.get_x()
+    field_y = pdf.get_y()
+    pdf.cell(field_width, 7, value, 0, 1, "C")
+    pdf.hline(field_x, field_y + 5.2, field_x + field_width)
+
+
+def _authorization_line(pdf: FpdfCanvas, authorization: str) -> None:
+    pdf.set_xy(BODY_LEFT, pdf.get_y())
+    pdf.cell(38, 7, "Autorizzazione n", 0, 0)
+    _centered_underlined_cell(pdf, authorization, width=54)
+    pdf.cell(10, 7, "del", 0, 0, "C")
+    _centered_underlined_cell(pdf, STATIC_AUTHORIZATION_DATE, width=50, ln=1)
+
+
+def _centered_underlined_cell(
+    pdf: FpdfCanvas,
+    value: str,
+    *,
+    width: float,
+    ln: int = 0,
+) -> None:
+    field_x = pdf.get_x()
+    field_y = pdf.get_y()
+    pdf.cell(width, 7, value, 0, ln, "C")
+    pdf.hline(field_x, field_y + 5.2, field_x + width)

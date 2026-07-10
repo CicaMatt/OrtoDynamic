@@ -10,5 +10,10 @@ ALLOWED_HOSTS = env.list(
 
 # Convenient default for the local React dev server (Vite).
 CORS_ALLOWED_ORIGINS = env.list(
-    "DJANGO_CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"]
+    "DJANGO_CORS_ALLOWED_ORIGINS",
+    default=["http://localhost:5173", "http://127.0.0.1:5173"],
+)
+CORS_ALLOWED_ORIGIN_REGEXES = env.list(
+    "DJANGO_CORS_ALLOWED_ORIGIN_REGEXES",
+    default=[r"^http://localhost:\d+$", r"^http://127\.0\.0\.1:\d+$"],
 )
