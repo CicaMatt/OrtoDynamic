@@ -100,7 +100,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     filterable: false,
     render: previewText,
   },
-  { key: 'note', label: 'Note', muted: true, searchable: false, render: previewText },
+  { key: 'note', label: 'Note', muted: true, render: previewText },
   {
     key: 'privateNote',
     label: 'Note Private',

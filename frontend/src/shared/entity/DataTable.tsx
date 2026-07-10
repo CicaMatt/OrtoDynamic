@@ -38,7 +38,7 @@ export function DataTable<T>({
         <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
           <tr>
             {columns.map((column) => (
-              <th key={column.key} className="py-3 px-6 uppercase font-bold tracking-wider whitespace-nowrap">
+              <th key={column.key} className="py-3 px-4 uppercase font-bold tracking-wider whitespace-nowrap">
                 {column.label}
               </th>
             ))}
@@ -60,7 +60,7 @@ export function DataTable<T>({
                 className="border-b border-surface-variant h-row-height hover:bg-surface-container-low transition-colors duration-300"
               >
                 {columns.map((column) => (
-                  <td key={column.key} className="px-6 whitespace-nowrap">
+                  <td key={column.key} className="px-4 whitespace-nowrap">
                     <FieldValue value={column.getValue(row)} />
                   </td>
                 ))}

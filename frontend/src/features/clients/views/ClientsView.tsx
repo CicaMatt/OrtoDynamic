@@ -8,6 +8,7 @@ const clientColumns: ReadonlyArray<EntityColumn<ClientListItem>> = [
   { key: 'idClient', label: 'ID Cliente', primary: true, filterable: false },
   { key: 'name', label: 'Nome' },
   { key: 'surname', label: 'Cognome' },
+  { key: 'phone', label: 'Telefono', muted: true },
   { key: 'fiscalCode', label: 'Codice Fiscale', muted: true },
   {
     key: 'birthDate',
@@ -21,7 +22,6 @@ const clientColumns: ReadonlyArray<EntityColumn<ClientListItem>> = [
   { key: 'address', label: 'Indirizzo', muted: true },
   { key: 'city', label: 'Citta', muted: true },
   { key: 'province', label: 'Provincia', muted: true },
-  { key: 'phone', label: 'Telefono', muted: true },
 ];
 
 export function ClientsView() {

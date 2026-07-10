@@ -144,7 +144,7 @@ def _write_signature_area(pdf: FpdfCanvas, fields: DeliveryFormFields) -> None:
     pdf.ln(12)
     _line(pdf, "Grado di parentela__________________________________________")
     pdf.ln(10)
-    _line_with_centered_field(pdf, "Pagani", fields.data_generazione, field_width=38)
+    _pagani_date_line(pdf, fields.data_generazione)
 
 
 def _line(pdf: FpdfCanvas, text: str) -> None:
@@ -186,3 +186,9 @@ def _centered_underlined_cell(
     field_y = pdf.get_y()
     pdf.cell(width, 7, value, 0, ln, "C")
     pdf.hline(field_x, field_y + 5.2, field_x + width)
+
+
+def _pagani_date_line(pdf: FpdfCanvas, date_text: str) -> None:
+    pdf.set_xy(BODY_LEFT, pdf.get_y())
+    pdf.cell(15, 7, "Pagani", 0, 0)
+    _centered_underlined_cell(pdf, date_text, width=38, ln=1)

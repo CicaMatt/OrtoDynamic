@@ -97,7 +97,7 @@ export function EntityListView<T extends object>({
               {columns.map((column) => (
                 <th
                   key={String(column.key)}
-                  className="py-3 px-6 uppercase font-bold tracking-wider whitespace-nowrap"
+                  className="py-3 px-4 uppercase font-bold tracking-wider whitespace-nowrap"
                 >
                   {column.label}
                 </th>
@@ -201,7 +201,7 @@ function EntityRow<T extends object>({
 }
 
 function cellClassName<T>(column: EntityColumn<T>): string {
-  const base = 'px-6 whitespace-nowrap';
+  const base = 'px-4 whitespace-nowrap';
   if (column.primary) return `${base} text-primary font-medium hover:underline`;
   if (column.muted) return `${base} text-on-surface-variant`;
   return base;
