@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useAuth } from '../AuthContext';
 
 const inputClass =
@@ -14,8 +14,8 @@ export function LoginView() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const submitLogin = async () => {
+    if (submitting || username.trim() === '' || password === '') return;
     setSubmitting(true);
     setError(null);
     try {
@@ -27,6 +27,17 @@ export function LoginView() {
     }
   };
 
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    await submitLogin();
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    void submitLogin();
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-[400px] max-w-full rounded-[12px] bg-white p-[36px] shadow-[0_16px_48px_rgba(0,0,0,0.16)]">
@@ -35,7 +46,7 @@ export function LoginView() {
           <p className="mt-[6px] font-body-sm text-body-sm text-on-surface-variant">Accedi per continuare</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-[18px]">
+        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-[18px]">
           <div>
             <label htmlFor="username" className={labelClass}>
               Nome utente o email
