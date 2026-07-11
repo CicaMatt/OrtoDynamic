@@ -150,7 +150,7 @@ export function ProductSearchField({
         className={inputClass}
       />
       {showDropdown && (
-        <ul className="mt-1 max-h-[320px] min-w-[560px] overflow-auto rounded-[6px] border border-outline-variant bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+        <ul className="absolute left-0 top-full z-30 mt-1 max-h-[320px] min-w-[560px] overflow-auto rounded-[6px] border border-outline-variant bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
           {loading ? (
             <li className="px-[11px] py-[8px] font-body-sm text-body-sm text-outline">Ricerca…</li>
           ) : error ? (

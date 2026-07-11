@@ -225,6 +225,7 @@ def test_footer_moves_to_next_page_when_it_does_not_fit():
 
     first, last = reader.pages[0].extract_text(), reader.pages[1].extract_text()
     assert "Timbro e firma" not in first
+    assert "Ortodynamic srl" in last
     for value in ("certificazioni e normative vigenti", "Francesco Pepe", "Timbro e firma"):
         assert value in last
     # the facsimile signature travels with the block.

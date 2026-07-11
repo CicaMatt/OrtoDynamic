@@ -6,7 +6,7 @@ export const EMPTY_ITEM_DRAFT: QuoteItemDraft = {
   code: '',
   description: '',
   price: '',
-  quantity: '',
+  quantity: '1',
   discount: '',
 };
 
@@ -84,6 +84,23 @@ export function discountError(raw: string): string | null {
   return null;
 }
 
+/** Validate quantity: every quote item must have a quantity of at least 1. */
+export function quantityError(raw: string): string | null {
+  const value = Number(raw);
+  if (raw.trim() === '' || !Number.isFinite(value) || value < 1) {
+    return 'La quantità deve essere almeno 1.';
+  }
+  return null;
+}
+
+/** Reject quantity keystrokes that would make the value lower than 1. */
+export function isAcceptableQuantityInput(value: string): boolean {
+  if (value.trim() === '') return true;
+  if (value.startsWith('-')) return false;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 1;
+}
+
 /** Reject obviously out-of-range discount keystrokes (negative or above 100). */
 export function isAcceptableDiscountInput(value: string): boolean {
   if (value.trim() === '') return true;
@@ -106,7 +123,7 @@ export function draftFromItem(item: {
     code: item.productCode,
     description: item.productDescription,
     price: item.price,
-    quantity: item.quantity,
+    quantity: quantityError(item.quantity) ? '1' : item.quantity,
     discount: item.discount,
   };
 }

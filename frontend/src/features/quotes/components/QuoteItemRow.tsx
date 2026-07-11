@@ -5,7 +5,12 @@ import { Icon } from '../../../shared/ui/Icon';
 import type { Product } from '../../products/types';
 import type { QuoteItemDraft } from '../types';
 import { ProductSearchField } from './ProductSearchField';
-import { isAcceptableDiscountInput, previewAmount } from './quoteItemMath';
+import {
+  isAcceptableDiscountInput,
+  isAcceptableQuantityInput,
+  previewAmount,
+  quantityError,
+} from './quoteItemMath';
 
 /** Read-only, derived cell (prezzo/importo) shown muted to mark it non-editable. */
 export function DerivedValue({ value }: { value: string }) {
@@ -112,9 +117,9 @@ function ConfirmCancelActions({
 }
 
 const NUMERIC_INPUTS = {
-  /** Quantity cannot be negative; ignore any minus-signed input. */
+  /** Quantity must stay blank while editing or at least 1. */
   quantity: (value: string, set: (v: string) => void) => {
-    if (!value.startsWith('-')) set(value);
+    if (isAcceptableQuantityInput(value)) set(value);
   },
   /** Discount is a 1–100 percent; reject keystrokes outside that range. */
   discount: (value: string, set: (v: string) => void) => {
@@ -142,7 +147,7 @@ export function ItemDraftRow({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const canConfirm = draft.productId.trim() !== '' && !submitting;
+  const canConfirm = draft.productId.trim() !== '' && !quantityError(draft.quantity) && !submitting;
   return (
     <tr className="border-b border-surface-variant last:border-0 bg-secondary/5">
       <td className="py-3 px-4 align-top min-w-[200px]">
@@ -164,7 +169,7 @@ export function ItemDraftRow({
       <td className="py-3 px-4 align-top">
         <EditInput
           type="number"
-          min={0}
+          min={1}
           value={draft.quantity}
           onChange={(value) => NUMERIC_INPUTS.quantity(value, (v) => onField('quantity', v))}
         />
@@ -213,6 +218,7 @@ export function ItemEditRow({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const canConfirm = !quantityError(draft.quantity) && !submitting;
   return (
     <tr className="border-b border-surface-variant last:border-0 bg-secondary/5">
       <td className="py-3 px-4 align-top whitespace-nowrap">
@@ -226,7 +232,7 @@ export function ItemEditRow({
       <td className="py-3 px-4 align-top">
         <EditInput
           type="number"
-          min={0}
+          min={1}
           value={draft.quantity}
           onChange={(value) => NUMERIC_INPUTS.quantity(value, (v) => onField('quantity', v))}
         />
@@ -248,7 +254,7 @@ export function ItemEditRow({
       <td className="py-3 px-4 align-top text-right">
         <ConfirmCancelActions
           submitting={submitting}
-          canConfirm={!submitting}
+          canConfirm={canConfirm}
           onConfirm={onConfirm}
           onCancel={onCancel}
         />

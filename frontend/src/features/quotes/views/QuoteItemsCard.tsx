@@ -25,6 +25,7 @@ import {
   draftFromItem,
   EMPTY_ITEM_DRAFT,
   ITEM_COLUMN_COUNT,
+  quantityError,
   toNullableNumber,
 } from '../components/quoteItemMath';
 
@@ -47,6 +48,10 @@ const READ_COLUMNS: ReadonlyArray<{
   { key: 'amount', label: 'Importo', format: formatEuro },
   { key: 'discount', label: 'Sconto' },
 ];
+
+const TABLE_SURFACE_CLASS =
+  'rounded-xl border border-outline-variant/50 bg-surface-container-low transition-[padding] duration-200 ease-out';
+const TABLE_SURFACE_DROPDOWN_SPACE_CLASS = `${TABLE_SURFACE_CLASS} pb-[340px]`;
 
 /** State of the one line being edited inline: its id plus the working draft. */
 type EditState = { id: string; draft: QuoteItemDraft };
@@ -82,6 +87,8 @@ export function QuoteItemsCard({ quoteId, onChanged }: { quoteId: string; onChan
   // Only one inline operation (add / edit / delete) at a time.
   const idle = addDraft === null && edit === null && !busy;
   const canAdd = !loading && !error && idle;
+  const tableSurfaceClass =
+    addDraft || edit ? TABLE_SURFACE_DROPDOWN_SPACE_CLASS : TABLE_SURFACE_CLASS;
 
   const setAddField = (key: keyof QuoteItemDraft, value: string) =>
     setAddDraft((current) => (current ? { ...current, [key]: value } : current));
@@ -105,7 +112,7 @@ export function QuoteItemsCard({ quoteId, onChanged }: { quoteId: string; onChan
 
   const confirmAdd = async () => {
     if (!addDraft || addDraft.productId.trim() === '') return;
-    const invalid = discountError(addDraft.discount);
+    const invalid = quantityError(addDraft.quantity) ?? discountError(addDraft.discount);
     if (invalid) {
       setActionError(invalid);
       return;
@@ -130,7 +137,7 @@ export function QuoteItemsCard({ quoteId, onChanged }: { quoteId: string; onChan
 
   const confirmEdit = async () => {
     if (!edit) return;
-    const invalid = discountError(edit.draft.discount);
+    const invalid = quantityError(edit.draft.quantity) ?? discountError(edit.draft.discount);
     if (invalid) {
       setActionError(invalid);
       return;
@@ -175,8 +182,8 @@ export function QuoteItemsCard({ quoteId, onChanged }: { quoteId: string; onChan
         <NewItemButton disabled={!canAdd} onClick={() => setAddDraft({ ...EMPTY_ITEM_DRAFT })} />
       }
     >
-      <ScrollableTable surfaceClassName="rounded-xl border border-outline-variant/50">
-        <table className="w-full text-left font-body-md text-body-md">
+      <ScrollableTable surfaceClassName={tableSurfaceClass}>
+        <table className="w-full bg-white text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>
               {READ_COLUMNS.map((column) => (

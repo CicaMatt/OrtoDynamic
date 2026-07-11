@@ -39,6 +39,7 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     filterable: false,
     render: formatBirthDate,
   },
+  { key: 'technicianSignature', label: 'Tecnico', muted: true, searchable: false },
   {
     key: 'deliveryDate',
     label: 'Data Consegna',
@@ -100,7 +101,6 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     render: formatBirthDate,
   },
   { key: 'serviceDoctorSignature', label: 'Firma Medico Assistenza', muted: true, filterable: false },
-  { key: 'technicianSignature', label: 'Firma Tecnico', muted: true, searchable: false },
   {
     key: 'interventionDescription',
     label: 'Descrizione Intervento',

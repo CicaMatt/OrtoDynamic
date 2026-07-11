@@ -13,7 +13,12 @@ import {
   ITEM_COLUMN_COUNT,
   ITEM_COLUMN_LABELS,
   previewAmount,
+  quantityError,
 } from '../components/quoteItemMath';
+
+const TABLE_SURFACE_CLASS =
+  'rounded-xl border border-outline-variant/50 bg-surface-container-low transition-[padding] duration-200 ease-out';
+const TABLE_SURFACE_DROPDOWN_SPACE_CLASS = `${TABLE_SURFACE_CLASS} pb-[340px]`;
 
 /**
  * Pending line items for a quote being created. The quote has no id yet, so
@@ -27,6 +32,7 @@ export function QuoteItemsDraftCard() {
   const { quoteItemDrafts, addQuoteItemDraft, removeQuoteItemDraft } = useEntityEdit();
   const [draft, setDraft] = useState<QuoteItemDraft | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const tableSurfaceClass = draft ? TABLE_SURFACE_DROPDOWN_SPACE_CLASS : TABLE_SURFACE_CLASS;
 
   const setField = (key: keyof QuoteItemDraft, value: string) =>
     setDraft((current) => (current ? { ...current, [key]: value } : current));
@@ -46,7 +52,7 @@ export function QuoteItemsDraftCard() {
 
   const confirmDraft = () => {
     if (!draft || draft.productId.trim() === '') return;
-    const invalid = discountError(draft.discount);
+    const invalid = quantityError(draft.quantity) ?? discountError(draft.discount);
     if (invalid) {
       setActionError(invalid);
       return;
@@ -64,8 +70,8 @@ export function QuoteItemsDraftCard() {
         <NewItemButton disabled={draft !== null} onClick={() => setDraft({ ...EMPTY_ITEM_DRAFT })} />
       }
     >
-      <ScrollableTable surfaceClassName="rounded-xl border border-outline-variant/50">
-        <table className="w-full text-left font-body-md text-body-md">
+      <ScrollableTable surfaceClassName={tableSurfaceClass}>
+        <table className="w-full bg-white text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>
               {ITEM_COLUMN_LABELS.map((label) => (

@@ -14,6 +14,10 @@ type NavEntry = {
 const mainNav: NavEntry[] = [
   { view: 'dashboard', icon: 'dashboard', label: 'Dashboard', matches: ['dashboard'] },
   { view: 'clients', icon: 'group', label: 'Clienti', matches: ['clients', 'client-detail', 'client-orthopedic', 'client-create'] },
+  { view: 'quotes', icon: 'request_quote', label: 'Preventivi', matches: ['quotes', 'quote-detail'] },
+  { view: 'work-orders', icon: 'engineering', label: 'Lavorazioni', matches: ['work-orders', 'work-order-detail'] },
+  { view: 'settings', icon: 'settings', label: 'Configurazioni', matches: ['settings'] },
+  { view: 'products', icon: 'inventory_2', label: 'Prodotti', matches: ['products', 'product-detail', 'product-create'] },
   { view: 'doctors', icon: 'medical_services', label: 'Medici', matches: ['doctors', 'doctor-detail', 'doctor-create'] },
   {
     view: 'health-companies',
@@ -21,10 +25,6 @@ const mainNav: NavEntry[] = [
     label: 'Aziende Sanitarie',
     matches: ['health-companies', 'health-company-detail', 'health-company-create'],
   },
-  { view: 'products', icon: 'inventory_2', label: 'Prodotti', matches: ['products', 'product-detail', 'product-create'] },
-  { view: 'quotes', icon: 'request_quote', label: 'Preventivi', matches: ['quotes', 'quote-detail'] },
-  { view: 'work-orders', icon: 'engineering', label: 'Lavorazioni', matches: ['work-orders', 'work-order-detail'] },
-  { view: 'settings', icon: 'settings', label: 'Configurazioni', matches: ['settings'] },
   { view: 'employees', icon: 'badge', label: 'Gestione Dipendenti', matches: ['employees'] },
 ];
 

@@ -19,6 +19,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from .fpdf_canvas import FpdfCanvas
+from .letterhead import CONTENT_TOP_MM, write_letterhead
 from .pdf_layout import (
     label_value,
     new_titled_document,
@@ -69,6 +70,7 @@ _ITEM_WIDTHS = (24.0, 74.0, 12.0, 26.0, 16.0, 26.0, 12.0)
 _ITEM_HEADERS = ("Codice", "Descrizione", "Qtà", "Prezzo", "Sconto", "Importo", "IVA")
 _ITEM_ALIGNS = ("L", "L", "C", "R", "C", "R", "C")
 _ITEM_LINE_MM = 5.0
+_CONTENT_LEFT_MM = 10.0
 
 
 @dataclass(frozen=True)
@@ -222,7 +224,7 @@ def _conformity_footer(pdf: FpdfCanvas) -> None:
     if pdf.fits(_FOOTER_HEIGHT_MM):
         pdf.ln(_FOOTER_GAP_MM)
     else:
-        pdf.add_page()
+        _add_continuation_page(pdf)
 
     pdf.set_font("", 9)
     pdf.cell(0, _FOOTER_STATEMENT_MM, _CONFORMITY_STATEMENT, 0, 1)
@@ -237,6 +239,13 @@ def _conformity_footer(pdf: FpdfCanvas) -> None:
         pdf.image(SIGNATURE_PATH, x, pdf.get_y() + _FOOTER_SIGNATURE_GAP_MM,
                   _SIGNATURE_W_MM, _SIGNATURE_H_MM)
         pdf.ln(_FOOTER_SIGNATURE_GAP_MM + _SIGNATURE_H_MM)
+
+
+def _add_continuation_page(pdf: FpdfCanvas) -> None:
+    """Start a Scheda Progetto continuation page with the shared letterhead."""
+    pdf.add_page()
+    write_letterhead(pdf)
+    pdf.set_xy(_CONTENT_LEFT_MM, CONTENT_TOP_MM)
 
 
 def _items_table(pdf: FpdfCanvas, document: SchedaDocument) -> None:

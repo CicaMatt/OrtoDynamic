@@ -121,7 +121,7 @@ class QuoteItemCreateSerializer(serializers.Serializer):
     """
 
     productId = serializers.IntegerField(source="product_id")
-    quantity = serializers.FloatField(allow_null=True, default=None, min_value=0)
+    quantity = serializers.FloatField(default=1, min_value=1)
     discount = serializers.FloatField(allow_null=True, default=None, min_value=1, max_value=100)
 
     def create(self, validated_data):
@@ -140,7 +140,7 @@ class QuoteItemUpdateSerializer(serializers.Serializer):
     clear it). The updated row is rendered with `QuoteItemSerializer`.
     """
 
-    quantity = serializers.FloatField(source="quantita", required=False, allow_null=True, min_value=0)
+    quantity = serializers.FloatField(source="quantita", required=False, min_value=1)
     discount = serializers.FloatField(
         source="sconto", required=False, allow_null=True, min_value=1, max_value=100
     )

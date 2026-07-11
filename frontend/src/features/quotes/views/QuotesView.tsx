@@ -13,7 +13,6 @@ import type { Quote } from '../types';
 const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   { key: 'idQuote', label: 'ID Preventivo', primary: true, filterable: false },
   { key: 'quoteType', label: 'Tipologia', searchable: false },
-  { key: 'status', label: 'Stato', searchable: false },
   {
     key: 'clientName',
     label: 'Cliente',
@@ -37,12 +36,6 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     render: previewText,
   },
   {
-    key: 'doctorName',
-    label: 'Medico',
-    muted: true,
-    renderCell: (quote) => <ReferenceName name={quote.doctorName} id={quote.doctorId} />,
-  },
-  {
     key: 'creationDate',
     label: 'Data Creazione',
     muted: true,
@@ -58,9 +51,6 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     filterable: false,
     render: formatBirthDate,
   },
-  { key: 'total', label: 'Totale', muted: true, filterable: false, render: formatEuro },
-  { key: 'entryBy', label: 'Inserito Da', muted: true },
-  { key: 'authorizationNumber', label: 'Nº Autorizzazione', muted: true},
   {
     key: 'acceptanceDate',
     label: 'Data Accettazione',
@@ -69,6 +59,26 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     filterable: false,
     render: formatBirthDate,
   },
+  { key: 'orderNumber', label: 'Nº Ordine', muted: true, filterable: false },
+  {
+    key: 'maxExpiry',
+    label: 'Data Massima Scadenza',
+    muted: true,
+    searchable: false,
+    filterable: false,
+    render: formatBirthDate,
+  },
+  { key: 'note', label: 'Note', muted: true, render: previewText },
+  { key: 'status', label: 'Stato', searchable: false },
+  {
+    key: 'doctorName',
+    label: 'Medico',
+    muted: true,
+    renderCell: (quote) => <ReferenceName name={quote.doctorName} id={quote.doctorId} />,
+  },
+  { key: 'total', label: 'Totale', muted: true, filterable: false, render: formatEuro },
+  { key: 'entryBy', label: 'Inserito Da', muted: true },
+  { key: 'authorizationNumber', label: 'Nº Autorizzazione', muted: true},
   {
     key: 'authorizationReceiptDate',
     label: 'Data Ricezione Autorizzazione',
@@ -78,17 +88,8 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     render: formatBirthDate,
   },
   { key: 'expiryDays', label: 'Giorni Massima Scadenza', muted: true, filterable: false },
-  {
-    key: 'maxExpiry',
-    label: 'Data Massima Scadenza',
-    muted: true,
-    searchable: false,
-    filterable: false,
-    render: formatBirthDate,
-  },
   { key: 'measurementsOk', label: 'Misure OK', searchable: false },
   { key: 'commissionsPaid', label: 'Provvigioni Pagate' },
-  { key: 'orderNumber', label: 'Nº Ordine', muted: true, filterable: false },
   { key: 'model', label: 'Modello', muted: true, filterable: false },
   { key: 'measurements', label: 'Misure', muted: true, filterable: false },
   { key: 'invoiceNumber', label: 'Nº Fattura', muted: true, filterable: false },
@@ -100,7 +101,6 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     filterable: false,
     render: previewText,
   },
-  { key: 'note', label: 'Note', muted: true, render: previewText },
   {
     key: 'privateNote',
     label: 'Note Private',
