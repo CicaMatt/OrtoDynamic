@@ -176,6 +176,14 @@ def _text(pdf_bytes):
     return PdfReader(BytesIO(pdf_bytes)).pages[0].extract_text()
 
 
+def _signature_draw_count(page):
+    signatures = [image for image in page.images if image.image.size == (69, 90)]
+    assert len(signatures) == 1
+    resource_name = signatures[0].name.removesuffix(".png")
+    content = page.get_contents().get_data().decode("latin1", errors="ignore")
+    return content.count(f"/{resource_name} Do")
+
+
 def test_render_produces_single_a4_pdf_with_content():
     pdf = render_scheda(document())
     assert pdf.startswith(b"%PDF")
@@ -206,14 +214,15 @@ def test_render_empty_items_shows_placeholder():
 def test_render_includes_conformity_footer():
     text = _text(render_scheda(document()))
     for value in ("certificazioni e normative vigenti", "Francesco Pepe",
-                  "all'albo N.48", "Timbro e firma"):
+                  "all'albo N.48", "Timbro e firma tecnico", "Timbro e firma"):
         assert value in text
 
 
 def test_render_embeds_technician_signature():
     pdf = render_scheda(document())
-    sizes = {image.image.size for image in PdfReader(BytesIO(pdf)).pages[0].images}
-    assert (69, 90) in sizes  # the facsimile signature lifted from the pre-printed sheet
+    page = PdfReader(BytesIO(pdf)).pages[0]
+    # The same facsimile signature resource is drawn twice: technician and generic.
+    assert _signature_draw_count(page) == 2
 
 
 def test_footer_moves_to_next_page_when_it_does_not_fit():
@@ -226,7 +235,8 @@ def test_footer_moves_to_next_page_when_it_does_not_fit():
     first, last = reader.pages[0].extract_text(), reader.pages[1].extract_text()
     assert "Timbro e firma" not in first
     assert "Ortodynamic srl" in last
-    for value in ("certificazioni e normative vigenti", "Francesco Pepe", "Timbro e firma"):
+    for value in ("certificazioni e normative vigenti", "Francesco Pepe",
+                  "Timbro e firma tecnico", "Timbro e firma"):
         assert value in last
-    # the facsimile signature travels with the block.
-    assert (69, 90) in {image.image.size for image in reader.pages[1].images}
+    # both facsimile signatures travel with the block.
+    assert _signature_draw_count(reader.pages[1]) == 2

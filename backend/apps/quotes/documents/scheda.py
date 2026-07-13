@@ -37,6 +37,7 @@ _VAT_RATE = 0.04
 # stamp-and-signature area with the technician's facsimile signature.
 _CONFORMITY_STATEMENT = "Prodotti corrispondenti alle certificazioni e normative vigenti."
 _TECNICO_LINE = "Tecnico ortopedico Francesco Pepe - Iscrizione all'albo N.48."
+_TECH_SIGNATURE_LABEL = "Timbro e firma tecnico"
 _SIGNATURE_LABEL = "Timbro e firma"
 
 # Facsimile of the technician's signature, lifted from the pre-printed sheet. The box
@@ -231,13 +232,22 @@ def _conformity_footer(pdf: FpdfCanvas) -> None:
     pdf.cell(0, _FOOTER_STATEMENT_MM, _TECNICO_LINE, 0, 1)
 
     pdf.ln(_FOOTER_INNER_GAP_MM)
+    _signature_area(pdf)
+
+
+def _signature_area(pdf: FpdfCanvas) -> None:
+    """Draw the technician and generic stamp/signature blocks side by side."""
+    label_y = pdf.get_y()
+    image_y = label_y + _FOOTER_LABEL_MM + _FOOTER_SIGNATURE_GAP_MM
+
     pdf.set_font("", 10)
+    pdf.text_cell(_CONTENT_LEFT_MM, label_y, 95.0, _FOOTER_LABEL_MM, _TECH_SIGNATURE_LABEL, "L")
     pdf.cell(0, _FOOTER_LABEL_MM, _SIGNATURE_LABEL, 0, 1, "R")
 
     if SIGNATURE_PATH.exists():
-        x = _RIGHT_MARGIN_MM - _SIGNATURE_W_MM
-        pdf.image(SIGNATURE_PATH, x, pdf.get_y() + _FOOTER_SIGNATURE_GAP_MM,
-                  _SIGNATURE_W_MM, _SIGNATURE_H_MM)
+        pdf.image(SIGNATURE_PATH, _CONTENT_LEFT_MM, image_y, _SIGNATURE_W_MM, _SIGNATURE_H_MM)
+        right_x = _RIGHT_MARGIN_MM - _SIGNATURE_W_MM
+        pdf.image(SIGNATURE_PATH, right_x, image_y, _SIGNATURE_W_MM, _SIGNATURE_H_MM)
         pdf.ln(_FOOTER_SIGNATURE_GAP_MM + _SIGNATURE_H_MM)
 
 
