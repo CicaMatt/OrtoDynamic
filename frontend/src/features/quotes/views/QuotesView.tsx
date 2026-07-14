@@ -19,6 +19,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     muted: true,
     renderCell: (quote) => <ReferenceName name={quote.clientName} id={quote.clientId} />,
   },
+  { key: 'clientCity', label: 'Città Cliente', muted: true },
   {
     key: 'diagnosis',
     label: 'Diagnosi Circostanziata',

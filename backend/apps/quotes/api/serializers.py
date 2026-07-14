@@ -36,6 +36,7 @@ class QuoteSerializer(NullToEmptyMixin):
     # view attaches in bulk (empty when the reference is unset or the row is gone).
     # The frontend shows these in place of the raw ids, revealing the id on hover.
     clientName = serializers.SerializerMethodField()
+    clientCity = serializers.SerializerMethodField()
     doctorName = serializers.SerializerMethodField()
 
     # Quote identity
@@ -75,6 +76,10 @@ class QuoteSerializer(NullToEmptyMixin):
 
     def get_clientName(self, quote):
         return person_display_name(getattr(quote, "client", None))
+
+    def get_clientCity(self, quote):
+        client = getattr(quote, "client", None)
+        return client.citta if client is not None else None
 
     def get_doctorName(self, quote):
         return person_display_name(getattr(quote, "doctor", None))

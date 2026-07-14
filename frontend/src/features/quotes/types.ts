@@ -11,6 +11,8 @@ export type Quote = {
   doctorId: string;
   /** Display names for the linked client/doctor, resolved by the API (read-only). */
   clientName: string;
+  /** The linked client's `citta`, resolved by the API (read-only). */
+  clientCity: string;
   doctorName: string;
 
   // Quote identity

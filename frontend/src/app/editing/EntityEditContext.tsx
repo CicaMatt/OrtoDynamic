@@ -208,7 +208,7 @@ function makeEmptyProduct(): Product {
 /** A blank quote used to seed the creation form (status is server-assigned). */
 function makeEmptyQuote(): Quote {
   return {
-    idQuote: '', clientId: '', doctorId: '', clientName: '', doctorName: '', quoteNumber: '', quoteType: '', status: '',
+    idQuote: '', clientId: '', doctorId: '', clientName: '', clientCity: '', doctorName: '', quoteNumber: '', quoteType: '', status: '',
     creationDate: '', quoteDate: '', total: '', entryBy: '', diagnosis: '',
     therapeuticProgram: '', detailedPrescription: '', authorizationNumber: '',
     acceptanceDate: '', authorizationReceiptDate: '', expiryDays: '', maxExpiry: '',
