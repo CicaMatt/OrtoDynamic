@@ -1,5 +1,6 @@
 """Quote business operations that go beyond plain field updates."""
 from django.db.models import Sum
+from django.db import transaction
 
 from apps.common.exceptions import ConflictError, ServiceError
 from apps.products.models import Product
@@ -99,6 +100,27 @@ def delete_quote_item(quote_item):
     quote_id = quote_item.id_preventivo
     quote_item.delete()
     recompute_quote_total(quote_id)
+
+
+def delete_quote_with_related(quote):
+    """
+    Delete a quote and the legacy rows that belong to it.
+
+    The database does not declare foreign keys for these unmanaged tables, so the
+    dependent rows must be removed explicitly: quote items plus any work order
+    created from this quote and that work order's items.
+    """
+    from apps.work_orders.models import WorkOrder, WorkOrderItem
+
+    with transaction.atomic():
+        work_order_ids = list(
+            WorkOrder.objects.filter(id_preventivo=quote.id).values_list("id", flat=True)
+        )
+        if work_order_ids:
+            WorkOrderItem.objects.filter(id_lavorazione__in=work_order_ids).delete()
+            WorkOrder.objects.filter(id__in=work_order_ids).delete()
+        QuoteItem.objects.filter(id_preventivo=quote.id).delete()
+        quote.delete()
 
 
 def change_quote_status(quote, target_status, *, note=None):

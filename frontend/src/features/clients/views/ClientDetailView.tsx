@@ -1,6 +1,8 @@
-import { fetchClient, fetchClientPrivacyForm } from '../api/clients';
+import { useState } from 'react';
+import { deleteClient, fetchClient, fetchClientPrivacyForm } from '../api/clients';
 import { fetchDoctor } from '../../doctors/api/doctors';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
+import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { ClientPageHeader } from '../components/ClientPageHeader';
 import { ClientDataSections } from '../components/ClientDataSections';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
@@ -17,6 +19,7 @@ const clientActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Cliente' },
   { id: 'quote', icon: 'request_quote', label: 'Inserisci Preventivo' },
   { id: 'privacy', icon: 'privacy_tip', label: 'Genera Modulo Privacy' },
+  { id: 'delete', icon: 'delete', label: 'Elimina Cliente', tone: 'danger' as const },
 ];
 
 export function ClientDetailView() {
@@ -35,6 +38,7 @@ export function ClientDetailView() {
   const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditing);
   const doctorFields = useClientDoctorAutocomplete(isEditing);
   const { generating, error: docError, clearError, open: openDocument } = useInlineDocument<'privacy'>();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const doctorId = data?.doctorId?.trim() ?? '';
   const { data: doctor } = useApiData(
     () => (doctorId ? fetchDoctor(doctorId) : Promise.resolve(null)),
@@ -75,47 +79,68 @@ export function ClientDetailView() {
             : undefined,
       };
     }
+    if (action.id === 'delete') {
+      return {
+        ...action,
+        onClick: !isEditing && !generating ? () => setDeleteDialogOpen(true) : undefined,
+      };
+    }
     return action;
   });
 
   return (
-    <EntityDetailLayout
-      header={
-        <ClientPageHeader
-          back={{ label: 'Torna indietro', onClick: () => goBack('clients') }}
-          crumbs={[
-            { label: 'Clienti', onClick: () => navigate('clients') },
-            { label: 'Dettaglio' },
-          ]}
-          client={data}
-        />
-      }
-      actionsTitle="Azioni cliente"
-      actions={actions}
-    >
-      {docError && (
-        <div
-          role="alert"
-          className="mb-[28px] flex items-start justify-between gap-3 rounded-[10px] border border-error bg-error/10 px-[20px] py-[14px]"
-        >
-          <span className="font-body-sm text-body-sm text-error">{docError}</span>
-          <button
-            type="button"
-            onClick={clearError}
-            aria-label="Chiudi"
-            className="text-error/70 hover:text-error"
+    <>
+      <EntityDetailLayout
+        header={
+          <ClientPageHeader
+            back={{ label: 'Torna indietro', onClick: () => goBack('clients') }}
+            crumbs={[
+              { label: 'Clienti', onClick: () => navigate('clients') },
+              { label: 'Dettaglio' },
+            ]}
+            client={data}
+          />
+        }
+        actionsTitle="Azioni cliente"
+        actions={actions}
+      >
+        {docError && (
+          <div
+            role="alert"
+            className="mb-[28px] flex items-start justify-between gap-3 rounded-[10px] border border-error bg-error/10 px-[20px] py-[14px]"
           >
-            <Icon name="close" className="text-[20px]" />
-          </button>
-        </div>
+            <span className="font-body-sm text-body-sm text-error">{docError}</span>
+            <button
+              type="button"
+              onClick={clearError}
+              aria-label="Chiudi"
+              className="text-error/70 hover:text-error"
+            >
+              <Icon name="close" className="text-[20px]" />
+            </button>
+          </div>
+        )}
+        <ClientDataSections
+          data={data}
+          editing={isEditing}
+          onChange={setClientField}
+          doctorName={doctorName}
+          autocompleteFields={{ ...municipalityFields, ...doctorFields }}
+        />
+      </EntityDetailLayout>
+
+      {deleteDialogOpen && (
+        <DeleteConfirmationDialog
+          title="Elimina Cliente"
+          message={`Confermi l'eliminazione del cliente ${data.surname} ${data.name}?`}
+          confirmLabel="Elimina Cliente"
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={async () => {
+            await deleteClient(data.idClient);
+            navigate('clients');
+          }}
+        />
       )}
-      <ClientDataSections
-        data={data}
-        editing={isEditing}
-        onChange={setClientField}
-        doctorName={doctorName}
-        autocompleteFields={{ ...municipalityFields, ...doctorFields }}
-      />
-    </EntityDetailLayout>
+    </>
   );
 }

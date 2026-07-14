@@ -38,6 +38,7 @@ class QuoteSerializer(NullToEmptyMixin):
     clientName = serializers.SerializerMethodField()
     clientCity = serializers.SerializerMethodField()
     doctorName = serializers.SerializerMethodField()
+    workOrderId = serializers.SerializerMethodField()
 
     # Quote identity
     quoteNumber = serializers.CharField(source="numero_preventivo")
@@ -83,6 +84,10 @@ class QuoteSerializer(NullToEmptyMixin):
 
     def get_doctorName(self, quote):
         return person_display_name(getattr(quote, "doctor", None))
+
+    def get_workOrderId(self, quote):
+        work_order = getattr(quote, "work_order", None)
+        return str(work_order.id) if work_order is not None else None
 
 
 class QuoteItemSerializer(NullToEmptyMixin):

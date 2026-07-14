@@ -14,6 +14,8 @@ export type Quote = {
   /** The linked client's `citta`, resolved by the API (read-only). */
   clientCity: string;
   doctorName: string;
+  /** Work order created from this quote, when present. */
+  workOrderId: string;
 
   // Quote identity
   quoteNumber: string;

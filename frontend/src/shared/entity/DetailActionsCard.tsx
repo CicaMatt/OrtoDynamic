@@ -5,6 +5,8 @@ export type DetailAction = {
   icon: string;
   label: string;
   active?: boolean;
+  disabled?: boolean;
+  tone?: 'default' | 'danger';
   onClick?: () => void;
 };
 
@@ -19,11 +21,19 @@ export function DetailActionsCard({ title, actions }: { title: string; actions: 
             key={action.id}
             type="button"
             onClick={action.onClick}
-            className={`flex h-[46px] w-full items-center gap-[18px] rounded-[6px] text-left font-body-md text-body-md transition-colors ${
-              action.active ? 'bg-secondary/10 font-semibold text-secondary' : 'text-on-surface hover:bg-surface-container-low'
+            disabled={action.disabled || !action.onClick}
+            className={`flex h-[46px] w-full items-center gap-[18px] rounded-[6px] text-left font-body-md text-body-md transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              action.active
+                ? 'bg-secondary/10 font-semibold text-secondary'
+                : action.tone === 'danger'
+                  ? 'text-error hover:bg-error/10'
+                  : 'text-on-surface hover:bg-surface-container-low'
             }`}
           >
-            <Icon name={action.icon} className="text-[24px] text-secondary" />
+            <Icon
+              name={action.icon}
+              className={`text-[24px] ${action.tone === 'danger' ? 'text-error' : 'text-secondary'}`}
+            />
             {action.label}
           </button>
         ))}

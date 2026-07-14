@@ -29,8 +29,9 @@ from apps.quotes.documents import (
 )
 from apps.quotes.models import Quote, QuoteItem
 from apps.quotes.selectors import ddt_item_rows, scheda_item_rows
-from apps.quotes.services import change_quote_status, delete_quote_item
+from apps.quotes.services import change_quote_status, delete_quote_item, delete_quote_with_related
 from apps.statuses.services import allowed_target_states
+from apps.work_orders.models import WorkOrder
 from .serializers import (
     QuoteCreateSerializer,
     QuoteItemCreateSerializer,
@@ -54,13 +55,30 @@ def attach_people(quotes):
     return quotes
 
 
+def attach_work_orders(quotes):
+    """
+    Attach the work order created from each quote as `quote.work_order`, if any.
+    The relationship is stored as a plain integer column on `lavorazioni`, so it
+    is resolved explicitly instead of through a Django FK.
+    """
+    quotes = list(quotes)
+    quote_ids = [quote.id for quote in quotes]
+    work_orders = WorkOrder.objects.filter(id_preventivo__in=quote_ids).order_by("id")
+    by_quote = {}
+    for work_order in work_orders:
+        by_quote.setdefault(work_order.id_preventivo, work_order)
+    for quote in quotes:
+        quote.work_order = by_quote.get(quote.id)
+    return quotes
+
+
 class QuoteListView(UnpaginatedListCreateAPIView):
     serializer_class = QuoteSerializer
     create_serializer_class = QuoteCreateSerializer
     queryset = Quote.objects.order_by("-id")
 
     def get_queryset(self):
-        return attach_people(super().get_queryset())
+        return attach_work_orders(attach_people(super().get_queryset()))
 
 
 class QuoteDetailView(ReadUpdateDetailAPIView):
@@ -71,8 +89,12 @@ class QuoteDetailView(ReadUpdateDetailAPIView):
     def retrieve(self, request, *args, **kwargs):
         quote = self.get_object()
         attach_people([quote])
+        attach_work_orders([quote])
         serializer = self.get_serializer(quote)
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        delete_quote_with_related(instance)
 
 
 class QuoteItemListView(UnpaginatedListCreateAPIView):

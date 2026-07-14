@@ -38,7 +38,7 @@ class ReadDetailAPIView(generics.RetrieveAPIView):
     pass
 
 
-class ReadUpdateDetailAPIView(generics.RetrieveUpdateAPIView):
+class ReadUpdateDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     write_serializer_class = None
 
     def get_serializer_class(self):

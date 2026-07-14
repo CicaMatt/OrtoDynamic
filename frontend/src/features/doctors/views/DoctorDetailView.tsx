@@ -1,4 +1,6 @@
-import { fetchDoctor } from '../api/doctors';
+import { useState } from 'react';
+import { deleteDoctor, fetchDoctor } from '../api/doctors';
+import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
@@ -11,11 +13,13 @@ import { doctorFields } from '../components/doctorFields';
 
 const doctorActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Medico' },
+  { id: 'delete', icon: 'delete', label: 'Elimina Medico', tone: 'danger' as const },
 ];
 
 export function DoctorDetailView() {
   const { selectedDoctorId, navigate, goBack } = useNavigation();
   const { doctorDraft, startDoctorEdit, seedDoctor, setDoctorField } = useEntityEdit();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({
     type: 'doctor',
@@ -42,47 +46,70 @@ export function DoctorDetailView() {
   }
 
   const title = `${data.name} ${data.surname}`.trim() || `Medico ${data.idDoctor}`;
-  const actions = doctorActions.map((action) => ({
-    ...action,
-    active: isEditing,
-    onClick: !isEditing ? () => startDoctorEdit(data.idDoctor) : undefined,
-  }));
+  const actions = doctorActions.map((action) => {
+    if (action.id === 'edit') {
+      return {
+        ...action,
+        active: isEditing,
+        onClick: !isEditing ? () => startDoctorEdit(data.idDoctor) : undefined,
+      };
+    }
+    return {
+      ...action,
+      onClick: !isEditing ? () => setDeleteDialogOpen(true) : undefined,
+    };
+  });
 
   return (
-    <EntityDetailLayout
-      header={
-        <EntityPageHeader
-          back={{ label: 'Torna indietro', onClick: () => goBack('doctors') }}
-          crumbs={[
-            { label: 'Medici', onClick: () => navigate('doctors') },
-            { label: 'Dettaglio' },
-          ]}
-          title={title}
-          subtitle={
-            <>
-              ID Medico: <span className="font-semibold text-on-surface">{data.idDoctor}</span>
-            </>
-          }
+    <>
+      <EntityDetailLayout
+        header={
+          <EntityPageHeader
+            back={{ label: 'Torna indietro', onClick: () => goBack('doctors') }}
+            crumbs={[
+              { label: 'Medici', onClick: () => navigate('doctors') },
+              { label: 'Dettaglio' },
+            ]}
+            title={title}
+            subtitle={
+              <>
+                ID Medico: <span className="font-semibold text-on-surface">{data.idDoctor}</span>
+              </>
+            }
+          />
+        }
+        actionsTitle="Azioni medico"
+        actions={actions}
+      >
+        <FieldSectionCard
+          icon="medical_services"
+          title="Dati Medico"
+          data={data}
+          fields={doctorFields}
+          editing={isEditing}
+          onChange={setDoctorField}
         />
-      }
-      actionsTitle="Azioni medico"
-      actions={actions}
-    >
-      <FieldSectionCard
-        icon="medical_services"
-        title="Dati Medico"
-        data={data}
-        fields={doctorFields}
-        editing={isEditing}
-        onChange={setDoctorField}
-      />
 
-      <NoteCard
-        value={data.note}
-        editing={isEditing}
-        onChange={(value) => setDoctorField('note', value)}
-        className="mt-[28px]"
-      />
-    </EntityDetailLayout>
+        <NoteCard
+          value={data.note}
+          editing={isEditing}
+          onChange={(value) => setDoctorField('note', value)}
+          className="mt-[28px]"
+        />
+      </EntityDetailLayout>
+
+      {deleteDialogOpen && (
+        <DeleteConfirmationDialog
+          title="Elimina Medico"
+          message={`Confermi l'eliminazione del medico ${title}?`}
+          confirmLabel="Elimina Medico"
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={async () => {
+            await deleteDoctor(data.idDoctor);
+            navigate('doctors');
+          }}
+        />
+      )}
+    </>
   );
 }

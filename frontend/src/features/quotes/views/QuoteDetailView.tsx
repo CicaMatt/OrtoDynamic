@@ -3,6 +3,7 @@ import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
+import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import {
   FieldSectionList,
@@ -15,7 +16,13 @@ import { FieldValue } from '../../../shared/ui/FieldValue';
 import { Icon } from '../../../shared/ui/Icon';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
-import { fetchQuote, fetchQuoteDdt, fetchQuoteDeliveryForm, fetchQuoteScheda } from '../api/quotes';
+import {
+  deleteQuote,
+  fetchQuote,
+  fetchQuoteDdt,
+  fetchQuoteDeliveryForm,
+  fetchQuoteScheda,
+} from '../api/quotes';
 import { useClientAutocomplete } from '../../clients/components/useClientAutocomplete';
 import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocomplete';
 import type { Quote } from '../types';
@@ -119,6 +126,7 @@ export function QuoteDetailView() {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [ddtOptionsOpen, setDdtOptionsOpen] = useState(false);
   const [deliveryFormOptionsOpen, setDeliveryFormOptionsOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { generating, error: docError, clearError, open: openDocument } =
     useInlineDocument<'consegna' | 'ddt' | 'scheda'>();
   const clientAutocomplete = useClientAutocomplete(isEditing);
@@ -175,6 +183,13 @@ export function QuoteDetailView() {
         !isEditing && !generating
           ? () => openDocument('scheda', () => fetchQuoteScheda(data.idQuote))
           : undefined,
+    },
+    {
+      id: 'delete',
+      icon: 'delete',
+      label: 'Elimina Preventivo',
+      tone: 'danger' as const,
+      onClick: !isEditing && !generating ? () => setDeleteDialogOpen(true) : undefined,
     },
   ];
 
@@ -258,6 +273,26 @@ export function QuoteDetailView() {
           onGenerate={(deliveryDate) => {
             setDeliveryFormOptionsOpen(false);
             openDocument('consegna', () => fetchQuoteDeliveryForm(data.idQuote, deliveryDate));
+          }}
+        />
+      )}
+      {deleteDialogOpen && (
+        <DeleteConfirmationDialog
+          title="Elimina Preventivo"
+          message={`Confermi l'eliminazione del preventivo ${data.quoteNumber || data.idQuote}?`}
+          warnings={[
+            'Saranno eliminati anche gli articoli associati al preventivo.',
+            ...(data.workOrderId
+              ? [
+                  `Sarà eliminata anche la Lavorazione associata ${data.workOrderId}, con i suoi articoli.`,
+                ]
+              : []),
+          ]}
+          confirmLabel="Elimina Preventivo"
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={async () => {
+            await deleteQuote(data.idQuote);
+            navigate('quotes');
           }}
         />
       )}

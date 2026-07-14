@@ -54,6 +54,10 @@ export function updateQuote(id: string, changes: QuoteUpdate): Promise<unknown> 
   return apiPatch(`/quotes/${id}/`, changes);
 }
 
+export function deleteQuote(id: string): Promise<void> {
+  return apiDelete(`/quotes/${id}/`);
+}
+
 /** Create a new quote (optionally with its initial line items); the API returns the record. */
 export function createQuote(values: QuoteCreatePayload): Promise<Quote> {
   return apiPost<Quote>('/quotes/', values);

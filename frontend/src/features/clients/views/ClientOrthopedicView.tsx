@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { fetchClientOrthopedic } from '../api/clients';
+import { useEffect, useState } from 'react';
+import { deleteClient, fetchClientOrthopedic } from '../api/clients';
 import { ClientPageHeader } from '../components/ClientPageHeader';
+import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import type { FieldConfig } from '../../../shared/entity/DataCard';
@@ -63,6 +64,7 @@ export function ClientOrthopedicView() {
     seedClientOrthopedic,
     setClientOrthopedicField,
   } = useEntityEdit();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const isEditingClient = editing && editTarget?.type === 'client' && editTarget.id === selectedClientCode;
 
   const { data: fetched, loading, error } = useApiData(
@@ -93,62 +95,88 @@ export function ClientOrthopedicView() {
   }
 
   const data = isEditingClient && clientOrthopedicDraft ? clientOrthopedicDraft : fetched;
+  const deleteActions = [
+    {
+      id: 'delete',
+      icon: 'delete',
+      label: 'Elimina Cliente',
+      tone: 'danger' as const,
+      onClick: !isEditingClient ? () => setDeleteDialogOpen(true) : undefined,
+    },
+  ];
 
   return (
-    <EntityDetailLayout
-      header={
-        <ClientPageHeader
-          back={{ label: 'Torna al dettaglio', onClick: () => navigate('client-detail') }}
-          crumbs={[
-            { label: 'Clienti', onClick: () => navigate('clients') },
-            { label: 'Dettaglio', onClick: () => navigate('client-detail') },
-            { label: 'Dati Ortopedici' },
-          ]}
-          client={data}
-        />
-      }
-    >
-      <div className="space-y-[28px]">
-        <FieldSectionCard
-          icon="footprint"
-          title="Calzatura e Plantare"
-          data={data}
-          fields={footwearFields}
-          editing={isEditingClient}
-          onChange={setClientOrthopedicField}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[28px]">
+    <>
+      <EntityDetailLayout
+        header={
+          <ClientPageHeader
+            back={{ label: 'Torna al dettaglio', onClick: () => navigate('client-detail') }}
+            crumbs={[
+              { label: 'Clienti', onClick: () => navigate('clients') },
+              { label: 'Dettaglio', onClick: () => navigate('client-detail') },
+              { label: 'Dati Ortopedici' },
+            ]}
+            client={data}
+          />
+        }
+        actionsTitle="Azioni cliente"
+        actions={deleteActions}
+      >
+        <div className="space-y-[28px]">
           <FieldSectionCard
-            icon="straighten"
-            title="Tutore e Armatura"
+            icon="footprint"
+            title="Calzatura e Plantare"
             data={data}
-            fields={braceFields}
-            columns={2}
+            fields={footwearFields}
             editing={isEditingClient}
             onChange={setClientOrthopedicField}
           />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[28px]">
+            <FieldSectionCard
+              icon="straighten"
+              title="Tutore e Armatura"
+              data={data}
+              fields={braceFields}
+              columns={2}
+              editing={isEditingClient}
+              onChange={setClientOrthopedicField}
+            />
+            <FieldSectionCard
+              icon="accessibility_new"
+              title="Misure Corporee"
+              data={data}
+              fields={bodyFields}
+              columns={2}
+              editing={isEditingClient}
+              onChange={setClientOrthopedicField}
+            />
+          </div>
+
           <FieldSectionCard
-            icon="accessibility_new"
-            title="Misure Corporee"
+            icon="sticky_note_2"
+            title="Note"
             data={data}
-            fields={bodyFields}
-            columns={2}
+            fields={noteFields}
+            columns={1}
             editing={isEditingClient}
             onChange={setClientOrthopedicField}
           />
         </div>
+      </EntityDetailLayout>
 
-        <FieldSectionCard
-          icon="sticky_note_2"
-          title="Note"
-          data={data}
-          fields={noteFields}
-          columns={1}
-          editing={isEditingClient}
-          onChange={setClientOrthopedicField}
+      {deleteDialogOpen && (
+        <DeleteConfirmationDialog
+          title="Elimina Cliente"
+          message={`Confermi l'eliminazione del cliente ${data.surname} ${data.name}?`}
+          confirmLabel="Elimina Cliente"
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={async () => {
+            await deleteClient(data.idClient);
+            navigate('clients');
+          }}
         />
-      </div>
-    </EntityDetailLayout>
+      )}
+    </>
   );
 }

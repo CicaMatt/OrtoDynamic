@@ -1,5 +1,5 @@
 import type { Client, ClientListItem, ClientOrthopedic } from '../types';
-import { apiGet, apiGetBlob, apiPatch, apiPost } from '../../../shared/api/http';
+import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '../../../shared/api/http';
 
 /** Editable client fields, keyed as the API expects (camelCase). */
 export type ClientUpdate = Record<string, string | number | null>;
@@ -22,6 +22,10 @@ export function fetchClientOrthopedic(code: string): Promise<ClientOrthopedic> {
 /** Persist edits to a client (anagrafica + orthopedic fields) in one PATCH. */
 export function updateClient(code: string, changes: ClientUpdate): Promise<unknown> {
   return apiPatch(`/clients/${code}/`, changes);
+}
+
+export function deleteClient(code: string): Promise<void> {
+  return apiDelete(`/clients/${code}/`);
 }
 
 /** Create a new client; the API returns the created record (with its new code). */

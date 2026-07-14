@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from '../../../shared/api/http';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../../../shared/api/http';
 import type { HealthCompany, HealthCompanyListItem } from '../types';
 
 export type HealthCompanyUpdate = Record<string, string | number | null>;
@@ -13,6 +13,10 @@ export function fetchHealthCompany(id: string): Promise<HealthCompany> {
 
 export function updateHealthCompany(id: string, changes: HealthCompanyUpdate): Promise<unknown> {
   return apiPatch(`/health-companies/${id}/`, changes);
+}
+
+export function deleteHealthCompany(id: string): Promise<void> {
+  return apiDelete(`/health-companies/${id}/`);
 }
 
 /** Create a new health company; the API returns the created record (with its new id). */

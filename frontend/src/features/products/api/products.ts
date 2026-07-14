@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from '../../../shared/api/http';
+import { apiDelete, apiGet, apiPatch, apiPost } from '../../../shared/api/http';
 import type { Product } from '../types';
 
 export type ProductUpdate = Record<string, string | number | null>;
@@ -18,6 +18,10 @@ export function fetchProduct(id: string): Promise<Product> {
 
 export function updateProduct(id: string, changes: ProductUpdate): Promise<unknown> {
   return apiPatch(`/products/${id}/`, changes);
+}
+
+export function deleteProduct(id: string): Promise<void> {
+  return apiDelete(`/products/${id}/`);
 }
 
 /** Create a new product; the API returns the created record (with its new id). */

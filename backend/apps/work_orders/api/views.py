@@ -17,6 +17,7 @@ from apps.products.models import Product
 from apps.quotes.documents import collaudi_filename, prepare_collaudi, render_collaudi
 from apps.quotes.models import Quote, QuoteItem
 from apps.work_orders.models import PeriodicCheck, WorkOrder, WorkOrderItem
+from apps.work_orders.services import delete_work_order_with_related
 from .serializers import (
     WorkOrderItemSerializer,
     WorkOrderItemUpdateSerializer,
@@ -52,6 +53,9 @@ class WorkOrderDetailView(ReadUpdateDetailAPIView):
         attach_client([work_order])
         serializer = self.get_serializer(work_order)
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        delete_work_order_with_related(instance)
 
 
 class WorkOrderItemListView(UnpaginatedListAPIView):

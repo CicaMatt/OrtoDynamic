@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import {
@@ -13,7 +14,7 @@ import { useInlineDocument } from '../../../shared/files/useInlineDocument';
 import { Icon } from '../../../shared/ui/Icon';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
-import { fetchWorkOrder, fetchWorkOrderCollaudi } from '../api/workOrders';
+import { deleteWorkOrder, fetchWorkOrder, fetchWorkOrderCollaudi } from '../api/workOrders';
 import type { WorkOrder } from '../types';
 import { WorkOrderItemsCard } from './WorkOrderItemsCard';
 import { WorkOrderStatusDialog } from './WorkOrderStatusDialog';
@@ -103,6 +104,7 @@ export function WorkOrderDetailView() {
   });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { generating, error: docError, clearError, open: openDocument } = useInlineDocument<'collaudi'>();
 
   if (loading) {
@@ -147,6 +149,13 @@ export function WorkOrderDetailView() {
         !isEditing && !generating
           ? () => openDocument('collaudi', () => fetchWorkOrderCollaudi(data.idWorkOrder))
           : undefined,
+    },
+    {
+      id: 'delete',
+      icon: 'delete',
+      label: 'Elimina Lavorazione',
+      tone: 'danger' as const,
+      onClick: !isEditing && !generating ? () => setDeleteDialogOpen(true) : undefined,
     },
   ];
 
@@ -210,6 +219,24 @@ export function WorkOrderDetailView() {
           currentStatus={data.status}
           onClose={() => setStatusDialogOpen(false)}
           onChanged={reload}
+        />
+      )}
+      {deleteDialogOpen && (
+        <DeleteConfirmationDialog
+          title="Elimina Lavorazione"
+          message={`Confermi l'eliminazione della lavorazione ${data.idWorkOrder}?`}
+          warnings={[
+            'Saranno eliminati anche gli articoli associati alla lavorazione.',
+            ...(data.quoteId
+              ? [`Sarà eliminato anche il Preventivo associato ${data.quoteId}, con i suoi articoli.`]
+              : []),
+          ]}
+          confirmLabel="Elimina Lavorazione"
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={async () => {
+            await deleteWorkOrder(data.idWorkOrder);
+            navigate('work-orders');
+          }}
         />
       )}
     </>

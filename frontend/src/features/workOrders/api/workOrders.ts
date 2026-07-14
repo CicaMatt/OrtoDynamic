@@ -1,4 +1,4 @@
-import { apiGet, apiGetBlob, apiPatch } from '../../../shared/api/http';
+import { apiDelete, apiGet, apiGetBlob, apiPatch } from '../../../shared/api/http';
 import type { WorkOrder, WorkOrderItem } from '../types';
 
 export type WorkOrderUpdate = Record<string, string | number | null>;
@@ -26,6 +26,10 @@ export function updateWorkOrderItem(
 
 export function updateWorkOrder(id: string, changes: WorkOrderUpdate): Promise<unknown> {
   return apiPatch(`/work-orders/${id}/`, changes);
+}
+
+export function deleteWorkOrder(id: string): Promise<void> {
+  return apiDelete(`/work-orders/${id}/`);
 }
 
 /** Set a work order's status (free choice among the fixed states). */
