@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useRef, type ReactNode } from 'react';
 import { FieldValue } from '../ui/FieldValue';
 import { Pagination } from '../ui/Pagination';
 import { ViewToolbar } from '../ui/ViewToolbar';
@@ -6,6 +6,7 @@ import { useApiData } from '../hooks/useApiData';
 import { usePagination } from '../hooks/usePagination';
 import { useTableSearchFilter, type SearchFilterColumn } from '../hooks/useTableSearchFilter';
 import { ScrollableTable } from './ScrollableTable';
+import { TableScrollSlider } from './TableScrollSlider';
 import { TableMessageRow } from './TableMessageRow';
 
 export type EntityColumn<T> = {
@@ -47,6 +48,7 @@ export function EntityListView<T extends object>({
 }: EntityListViewProps<T>) {
   const { data, loading, error } = useApiData(() => fetchItems(), []);
   const items = useMemo(() => data ?? [], [data]);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
 
   // Adapt the list's column config to the search/filter hook's accessor shape,
   // so a single implementation drives search and filtering across every table.
@@ -78,7 +80,10 @@ export function EntityListView<T extends object>({
   return (
     <div>
       <header className="flex flex-col items-start gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between lg:gap-0">
-        <h2 className="font-headline-lg text-headline-lg font-bold text-primary">{title}</h2>
+        <div className="flex flex-wrap items-center gap-4">
+          <h2 className="font-headline-lg text-headline-lg font-bold text-primary">{title}</h2>
+          <TableScrollSlider scrollRef={tableScrollRef} />
+        </div>
         <ViewToolbar
           searchValue={searchValue}
           onSearchChange={setSearchValue}
@@ -90,7 +95,7 @@ export function EntityListView<T extends object>({
         />
       </header>
 
-      <ScrollableTable>
+      <ScrollableTable scrollRef={tableScrollRef}>
         <table className="w-full text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>

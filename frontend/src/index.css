@@ -5,3 +5,13 @@
 body {
   font-family: 'Inter', system-ui, sans-serif;
 }
+
+@layer components {
+  .table-scroll-slider { --slider: theme('colors.secondary'); --track: theme('colors.outline-variant'); height: 8px; appearance: none; background: transparent; }
+  .table-scroll-slider:focus { outline: 0; }
+  .table-scroll-slider::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: var(--track); }
+  .table-scroll-slider::-moz-range-track { height: 4px; border-radius: 999px; background: var(--track); }
+  .table-scroll-slider::-webkit-slider-thumb, .table-scroll-slider:active::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 999px; background: var(--slider); }
+  .table-scroll-slider::-moz-range-progress, .table-scroll-slider::-moz-range-thumb, .table-scroll-slider:active::-moz-range-thumb { background: var(--slider); }
+  .table-scroll-slider::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 999px; }
+}

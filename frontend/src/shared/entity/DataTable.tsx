@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import { FieldValue } from '../ui/FieldValue';
 import { ScrollableTable } from './ScrollableTable';
 import { TableMessageRow } from './TableMessageRow';
@@ -17,6 +18,7 @@ type DataTableProps<T> = {
   loadingLabel: string;
   emptyLabel: string;
   rowKey: (row: T) => string;
+  scrollRef?: RefObject<HTMLDivElement>;
 };
 
 /**
@@ -31,9 +33,10 @@ export function DataTable<T>({
   loadingLabel,
   emptyLabel,
   rowKey,
+  scrollRef,
 }: DataTableProps<T>) {
   return (
-    <ScrollableTable>
+    <ScrollableTable scrollRef={scrollRef}>
       <table className="w-full text-left font-body-md text-body-md">
         <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
           <tr>

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode, type RefObject } from 'react';
 import { useDragScroll } from '../hooks/useDragScroll';
 
 const DEFAULT_SURFACE_CLASS =
@@ -18,11 +18,13 @@ const DEFAULT_SURFACE_CLASS =
 export function ScrollableTable({
   children,
   surfaceClassName = DEFAULT_SURFACE_CLASS,
+  scrollRef: externalScrollRef,
 }: {
   children: ReactNode;
   surfaceClassName?: string;
+  scrollRef?: RefObject<HTMLDivElement>;
 }) {
-  const scrollRef = useDragScroll<HTMLDivElement>();
+  const scrollRef = useDragScroll<HTMLDivElement>(externalScrollRef);
   const [edges, setEdges] = useState({ left: false, right: false });
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 // Horizontal travel (px) a press must exceed before it counts as a pan rather
 // than a click — small enough to feel immediate, large enough to absorb jitter.
@@ -14,8 +14,9 @@ const DRAG_THRESHOLD = 6;
  * activate. A press that stays put remains an ordinary click. A "grab" cursor is
  * shown only while the content actually overflows, so it never lies.
  */
-export function useDragScroll<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
+export function useDragScroll<T extends HTMLElement>(externalRef?: RefObject<T>) {
+  const ownRef = useRef<T>(null);
+  const ref = externalRef ?? ownRef;
 
   useEffect(() => {
     const el = ref.current;
