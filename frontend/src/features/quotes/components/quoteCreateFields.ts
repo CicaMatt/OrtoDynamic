@@ -79,10 +79,13 @@ const noteFields: QuoteField[] = [
  * other reference fields (Medico, Inserito Da) are rendered separately, so they
  * are not part of these sections.
  */
-export const quoteCreateSections: FieldSectionConfig<Quote>[] = [
+export const quoteCreateSectionsBeforeNotes: FieldSectionConfig<Quote>[] = [
   { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields, format: formatIdentity },
   { icon: 'clinical_notes', title: 'Dati Clinici', fields: clinicalFields, columns: 1 },
   { icon: 'fact_check', title: 'Autorizzazione e Scadenze', fields: authorizationFields },
   { icon: 'receipt_long', title: 'Fornitura e Fatturazione', fields: supplyFields },
+];
+
+export const quoteCreateNoteSections: FieldSectionConfig<Quote>[] = [
   { icon: 'sticky_note_2', title: 'Note', fields: noteFields, columns: 1 },
 ];

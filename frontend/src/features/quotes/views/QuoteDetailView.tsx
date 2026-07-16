@@ -101,12 +101,15 @@ const noteFields: QuoteField[] = [
   { label: 'Note Finali', key: 'finalNote', type: 'textarea' },
 ];
 
-const quoteSections: FieldSectionConfig<Quote>[] = [
+const quoteSectionsBeforeNotes: FieldSectionConfig<Quote>[] = [
   { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields },
   { icon: 'group', title: 'Riferimenti', fields: referenceFields },
   { icon: 'clinical_notes', title: 'Dati Clinici', fields: clinicalFields, columns: 1 },
   { icon: 'fact_check', title: 'Autorizzazione e Scadenze', fields: authorizationFields },
   { icon: 'receipt_long', title: 'Fornitura e Fatturazione', fields: supplyFields },
+];
+
+const quoteNoteSections: FieldSectionConfig<Quote>[] = [
   { icon: 'sticky_note_2', title: 'Note', fields: noteFields, columns: 1 },
 ];
 
@@ -239,12 +242,18 @@ export function QuoteDetailView() {
           )}
           <FieldSectionList
             data={data}
-            sections={quoteSections}
+            sections={quoteSectionsBeforeNotes}
             editing={isEditing}
             onChange={setQuoteField}
             autocompleteFields={{ clientId: clientAutocomplete, doctorId: doctorAutocomplete }}
           />
           <QuoteItemsCard quoteId={data.idQuote} onChanged={reload} />
+          <FieldSectionList
+            data={data}
+            sections={quoteNoteSections}
+            editing={isEditing}
+            onChange={setQuoteField}
+          />
         </div>
       </EntityDetailLayout>
 

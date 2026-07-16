@@ -27,19 +27,19 @@ export function EditActionBar() {
   const saveLabel = saving ? 'Salvataggio…' : creating ? 'Crea' : 'Salva';
 
   return (
-    <div className="fixed bottom-[24px] right-[32px] z-50 flex items-center gap-[14px] rounded-[10px] border border-surface-variant bg-white px-[18px] py-[14px] shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+    <div className="fixed bottom-[24px] right-[32px] z-50 flex flex-col items-stretch gap-[10px] rounded-[10px] border border-surface-variant bg-white px-[18px] py-[14px] shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
       {saveError && <span className="max-w-[260px] font-body-sm text-body-sm text-error">{saveError}</span>}
       <button
         onClick={handleCancel}
         disabled={saving}
-        className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+        className="h-[40px] min-w-[120px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
       >
         Annulla
       </button>
       <button
         onClick={handleSave}
         disabled={saving}
-        className="h-[40px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
+        className="h-[40px] min-w-[120px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
       >
         {saveLabel}
       </button>

@@ -6,7 +6,11 @@ import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader'
 import { DataCard, InfoBlock } from '../../../shared/entity/DataCard';
 import { FieldSectionList } from '../../../shared/entity/FieldSectionCard';
 import { Autocomplete } from '../../../shared/ui/Autocomplete';
-import { QUOTE_CREATE_REQUIRED, quoteCreateSections } from '../components/quoteCreateFields';
+import {
+  QUOTE_CREATE_REQUIRED,
+  quoteCreateNoteSections,
+  quoteCreateSectionsBeforeNotes,
+} from '../components/quoteCreateFields';
 import { draftItemsTotal } from '../components/quoteItemMath';
 import { useClientAutocomplete } from '../../clients/components/useClientAutocomplete';
 import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocomplete';
@@ -96,13 +100,21 @@ export function QuoteCreateView() {
 
         <FieldSectionList
           data={quoteWithTotal}
-          sections={quoteCreateSections}
+          sections={quoteCreateSectionsBeforeNotes}
           editing
           onChange={setQuoteField}
           invalidKeys={invalidKeys}
         />
 
         <QuoteItemsDraftCard />
+
+        <FieldSectionList
+          data={quoteWithTotal}
+          sections={quoteCreateNoteSections}
+          editing
+          onChange={setQuoteField}
+          invalidKeys={invalidKeys}
+        />
       </div>
     </EntityDetailLayout>
   );
