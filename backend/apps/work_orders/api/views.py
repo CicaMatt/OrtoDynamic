@@ -35,12 +35,24 @@ def attach_client(work_orders):
     return attach_related(work_orders, id_attr="id_cliente", attr="client", model=Client)
 
 
+def attach_quote(work_orders):
+    """
+    Attach each work order's referenced quote as `work_order.quote`, so
+    `WorkOrderSerializer` can render the quote status without a per-row lookup.
+    """
+    return attach_related(work_orders, id_attr="id_preventivo", attr="quote", model=Quote)
+
+
+def attach_work_order_read_relations(work_orders):
+    return attach_quote(attach_client(work_orders))
+
+
 class WorkOrderListView(UnpaginatedListAPIView):
     serializer_class = WorkOrderSerializer
     queryset = WorkOrder.objects.order_by("-id")
 
     def get_queryset(self):
-        return attach_client(super().get_queryset())
+        return attach_work_order_read_relations(super().get_queryset())
 
 
 class WorkOrderDetailView(ReadUpdateDetailAPIView):
@@ -50,7 +62,7 @@ class WorkOrderDetailView(ReadUpdateDetailAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         work_order = self.get_object()
-        attach_client([work_order])
+        attach_work_order_read_relations([work_order])
         serializer = self.get_serializer(work_order)
         return Response(serializer.data)
 
@@ -99,9 +111,9 @@ class WorkOrderStatusUpdateView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         # Attach the client to the saved instance so the response (rendered by
-        # WorkOrderSerializer) carries the client's name like every other read.
+        # WorkOrderSerializer) carries related display fields like every other read.
         work_order = serializer.save()
-        attach_client([work_order])
+        attach_work_order_read_relations([work_order])
 
 
 class WorkOrderItemUpdateView(generics.UpdateAPIView):

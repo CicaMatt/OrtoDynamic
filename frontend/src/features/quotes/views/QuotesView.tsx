@@ -12,14 +12,29 @@ import type { Quote } from '../types';
  */
 const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   { key: 'idQuote', label: 'ID Preventivo', primary: true, filterable: false },
-  { key: 'quoteType', label: 'Tipologia', searchable: false },
   {
     key: 'clientName',
     label: 'Cliente',
     muted: true,
     renderCell: (quote) => <ReferenceName name={quote.clientName} id={quote.clientId} />,
   },
-  { key: 'clientCity', label: 'Città Cliente', muted: true },
+  {
+    key: 'creationDate',
+    label: 'Data Creazione',
+    muted: true,
+    searchable: false,
+    filterable: false,
+    render: formatBirthDate,
+  },
+  { key: 'status', label: 'Stato', searchable: false },
+  {
+    key: 'quoteDate',
+    label: 'Data Preventivo',
+    muted: true,
+    searchable: false,
+    filterable: false,
+    render: formatBirthDate,
+  },
   {
     key: 'diagnosis',
     label: 'Diagnosi Circostanziata',
@@ -37,22 +52,6 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     render: previewText,
   },
   {
-    key: 'creationDate',
-    label: 'Data Creazione',
-    muted: true,
-    searchable: false,
-    filterable: false,
-    render: formatBirthDate,
-  },
-  {
-    key: 'quoteDate',
-    label: 'Data Preventivo',
-    muted: true,
-    searchable: false,
-    filterable: false,
-    render: formatBirthDate,
-  },
-  {
     key: 'acceptanceDate',
     label: 'Data Accettazione',
     muted: true,
@@ -60,7 +59,9 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     filterable: false,
     render: formatBirthDate,
   },
-  { key: 'orderNumber', label: 'Nº Ordine', muted: true, filterable: false },
+  { key: 'orderNumber', label: 'N. Ordine', muted: true, filterable: false },
+  { key: 'quoteType', label: 'Tipologia', searchable: false },
+  { key: 'clientCity', label: 'Città Cliente', muted: true },
   {
     key: 'maxExpiry',
     label: 'Data Massima Scadenza',
@@ -70,7 +71,6 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     render: formatBirthDate,
   },
   { key: 'note', label: 'Note', muted: true, render: previewText },
-  { key: 'status', label: 'Stato', searchable: false },
   {
     key: 'doctorName',
     label: 'Medico',

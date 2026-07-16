@@ -7,14 +7,13 @@ import type { WorkOrder } from '../types';
 
 /**
  * Every column of `lavorazioni` is shown. The bounded categorical columns
- * (status, trial/check, technical service, complaint, device, warranty,
- * technician signature) are exact-pick filters excluded from free-text search
+ * (work-order status, quote status, trial/check, technical service, complaint,
+ * device, warranty, technician signature) are exact-pick filters excluded from free-text search
  * (`searchable: false`); dates render in Italian and are not searched; the long
  * free-text columns are previewed and excluded from search.
  */
 const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
   { key: 'idWorkOrder', label: 'ID Lavorazione', primary: true, filterable: false },
-  { key: 'quoteId', label: 'ID Preventivo', muted: true, filterable: false },
   {
     key: 'clientName',
     label: 'Cliente',
@@ -22,7 +21,6 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     filterable: false,
     renderCell: (workOrder) => <ReferenceName name={workOrder.clientName} id={workOrder.clientId} />,
   },
-  { key: 'status', label: 'Stato', searchable: false },
   {
     key: 'creationDate',
     label: 'Data Creazione',
@@ -31,6 +29,8 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     filterable: false,
     render: formatBirthDate,
   },
+  { key: 'status', label: 'Stato Lavorazione', searchable: false },
+  { key: 'quoteStatus', label: 'Stato Preventivo', searchable: false },
   {
     key: 'completionDate',
     label: 'Data Fine Lavorazione',
@@ -40,6 +40,7 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     render: formatBirthDate,
   },
   { key: 'technicianSignature', label: 'Tecnico', muted: true, searchable: false },
+  { key: 'quoteId', label: 'ID Preventivo', muted: true, filterable: false },
   {
     key: 'deliveryDate',
     label: 'Data Consegna',

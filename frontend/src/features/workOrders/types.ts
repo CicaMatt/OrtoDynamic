@@ -14,6 +14,8 @@ export type WorkOrder = {
 
   // Lifecycle
   status: string;
+  /** Status of the linked quote, resolved by the API (read-only). */
+  quoteStatus: string;
   creationDate: string;
   completionDate: string;
   deliveryDate: string;

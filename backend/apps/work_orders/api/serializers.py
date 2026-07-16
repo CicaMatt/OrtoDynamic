@@ -29,6 +29,7 @@ class WorkOrderSerializer(NullToEmptyMixin):
     # attaches (empty when the reference is unset or the row is gone). The frontend
     # shows this in place of the raw id, revealing the id on hover.
     clientName = serializers.SerializerMethodField()
+    quoteStatus = serializers.SerializerMethodField()
 
     # Lifecycle
     status = serializers.CharField(source="stato")
@@ -65,6 +66,10 @@ class WorkOrderSerializer(NullToEmptyMixin):
 
     def get_clientName(self, work_order):
         return person_display_name(getattr(work_order, "client", None))
+
+    def get_quoteStatus(self, work_order):
+        quote = getattr(work_order, "quote", None)
+        return None if quote is None else quote.stato
 
 
 class WorkOrderUpdateSerializer(UpdateFieldsSerializer):
