@@ -28,6 +28,7 @@ import {
   quantityError,
   toNullableNumber,
 } from '../components/quoteItemMath';
+import { QuoteTotalSummary } from '../components/QuoteTotalSummary';
 
 /**
  * Read-mode columns in display order; the value is read straight off the item.
@@ -69,7 +70,15 @@ type EditState = { id: string; draft: QuoteItemDraft };
  * data derived from the items — the quote's Totale, which the server recomputes
  * from them.
  */
-export function QuoteItemsCard({ quoteId, onChanged }: { quoteId: string; onChanged?: () => void }) {
+export function QuoteItemsCard({
+  quoteId,
+  total,
+  onChanged,
+}: {
+  quoteId: string;
+  total: string;
+  onChanged?: () => void;
+}) {
   const [reloadKey, setReloadKey] = useState(0);
   const { data, loading, error } = useApiData(
     () => fetchQuoteItems(quoteId),
@@ -249,6 +258,7 @@ export function QuoteItemsCard({ quoteId, onChanged }: { quoteId: string; onChan
       </ScrollableTable>
 
       {actionError && <p className="mt-[16px] font-body-sm text-body-sm text-error">{actionError}</p>}
+      <QuoteTotalSummary total={total} />
     </DataCard>
   );
 }

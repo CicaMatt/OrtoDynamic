@@ -62,6 +62,7 @@ export function EditInput({
   onChange: (value: string) => void;
 }) {
   const inputClass = `${baseInputClass} ${invalid ? invalidBorderClass : validBorderClass}`;
+  const selectClass = `${inputClass} pr-[36px]`;
   if (type === 'textarea') {
     return (
       <textarea rows={3} value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} />
@@ -69,7 +70,7 @@ export function EditInput({
   }
   if (type === 'gender') {
     return (
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
         <option value="">—</option>
         <option value="M">Maschile</option>
         <option value="F">Femminile</option>
@@ -82,7 +83,7 @@ export function EditInput({
     // so editing an unrelated field never silently drops it.
     const hasCurrent = value === '' || choices.some((option) => option.value === value);
     return (
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
         <option value="">—</option>
         {!hasCurrent && <option value={value}>{value}</option>}
         {choices.map((option) => (

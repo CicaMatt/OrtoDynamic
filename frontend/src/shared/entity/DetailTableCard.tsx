@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { DataCard, EditInput, optionsFromValues } from './DataCard';
 import { ScrollableTable } from './ScrollableTable';
+import { TableScrollSlider } from './TableScrollSlider';
 import { FieldValue } from '../ui/FieldValue';
 
 /** A column in a {@link DetailTableCard}. */
@@ -39,6 +40,7 @@ export function DetailTableCard<T extends object>({
   emptyLabel,
   editing = false,
   onCellChange,
+  footer,
 }: {
   icon: string;
   title: string;
@@ -52,10 +54,16 @@ export function DetailTableCard<T extends object>({
   /** When true, columns with `editOptions` render an editable select. */
   editing?: boolean;
   onCellChange?: (item: T, key: keyof T, value: string) => void;
+  footer?: ReactNode;
 }) {
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+
   return (
-    <DataCard icon={icon} title={title}>
-      <ScrollableTable surfaceClassName="rounded-xl border border-outline-variant/50">
+    <DataCard icon={icon} title={title} action={<TableScrollSlider scrollRef={tableScrollRef} />}>
+      <ScrollableTable
+        surfaceClassName="rounded-xl border border-outline-variant/50"
+        scrollRef={tableScrollRef}
+      >
         <table className="w-full text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
             <tr>
@@ -84,6 +92,7 @@ export function DetailTableCard<T extends object>({
           </tbody>
         </table>
       </ScrollableTable>
+      {footer}
     </DataCard>
   );
 }
@@ -134,8 +143,9 @@ function DetailTableBody<T extends object>({
               (column.editOptions || column.editDate) &&
               onCellChange &&
               (column.editableWhen?.(item) ?? true);
+            const cellClassName = `py-3 px-4 whitespace-nowrap ${cellEditable ? 'min-w-[200px]' : ''}`;
             return (
-              <td key={String(column.key)} className="py-3 px-4 whitespace-nowrap">
+              <td key={String(column.key)} className={cellClassName}>
                 {cellEditable ? (
                   <EditInput
                     type={column.editOptions ? 'select' : 'date'}

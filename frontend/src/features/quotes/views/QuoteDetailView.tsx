@@ -10,9 +10,7 @@ import {
   type FieldSectionConfig,
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
-import { formatEuro } from '../../../shared/format/format';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
-import { FieldValue } from '../../../shared/ui/FieldValue';
 import { Icon } from '../../../shared/ui/Icon';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
@@ -42,15 +40,6 @@ const identityFields: QuoteField[] = [
   { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
   { label: 'Stato', key: 'status', readonly: true },
   { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
-  {
-    label: 'Totale',
-    key: 'total',
-    type: 'number',
-    // Derived from the sum of the line items' importi (kept in sync server-side),
-    // so it is shown but never edited here.
-    readonly: true,
-    renderValue: (raw) => <FieldValue value={formatEuro(raw)} />,
-  },
 ];
 
 // In read mode the client/doctor show by name with their id revealed on hover;
@@ -247,7 +236,7 @@ export function QuoteDetailView() {
             onChange={setQuoteField}
             autocompleteFields={{ clientId: clientAutocomplete, doctorId: doctorAutocomplete }}
           />
-          <QuoteItemsCard quoteId={data.idQuote} onChanged={reload} />
+          <QuoteItemsCard quoteId={data.idQuote} total={data.total} onChanged={reload} />
           <FieldSectionList
             data={data}
             sections={quoteNoteSections}

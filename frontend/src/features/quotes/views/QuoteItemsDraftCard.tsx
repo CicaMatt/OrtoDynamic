@@ -15,6 +15,7 @@ import {
   previewAmount,
   quantityError,
 } from '../components/quoteItemMath';
+import { QuoteTotalSummary } from '../components/QuoteTotalSummary';
 
 const TABLE_SURFACE_CLASS =
   'rounded-xl border border-outline-variant/50 bg-surface-container-low transition-[padding] duration-200 ease-out';
@@ -28,7 +29,7 @@ const TABLE_SURFACE_DROPDOWN_SPACE_CLASS = `${TABLE_SURFACE_CLASS} pb-[340px]`;
  * `nomenclatore` lookup; confirmed rows are listed and can be removed before
  * saving. Importo is previewed locally (prezzo × quantità less the sconto %).
  */
-export function QuoteItemsDraftCard() {
+export function QuoteItemsDraftCard({ total }: { total: string }) {
   const { quoteItemDrafts, addQuoteItemDraft, removeQuoteItemDraft } = useEntityEdit();
   const [draft, setDraft] = useState<QuoteItemDraft | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -112,6 +113,7 @@ export function QuoteItemsDraftCard() {
       </ScrollableTable>
 
       {actionError && <p className="mt-[16px] font-body-sm text-body-sm text-error">{actionError}</p>}
+      <QuoteTotalSummary total={total} />
     </DataCard>
   );
 }

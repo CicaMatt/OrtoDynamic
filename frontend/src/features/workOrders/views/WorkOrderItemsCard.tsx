@@ -6,6 +6,7 @@ import {
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { formatBirthDate, formatEuro, formatInteger } from '../../../shared/format/format';
+import { FieldValue } from '../../../shared/ui/FieldValue';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { fetchWorkOrderItems, updateWorkOrderItem } from '../api/workOrders';
 import type { WorkOrderItem } from '../types';
@@ -17,12 +18,24 @@ const ITEM_PRODUCTIONS = ['ESTERNA', 'INTERNA'];
 const STATUS_CODE_LABELS: Record<string, string> = {
   '5': 'IN LAVORAZIONE',
 };
-const renderStatus = (value: string) => STATUS_CODE_LABELS[value] ?? value;
+const renderStatus = (value: string) => {
+  const trimmed = value.trim();
+  return STATUS_CODE_LABELS[trimmed] ?? trimmed;
+};
 
 // Statuses that gate the two conditional dates, and the date keys to null-blank.
 const CANCELLED = 'ANNULLATO';
 const DELIVERED = 'CONSEGNATO';
 const DATE_KEYS = ['cancellationDate', 'orderDate', 'partialDeliveryDate', 'deliveryDate'];
+
+function itemsTotal(items: ReadonlyArray<WorkOrderItem>): string {
+  if (items.length === 0) return '';
+  const total = items.reduce((sum, item) => {
+    const amount = Number(item.amount);
+    return Number.isFinite(amount) ? sum + amount : sum;
+  }, 0);
+  return String(Math.round(total * 100) / 100);
+}
 
 /**
  * Columns shown for each work order line. The first group is joined from the
@@ -35,11 +48,20 @@ const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
   { key: 'productCode', label: 'Codice Prodotto' },
   { key: 'productDescription', label: 'Descrizione' },
   { key: 'quantity', label: 'Quantità', render: formatInteger },
+  { key: 'status', label: 'Stato', render: renderStatus, editOptions: ITEM_STATUSES },
+  { key: 'production', label: 'Produzione', editOptions: ITEM_PRODUCTIONS },
+  {
+    key: 'deliveryDate',
+    label: 'Data Consegna',
+    render: formatBirthDate,
+    editDate: true,
+    editableWhen: (item) => item.status === DELIVERED,
+    invalidWhen: (item) => item.status === DELIVERED && !item.deliveryDate,
+  },
+  { key: 'partialDeliveryDate', label: 'Data Consegna Parziale', render: formatBirthDate, editDate: true },
   { key: 'price', label: 'Prezzo', render: formatEuro },
   { key: 'amount', label: 'Importo', render: formatEuro },
   { key: 'discount', label: 'Sconto' },
-  { key: 'status', label: 'Stato', render: renderStatus, editOptions: ITEM_STATUSES },
-  { key: 'production', label: 'Produzione', editOptions: ITEM_PRODUCTIONS },
   {
     key: 'cancellationDate',
     label: 'Data Annullamento',
@@ -49,15 +71,6 @@ const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
     invalidWhen: (item) => item.status === CANCELLED && !item.cancellationDate,
   },
   { key: 'orderDate', label: 'Data Ordine', render: formatBirthDate, editDate: true },
-  { key: 'partialDeliveryDate', label: 'Data Consegna Parziale', render: formatBirthDate, editDate: true },
-  {
-    key: 'deliveryDate',
-    label: 'Data Consegna',
-    render: formatBirthDate,
-    editDate: true,
-    editableWhen: (item) => item.status === DELIVERED,
-    invalidWhen: (item) => item.status === DELIVERED && !item.deliveryDate,
-  },
 ];
 
 /** Pending edits (status/production/dates) keyed by line id. */
@@ -86,7 +99,11 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
     setEdits({});
   }, [data]);
 
-  const items: WorkOrderItem[] = (data ?? []).map((item) => ({ ...item, ...edits[item.id] }));
+  const items: WorkOrderItem[] = (data ?? []).map((item) => ({
+    ...item,
+    status: renderStatus(item.status),
+    ...edits[item.id],
+  }));
   const isDirty = Object.keys(edits).length > 0;
 
   // Report dirtiness so the global Save button and the unsaved-changes guard
@@ -162,6 +179,18 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
       emptyLabel="Nessun articolo per questa lavorazione."
       editing={isEditing}
       onCellChange={onCellChange}
+      footer={<WorkOrderItemsTotal total={itemsTotal(items)} />}
     />
+  );
+}
+
+function WorkOrderItemsTotal({ total }: { total: string }) {
+  return (
+    <div className="mt-[20px] border-t border-surface-variant pt-[18px] text-center">
+      <div className="font-label-caps text-label-caps font-bold uppercase text-outline">Totale</div>
+      <div className="mt-[6px] font-headline-md text-headline-md font-bold text-on-surface">
+        <FieldValue value={formatEuro(total)} />
+      </div>
+    </div>
   );
 }

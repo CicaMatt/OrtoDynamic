@@ -38,7 +38,7 @@ export function QuoteCreateView() {
   const selectedClientLabel = clientAutocomplete.displayValue?.(quoteDraft.clientId) ?? '';
   const selectedDoctorLabel = doctorAutocomplete.displayValue?.(quoteDraft.doctorId) ?? '';
   // Totale is derived: previewed from the pending items, set on the server on save.
-  const quoteWithTotal = { ...quoteDraft, total: draftItemsTotal(quoteItemDrafts) };
+  const total = draftItemsTotal(quoteItemDrafts);
 
   return (
     <EntityDetailLayout
@@ -99,17 +99,17 @@ export function QuoteCreateView() {
         </DataCard>
 
         <FieldSectionList
-          data={quoteWithTotal}
+          data={quoteDraft}
           sections={quoteCreateSectionsBeforeNotes}
           editing
           onChange={setQuoteField}
           invalidKeys={invalidKeys}
         />
 
-        <QuoteItemsDraftCard />
+        <QuoteItemsDraftCard total={total} />
 
         <FieldSectionList
-          data={quoteWithTotal}
+          data={quoteDraft}
           sections={quoteCreateNoteSections}
           editing
           onChange={setQuoteField}

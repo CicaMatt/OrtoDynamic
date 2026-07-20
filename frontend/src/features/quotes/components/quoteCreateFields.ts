@@ -1,18 +1,12 @@
 import {
-  formatFieldValue,
   markRequired,
   optionsFromValues,
   type FieldConfig,
 } from '../../../shared/entity/DataCard';
 import type { FieldSectionConfig } from '../../../shared/entity/FieldSectionCard';
-import { formatEuro } from '../../../shared/format/format';
 import type { Quote } from '../types';
 
 type QuoteField = FieldConfig<Quote>;
-
-/** Euro-format the read-only Totale; other fields keep their default display. */
-const formatIdentity = (field: QuoteField, raw: string) =>
-  field.key === 'total' ? formatEuro(raw) : formatFieldValue(field, raw);
 
 // Stored verbatim in `tipologia_preventivo` — values must match the database exactly.
 const typeOptions = optionsFromValues(['Asl', 'Inail', 'Privato']);
@@ -35,9 +29,6 @@ const identityFields: QuoteField[] = markRequired(
     { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
     { label: 'Data Creazione', key: 'creationDate', type: 'date' },
     { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
-    // Derived from the items' importi (previewed live in the create form, set on
-    // the server on save) — never typed.
-    { label: 'Totale', key: 'total', type: 'number', readonly: true },
   ],
   ['quoteType'],
 );
@@ -80,7 +71,7 @@ const noteFields: QuoteField[] = [
  * are not part of these sections.
  */
 export const quoteCreateSectionsBeforeNotes: FieldSectionConfig<Quote>[] = [
-  { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields, format: formatIdentity },
+  { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields },
   { icon: 'clinical_notes', title: 'Dati Clinici', fields: clinicalFields, columns: 1 },
   { icon: 'fact_check', title: 'Autorizzazione e Scadenze', fields: authorizationFields },
   { icon: 'receipt_long', title: 'Fornitura e Fatturazione', fields: supplyFields },

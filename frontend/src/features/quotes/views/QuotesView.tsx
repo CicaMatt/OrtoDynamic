@@ -20,7 +20,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   },
   {
     key: 'creationDate',
-    label: 'Data Creazione',
+    label: 'Data Prescrizione',
     muted: true,
     searchable: false,
     filterable: false,

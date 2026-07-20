@@ -171,7 +171,7 @@ def render_scheda(document: SchedaDocument) -> bytes:
     _field(pdf, "Progetto Nº:", document.id_progetto)
     _field(pdf, "Data Preventivo:", document.data_preventivo)
     _field(pdf, "Tipologia:", document.tipologia)
-    _field(pdf, "Codice Lab.:", _LAB_CODE)
+    _field(pdf, "ITCA:", _LAB_CODE)
     pdf.ln(3)
 
     # Client.
