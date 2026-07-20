@@ -1,6 +1,5 @@
 """Thin endpoints for the Quote resource."""
 
-from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework import generics
@@ -11,7 +10,8 @@ from apps.clients.models import Client
 from apps.common.api.views import (
     ReadUpdateDetailAPIView,
     UnpaginatedListCreateAPIView,
-    attach_related,
+    attach_many,
+    inline_pdf_response,
 )
 from apps.common.exceptions import ServiceError, NotFoundError
 from apps.doctors.models import Doctor
@@ -50,9 +50,11 @@ def attach_people(quotes):
     lookup. Two batched queries, one per relation.
     """
     quotes = list(quotes)
-    attach_related(quotes, id_attr="id_cliente", attr="client", model=Client)
-    attach_related(quotes, id_attr="id_medico", attr="doctor", model=Doctor)
-    return quotes
+    return attach_many(
+        quotes,
+        {"id_attr": "id_cliente", "attr": "client", "model": Client},
+        {"id_attr": "id_medico", "attr": "doctor", "model": Doctor},
+    )
 
 
 def attach_work_orders(quotes):
@@ -70,6 +72,21 @@ def attach_work_orders(quotes):
     for quote in quotes:
         quote.work_order = by_quote.get(quote.id)
     return quotes
+
+
+def get_quote_or_404(pk):
+    quote = Quote.objects.filter(pk=pk).first()
+    if quote is None:
+        raise NotFoundError("Preventivo inesistente.")
+    return quote
+
+
+def get_quote_and_client_or_404(pk):
+    quote = Quote.objects.filter(pk=pk).first()
+    client = Client.objects.filter(pk=quote.id_cliente).first() if quote else None
+    if quote is None or client is None:
+        raise NotFoundError("Preventivo non trovato.")
+    return quote, client
 
 
 class QuoteListView(UnpaginatedListCreateAPIView):
@@ -192,20 +209,15 @@ class QuoteDeliveryFormView(APIView):
     """
 
     def get(self, request, pk):
-        quote = Quote.objects.filter(pk=pk).first()
-        if quote is None:
-            raise NotFoundError("Preventivo inesistente.")
-
+        quote = get_quote_or_404(pk)
         client = Client.objects.filter(pk=quote.id_cliente).first()
         today = timezone.localdate()
         delivery_date = _delivery_form_date(request.query_params.get("delivery_date"), today)
         fields = prepare_delivery_form_fields(quote, client, today=delivery_date)
         pdf = render_delivery_form(fields)
 
-        response = HttpResponse(pdf, content_type="application/pdf")
         filename = delivery_form_filename(quote, today)
-        response["Content-Disposition"] = f'inline; filename="{filename}"'
-        return response
+        return inline_pdf_response(pdf, filename)
 
 
 def _delivery_form_date(raw: str | None, fallback):
@@ -227,11 +239,7 @@ class QuoteDdtView(APIView):
     """
 
     def get(self, request, pk):
-        quote = Quote.objects.filter(pk=pk).first()
-        client = Client.objects.filter(pk=quote.id_cliente).first() if quote else None
-        if quote is None or client is None:
-            raise NotFoundError("Preventivo non trovato.")
-
+        quote, client = get_quote_and_client_or_404(pk)
         today = timezone.localdate()
         show_prices = request.query_params.get("include_prices") == "true"
         document = prepare_ddt(
@@ -243,9 +251,7 @@ class QuoteDdtView(APIView):
         )
         pdf = render_ddt(document)
 
-        response = HttpResponse(pdf, content_type="application/pdf")
-        response["Content-Disposition"] = f'inline; filename="{ddt_filename(quote)}"'
-        return response
+        return inline_pdf_response(pdf, ddt_filename(quote))
 
 
 class QuoteSchedaView(APIView):
@@ -258,14 +264,8 @@ class QuoteSchedaView(APIView):
     """
 
     def get(self, request, pk):
-        quote = Quote.objects.filter(pk=pk).first()
-        client = Client.objects.filter(pk=quote.id_cliente).first() if quote else None
-        if quote is None or client is None:
-            raise NotFoundError("Preventivo non trovato.")
-
+        quote, client = get_quote_and_client_or_404(pk)
         document = prepare_scheda(quote, client, scheda_item_rows(quote.id))
         pdf = render_scheda(document)
 
-        response = HttpResponse(pdf, content_type="application/pdf")
-        response["Content-Disposition"] = f'inline; filename="{scheda_filename(quote)}"'
-        return response
+        return inline_pdf_response(pdf, scheda_filename(quote))

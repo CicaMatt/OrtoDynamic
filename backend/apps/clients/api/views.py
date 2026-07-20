@@ -1,6 +1,5 @@
 """Thin endpoints for the Client resource."""
 
-from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework.views import APIView
 
@@ -9,6 +8,7 @@ from apps.common.api.views import (
     ReadDetailAPIView,
     ReadUpdateDetailAPIView,
     UnpaginatedListCreateAPIView,
+    inline_pdf_response,
 )
 from apps.common.exceptions import NotFoundError, TemplateAssetMissing
 from apps.quotes.documents import (
@@ -63,6 +63,4 @@ class ClientPrivacyFormView(APIView):
         except FileNotFoundError as exc:
             raise TemplateAssetMissing("Modello del modulo di privacy non disponibile.") from exc
 
-        response = HttpResponse(pdf, content_type="application/pdf")
-        response["Content-Disposition"] = f'inline; filename="{privacy_form_filename(client)}"'
-        return response
+        return inline_pdf_response(pdf, privacy_form_filename(client))

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from .fpdf_canvas import FpdfCanvas
+from .formatting import date_long_slash, date_short_slash, upper_or_empty
 from .letterhead import CONTENT_TOP_MM, write_letterhead
 
 BODY_LEFT = 20.0
@@ -38,22 +39,16 @@ def prepare_delivery_form_fields(quote, client, *, today: date) -> DeliveryFormF
     ``DD/MM/YYYY``. `today` is passed in so the caller owns the clock
     (``timezone.localdate()`` in the view), keeping this function pure.
     """
-    cognome = (client.cognome or "").upper() if client is not None else ""
-    nome = (client.nome or "").upper() if client is not None else ""
-    data_nascita = (
-        client.data_nascita.strftime("%d/%m/%y")
-        if client is not None and client.data_nascita
-        else ""
-    )
+    cognome = upper_or_empty(client.cognome) if client is not None else ""
+    nome = upper_or_empty(client.nome) if client is not None else ""
+    data_nascita = date_short_slash(client.data_nascita) if client is not None else ""
     return DeliveryFormFields(
         cognome=cognome,
         nome=nome,
         data_nascita=data_nascita,
         numero_autorizzazione=quote.numero_autorizzazione or "",
-        data_accettazione=(
-            quote.data_accettazione.strftime("%d/%m/%y") if quote.data_accettazione else ""
-        ),
-        data_generazione=today.strftime("%d/%m/%Y"),
+        data_accettazione=date_short_slash(quote.data_accettazione),
+        data_generazione=date_long_slash(today),
     )
 
 

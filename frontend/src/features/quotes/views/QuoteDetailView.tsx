@@ -7,13 +7,15 @@ import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmat
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import {
   FieldSectionList,
-  type FieldSectionConfig,
 } from '../../../shared/entity/FieldSectionCard';
-import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
+import {
+  DocumentErrorAlert,
+  DocumentOptionsDialog,
+  documentActionState,
+} from '../../../shared/files/DocumentActions';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
 import { Icon } from '../../../shared/ui/Icon';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
-import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import {
   deleteQuote,
   fetchQuote,
@@ -23,84 +25,9 @@ import {
 } from '../api/quotes';
 import { useClientAutocomplete } from '../../clients/components/useClientAutocomplete';
 import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocomplete';
-import type { Quote } from '../types';
+import { quoteDetailNoteSections, quoteDetailSectionsBeforeNotes } from '../components/quoteFields';
 import { QuoteItemsCard } from './QuoteItemsCard';
 import { QuoteStatusDialog } from './QuoteStatusDialog';
-
-type QuoteField = FieldConfig<Quote>;
-
-const typeOptions = optionsFromValues(['Asl', 'Privato', 'Inail']);
-const yesNoOptions = optionsFromValues(['Si', 'No']);
-
-// `Stato` is read-only here: it changes only via the guarded "Cambia Stato"
-// action, which follows the `stato_check` transition rules.
-const identityFields: QuoteField[] = [
-  { label: 'ID', key: 'idQuote', readonly: true },
-  { label: 'Data Creazione', key: 'creationDate', type: 'date' },
-  { label: 'Tipologia', key: 'quoteType', type: 'select', options: typeOptions },
-  { label: 'Stato', key: 'status', readonly: true },
-  { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
-];
-
-// In read mode the client/doctor show by name with their id revealed on hover;
-// both are edited via a name search (the autocomplete configs are supplied at
-// render time), though each is still stored as the referenced id.
-const referenceFields: QuoteField[] = [
-  {
-    label: 'Cliente',
-    key: 'clientId',
-    type: 'autocomplete',
-    renderValue: (id, quote) => <ReferenceName name={quote.clientName} id={id} entity="client" />,
-  },
-  {
-    label: 'Medico',
-    key: 'doctorId',
-    type: 'autocomplete',
-    renderValue: (id, quote) => <ReferenceName name={quote.doctorName} id={id} entity="doctor" />,
-  },
-  { label: 'Inserito Da', key: 'entryBy' },
-];
-
-const clinicalFields: QuoteField[] = [
-  { label: 'Diagnosi Circostanziata', key: 'diagnosis', type: 'textarea' },
-  { label: 'Prescrizione Dettagliata Protesi', key: 'detailedPrescription', type: 'textarea' },
-];
-
-const authorizationFields: QuoteField[] = [
-  { label: 'Nº Autorizzazione', key: 'authorizationNumber' },
-  { label: 'Data Accettazione', key: 'acceptanceDate', type: 'date' },
-  { label: 'Data Ricezione Autorizzazione', key: 'authorizationReceiptDate', type: 'date' },
-  { label: 'Giorni Massima Scadenza', key: 'expiryDays' },
-  // Derived from Giorni Massima Scadenza (today + that many days), so not editable.
-  { label: 'Data Massima Scadenza', key: 'maxExpiry', type: 'date', readonly: true },
-];
-
-const supplyFields: QuoteField[] = [
-  { label: 'Nº Ordine', key: 'orderNumber' },
-  { label: 'Nº Fattura', key: 'invoiceNumber' },
-  { label: 'Provvigioni Pagate', key: 'commissionsPaid', type: 'select', options: yesNoOptions },
-  { label: 'Misure OK', key: 'measurementsOk', type: 'select', options: yesNoOptions },
-  { label: 'Modello', key: 'model' },
-  { label: 'Misure', key: 'measurements' },
-];
-
-const noteFields: QuoteField[] = [
-  { label: 'Note', key: 'note', type: 'textarea' },
-  { label: 'Note Private', key: 'privateNote', type: 'textarea' },
-  { label: 'Note Finali', key: 'finalNote', type: 'textarea' },
-];
-
-const quoteSectionsBeforeNotes: FieldSectionConfig<Quote>[] = [
-  { icon: 'request_quote', title: 'Dati Preventivo', fields: identityFields },
-  { icon: 'group', title: 'Riferimenti', fields: referenceFields },
-  { icon: 'clinical_notes', title: 'Dati Clinici', fields: clinicalFields, columns: 1 },
-  { icon: 'fact_check', title: 'Autorizzazione e Scadenze', fields: authorizationFields },
-  { icon: 'receipt_long', title: 'Fornitura e Fatturazione', fields: supplyFields },
-];
-
-const quoteNoteSections: FieldSectionConfig<Quote>[] = [
-  { icon: 'sticky_note_2', title: 'Note', fields: noteFields, columns: 1 },
-];
 
 export function QuoteDetailView() {
   const { selectedQuoteId, navigate, goBack } = useNavigation();
@@ -140,6 +67,27 @@ export function QuoteDetailView() {
   }
 
   const title = data.quoteNumber ? `Preventivo Nº ${data.quoteNumber}` : `Preventivo ${data.idQuote}`;
+  const deliveryFormState = documentActionState({
+    generating,
+    kind: 'consegna',
+    idleLabel: 'Modulo di Consegna',
+    busyLabel: 'Generazione modulo…',
+    disabled: isEditing,
+  });
+  const ddtState = documentActionState({
+    generating,
+    kind: 'ddt',
+    idleLabel: 'Genera DDT',
+    busyLabel: 'Generazione DDT…',
+    disabled: isEditing,
+  });
+  const schedaState = documentActionState({
+    generating,
+    kind: 'scheda',
+    idleLabel: 'Scheda Progetto',
+    busyLabel: 'Generazione scheda…',
+    disabled: isEditing,
+  });
 
   const actions = [
     {
@@ -158,21 +106,21 @@ export function QuoteDetailView() {
     {
       id: 'delivery-form',
       icon: 'picture_as_pdf',
-      label: generating === 'consegna' ? 'Generazione modulo…' : 'Modulo di Consegna',
-      onClick: !isEditing && !generating ? () => setDeliveryFormOptionsOpen(true) : undefined,
+      label: deliveryFormState.label,
+      onClick: !deliveryFormState.disabled ? () => setDeliveryFormOptionsOpen(true) : undefined,
     },
     {
       id: 'ddt',
       icon: 'local_shipping',
-      label: generating === 'ddt' ? 'Generazione DDT…' : 'Genera DDT',
-      onClick: !isEditing && !generating ? () => setDdtOptionsOpen(true) : undefined,
+      label: ddtState.label,
+      onClick: !ddtState.disabled ? () => setDdtOptionsOpen(true) : undefined,
     },
     {
       id: 'scheda',
       icon: 'assignment',
-      label: generating === 'scheda' ? 'Generazione scheda…' : 'Scheda Progetto',
+      label: schedaState.label,
       onClick:
-        !isEditing && !generating
+        !schedaState.disabled
           ? () => openDocument('scheda', () => fetchQuoteScheda(data.idQuote))
           : undefined,
     },
@@ -214,24 +162,11 @@ export function QuoteDetailView() {
       >
         <div className="space-y-[28px]">
           {docError && (
-            <div
-              role="alert"
-              className="flex items-start justify-between gap-3 rounded-[10px] border border-error bg-error/10 px-[20px] py-[14px]"
-            >
-              <span className="font-body-sm text-body-sm text-error">{docError}</span>
-              <button
-                type="button"
-                onClick={clearError}
-                aria-label="Chiudi"
-                className="text-error/70 hover:text-error"
-              >
-                <Icon name="close" className="text-[20px]" />
-              </button>
-            </div>
+            <DocumentErrorAlert error={docError} onClose={clearError} />
           )}
           <FieldSectionList
             data={data}
-            sections={quoteSectionsBeforeNotes}
+            sections={quoteDetailSectionsBeforeNotes}
             editing={isEditing}
             onChange={setQuoteField}
             autocompleteFields={{ clientId: clientAutocomplete, doctorId: doctorAutocomplete }}
@@ -239,7 +174,7 @@ export function QuoteDetailView() {
           <QuoteItemsCard quoteId={data.idQuote} total={data.total} onChanged={reload} />
           <FieldSectionList
             data={data}
-            sections={quoteNoteSections}
+            sections={quoteDetailNoteSections}
             editing={isEditing}
             onChange={setQuoteField}
           />
@@ -318,24 +253,12 @@ function DeliveryFormOptionsDialog({
   const [deliveryDate, setDeliveryDate] = useState(todayInputValue);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delivery-form-options-title"
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4"
-      onClick={onClose}
+    <DocumentOptionsDialog
+      titleId="delivery-form-options-title"
+      title="Modulo di Consegna"
+      description="Scegli la data da stampare in fondo al documento."
+      onClose={onClose}
     >
-      <div
-        className="w-[460px] max-w-full rounded-[12px] bg-white p-[28px] shadow-[0_16px_48px_rgba(0,0,0,0.22)]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h3 id="delivery-form-options-title" className="font-headline-md text-headline-md font-bold text-black">
-          Modulo di Consegna
-        </h3>
-        <p className="mt-[10px] font-body-md text-body-md text-on-surface-variant">
-          Scegli la data da stampare in fondo al documento.
-        </p>
-
         <label className="mt-[22px] block">
           <span className="font-label-caps text-label-caps font-bold uppercase text-outline">Data</span>
           <input
@@ -364,8 +287,7 @@ function DeliveryFormOptionsDialog({
             Genera
           </button>
         </div>
-      </div>
-    </div>
+    </DocumentOptionsDialog>
   );
 }
 
@@ -379,24 +301,12 @@ function DdtOptionsDialog({
   onGenerate: (includePrices: boolean) => void;
 }) {
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ddt-options-title"
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4"
-      onClick={onClose}
+    <DocumentOptionsDialog
+      titleId="ddt-options-title"
+      title="Genera DDT"
+      description="Scegli se includere prezzo unitario e totale riga per ogni articolo."
+      onClose={onClose}
     >
-      <div
-        className="w-[460px] max-w-full rounded-[12px] bg-white p-[28px] shadow-[0_16px_48px_rgba(0,0,0,0.22)]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h3 id="ddt-options-title" className="font-headline-md text-headline-md font-bold text-black">
-          Genera DDT
-        </h3>
-        <p className="mt-[10px] font-body-md text-body-md text-on-surface-variant">
-          Scegli se includere prezzo unitario e totale riga per ogni articolo.
-        </p>
-
         <div className="mt-[24px] grid gap-[10px]">
           <button
             type="button"
@@ -428,7 +338,6 @@ function DdtOptionsDialog({
             Annulla
           </button>
         </div>
-      </div>
-    </div>
+    </DocumentOptionsDialog>
   );
 }

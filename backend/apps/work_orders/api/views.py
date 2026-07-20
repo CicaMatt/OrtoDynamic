@@ -1,6 +1,5 @@
 """Thin endpoints for the WorkOrder resource."""
 
-from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.response import Response
@@ -10,7 +9,8 @@ from apps.clients.models import Client
 from apps.common.api.views import (
     ReadUpdateDetailAPIView,
     UnpaginatedListAPIView,
-    attach_related,
+    attach_many,
+    inline_pdf_response,
 )
 from apps.common.exceptions import NotFoundError, TemplateAssetMissing
 from apps.products.models import Product
@@ -27,24 +27,12 @@ from .serializers import (
 )
 
 
-def attach_client(work_orders):
-    """
-    Attach each work order's referenced client as `work_order.client`, so
-    `WorkOrderSerializer` can render the client's name without a per-row lookup.
-    """
-    return attach_related(work_orders, id_attr="id_cliente", attr="client", model=Client)
-
-
-def attach_quote(work_orders):
-    """
-    Attach each work order's referenced quote as `work_order.quote`, so
-    `WorkOrderSerializer` can render the quote status without a per-row lookup.
-    """
-    return attach_related(work_orders, id_attr="id_preventivo", attr="quote", model=Quote)
-
-
 def attach_work_order_read_relations(work_orders):
-    return attach_quote(attach_client(work_orders))
+    return attach_many(
+        work_orders,
+        {"id_attr": "id_cliente", "attr": "client", "model": Client},
+        {"id_attr": "id_preventivo", "attr": "quote", "model": Quote},
+    )
 
 
 class WorkOrderListView(UnpaginatedListAPIView):
@@ -155,6 +143,4 @@ class WorkOrderCollaudiView(APIView):
         except FileNotFoundError as exc:
             raise TemplateAssetMissing("Modello della scheda collaudi non disponibile.") from exc
 
-        response = HttpResponse(pdf, content_type="application/pdf")
-        response["Content-Disposition"] = f'inline; filename="{collaudi_filename(work_order)}"'
-        return response
+        return inline_pdf_response(pdf, collaudi_filename(work_order))

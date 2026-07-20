@@ -19,6 +19,7 @@ from datetime import date
 from pathlib import Path
 
 from .fpdf_canvas import FpdfCanvas
+from .formatting import date_short_dash, upper_or_empty
 from .pdf_background import compose_on_template
 
 TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "privacy.pdf"
@@ -40,9 +41,9 @@ def prepare_privacy_form_fields(client, *, today: date) -> PrivacyFormFields:
     caller owns the clock (``timezone.localdate()`` in the view), keeping this pure.
     """
     return PrivacyFormFields(
-        nome=(client.nome or "").upper(),
-        cognome=(client.cognome or "").upper(),
-        generated_date=today.strftime("%d-%m-%y"),
+        nome=upper_or_empty(client.nome),
+        cognome=upper_or_empty(client.cognome),
+        generated_date=date_short_dash(today),
     )
 
 

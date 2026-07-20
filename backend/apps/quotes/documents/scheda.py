@@ -15,10 +15,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 from .fpdf_canvas import FpdfCanvas
+from .formatting import date_short_slash, plain_number, rounded_amount, upper_or_empty
 from .letterhead import CONTENT_TOP_MM, write_letterhead
 from .pdf_layout import (
     label_value,
@@ -129,31 +129,31 @@ def prepare_scheda(quote, client, items) -> SchedaDocument:
             SchedaItem(
                 codice=str(item.codice) if item.codice is not None else "",
                 descrizione=item.descrizione or "",
-                quantita=_plain(item.quantita),
-                prezzo=_plain(item.prezzo),
-                sconto=_plain(item.sconto),
+                quantita=plain_number(item.quantita),
+                prezzo=plain_number(item.prezzo),
+                sconto=plain_number(item.sconto),
                 show_sconto=bool(item.sconto),
-                importo=_amount(item.importo),
+                importo=rounded_amount(item.importo),
             )
         )
 
     return SchedaDocument(
         id_progetto=str(quote.id),
-        data_preventivo=_date(quote.data_preventivo),
-        cognome=(client.cognome or "").upper(),
-        nome=(client.nome or "").upper(),
+        data_preventivo=date_short_slash(quote.data_preventivo),
+        cognome=upper_or_empty(client.cognome),
+        nome=upper_or_empty(client.nome),
         indirizzo=client.indirizzo or "",
-        comune_residenza=(client.citta or "").upper(),
+        comune_residenza=upper_or_empty(client.citta),
         provincia=client.provincia or "",
         telefono=client.telefono or "",
-        comune_nascita=(client.comune_nascita or "").upper(),
-        data_nascita=_date(client.data_nascita),
-        tipologia=(quote.tipologia_preventivo or "").upper(),
-        diagnosi=(quote.diagnosi_circostanziata or "").upper(),
-        protesi=(quote.prescizione_dettagliata_protesi or "").upper(),
+        comune_nascita=upper_or_empty(client.comune_nascita),
+        data_nascita=date_short_slash(client.data_nascita),
+        tipologia=upper_or_empty(quote.tipologia_preventivo),
+        diagnosi=upper_or_empty(quote.diagnosi_circostanziata),
+        protesi=upper_or_empty(quote.prescizione_dettagliata_protesi),
         items=tuple(prepared_items),
-        sub_totale=_amount(sub_total),
-        totale=_amount(sub_total * (1 + _VAT_RATE)),
+        sub_totale=rounded_amount(sub_total),
+        totale=rounded_amount(sub_total * (1 + _VAT_RATE)),
     )
 
 
@@ -296,22 +296,3 @@ def _birth(document: SchedaDocument) -> str:
         return f"{document.comune_nascita} il {document.data_nascita}".strip()
     return document.comune_nascita
 
-
-def _date(value: date | None) -> str:
-    return value.strftime("%d/%m/%y") if value else ""
-
-
-def _plain(value) -> str:
-    """A DOUBLE column value as the DB would render it: whole → integer, else as-is."""
-    if value is None or value == "":
-        return ""
-    number = float(value)
-    return str(int(number)) if number == int(number) else str(number)
-
-
-def _amount(value) -> str:
-    """Round to two decimals (half-up, like PHP `round`), then drop trailing zeros."""
-    number = float(value) if value not in (None, "") else 0.0
-    rounded = Decimal(str(number)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    text = format(rounded, "f")
-    return text.rstrip("0").rstrip(".") if "." in text else text

@@ -10,7 +10,7 @@ import {
   QUOTE_CREATE_REQUIRED,
   quoteCreateNoteSections,
   quoteCreateSectionsBeforeNotes,
-} from '../components/quoteCreateFields';
+} from '../components/quoteFields';
 import { draftItemsTotal } from '../components/quoteItemMath';
 import { useClientAutocomplete } from '../../clients/components/useClientAutocomplete';
 import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocomplete';

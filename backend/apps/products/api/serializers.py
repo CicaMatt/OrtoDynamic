@@ -7,23 +7,28 @@ from apps.common.api.serializers import (
     NullToEmptyMixin,
     UpdateFieldsSerializer,
     nullable_text,
-    optional_text,
+    optional_text_fields,
+    read_fields,
 )
 
 from apps.products.models import Product
 
 
 class ProductSerializer(NullToEmptyMixin):
-    idProduct = serializers.CharField(source="id")
-    code = serializers.CharField(source="codice")
-    description = serializers.CharField(source="descrizione")
-    price = serializers.CharField(source="prezzo")
-    year = serializers.CharField(source="anno")
+    locals().update(read_fields({
+        "idProduct": "id",
+        "code": "codice",
+        "description": "descrizione",
+        "price": "prezzo",
+        "year": "anno",
+    }))
 
 
 class ProductUpdateSerializer(UpdateFieldsSerializer):
-    code = optional_text("codice")
-    description = optional_text("descrizione")
+    locals().update(optional_text_fields({
+        "code": "codice",
+        "description": "descrizione",
+    }))
     price = serializers.FloatField(source="prezzo", required=False)
     year = nullable_text("anno")
 

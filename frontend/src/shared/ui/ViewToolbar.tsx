@@ -90,20 +90,8 @@ function QuickFilters({
   groups: QuickFilterGroup[];
   onFilterChange?: (key: string, value: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { open, setOpen, containerRef } = useClickOutsideDropdown<HTMLDivElement>();
   const disabled = groups.length === 0 || !onFilterChange;
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [open]);
 
   return (
     <div className="relative" ref={containerRef}>
@@ -136,7 +124,7 @@ function QuickFiltersDropdown({
   onSelect: (key: string, value: string) => void;
 }) {
   return (
-    <div className="absolute left-0 mt-2 w-56 bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-outline-variant/30 py-2 z-50">
+    <DropdownShell align="left" size="sm" padding="sm">
       {groups.map((group, groupIndex) => (
         <div key={group.title}>
           {groupIndex > 0 && <div className="h-px bg-outline-variant/30 my-2" />}
@@ -152,7 +140,7 @@ function QuickFiltersDropdown({
           ))}
         </div>
       ))}
-    </div>
+    </DropdownShell>
   );
 }
 
@@ -193,20 +181,8 @@ function FilterMenu({
   onFilterChange?: (key: string, value: string) => void;
   onClearFilters?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { open, setOpen, containerRef } = useClickOutsideDropdown<HTMLDivElement>();
   const disabled = filters.length === 0 || !onFilterChange;
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [open]);
 
   return (
     <div className="relative" ref={containerRef}>
@@ -225,7 +201,7 @@ function FilterMenu({
       </button>
 
       {open && onFilterChange && (
-        <div className="absolute right-0 mt-2 w-72 bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-outline-variant/30 p-4 z-50">
+        <DropdownShell>
           <div className="flex items-center justify-between mb-3">
             <div className="font-label-caps text-label-caps text-on-surface-variant uppercase">
               Filtri
@@ -260,8 +236,49 @@ function FilterMenu({
               ),
             )}
           </div>
-        </div>
+        </DropdownShell>
       )}
+    </div>
+  );
+}
+
+function useClickOutsideDropdown<T extends HTMLElement>() {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<T>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [open]);
+
+  return { open, setOpen, containerRef };
+}
+
+function DropdownShell({
+  align = 'right',
+  size = 'md',
+  padding = 'md',
+  children,
+}: {
+  align?: 'left' | 'right';
+  size?: 'sm' | 'md';
+  padding?: 'none' | 'sm' | 'md';
+  children: ReactNode;
+}) {
+  const alignClass = align === 'left' ? 'left-0' : 'right-0';
+  const sizeClass = size === 'sm' ? 'w-56' : 'w-72';
+  const paddingClass = padding === 'sm' ? 'py-2' : padding === 'md' ? 'p-4' : '';
+  return (
+    <div
+      className={`absolute ${alignClass} mt-2 ${sizeClass} bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-outline-variant/30 ${paddingClass} z-50`}
+    >
+      {children}
     </div>
   );
 }
@@ -297,24 +314,12 @@ function FilterSelect({
   );
 }
 
-/**
- * Ranks how well an option matches a search term, lower being more relevant:
- * 0 the option starts with the term, 1 a word inside it starts with the term,
- * 2 the term appears somewhere inside. `null` means no match. Inputs must be
- * lower-cased by the caller. The split is Unicode-aware so accented letters and
- * digits count as word characters.
- */
 function matchRank(option: string, term: string): number | null {
   if (option.startsWith(term)) return 0;
   if (option.split(/[^\p{L}\p{N}]+/u).some((word) => word.startsWith(term))) return 1;
   return option.includes(term) ? 2 : null;
 }
 
-/**
- * A single column filter: a search box that suggests the column's existing
- * values as the user types, and applies a substring filter on submit (Enter,
- * the search button, or picking a suggestion) so partial phrases match too.
- */
 function FilterCombobox({
   label,
   value,
@@ -329,25 +334,18 @@ function FilterCombobox({
   const [draft, setDraft] = useState(value);
   const [open, setOpen] = useState(false);
 
-  // Mirror the committed value when it changes outside the input — notably when
-  // "Rimuovi" clears every filter at once.
   useEffect(() => setDraft(value), [value]);
 
   const suggestions = useMemo(() => {
     const term = draft.trim().toLowerCase();
-    // Nothing typed yet: offer no suggestions rather than the whole column.
     if (!term) return [];
     return options
       .map((option) => ({ option, lower: option.toLowerCase() }))
       .map((entry) => ({ ...entry, rank: matchRank(entry.lower, term) }))
       .filter(
         (entry): entry is { option: string; lower: string; rank: number } =>
-          // A value typed in full has nothing left to suggest.
           entry.rank !== null && entry.lower !== term,
       )
-      // Most relevant first: prefix, then word-start, then substring. `options`
-      // arrives alphabetically sorted and the sort is stable, so values keep
-      // that order within each rank.
       .sort((a, b) => a.rank - b.rank)
       .map(({ option, rank }) => ({ option, rank }));
   }, [draft, options]);
@@ -394,8 +392,6 @@ function FilterCombobox({
         {open && suggestions.length > 0 && (
           <ul className="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-surface-container-lowest rounded-lg border border-outline-variant/30 shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 z-10">
             {suggestions.map((entry, index) => {
-              // A hairline rule splits values that start with the term (and
-              // word-start matches) from those that merely contain it.
               const startsSubstringGroup =
                 entry.rank === 2 && index > 0 && suggestions[index - 1].rank < 2;
               return (

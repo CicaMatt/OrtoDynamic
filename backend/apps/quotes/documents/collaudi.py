@@ -22,6 +22,7 @@ from datetime import date
 from pathlib import Path
 
 from .fpdf_canvas import FpdfCanvas
+from .formatting import date_long_dash, upper_or_empty
 from .pdf_background import overlay_full_size
 
 TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "schedacollaudi.pdf"
@@ -97,16 +98,16 @@ def prepare_collaudi(work_order, client, quote, items, periodic_checks, *, today
     raw_protesi = (quote.prescizione_dettagliata_protesi if quote is not None else "") or ""
 
     return CollaudiDocument(
-        nome=(client.nome or "").upper() if client is not None else "",
-        cognome=(client.cognome or "").upper() if client is not None else "",
+        nome=upper_or_empty(client.nome) if client is not None else "",
+        cognome=upper_or_empty(client.cognome) if client is not None else "",
         id_lavorazione=str(work_order.id),
         protesi=_protesi_lines(raw_protesi),
         product_ids=tuple(str(item.id) for item in items),
         internal_codes=tuple(str(item.id) for item in items if item.produzione == "INTERNA"),
         external_codes=tuple(str(item.id) for item in items if item.produzione == "ESTERNA"),
-        data_prova=_date(work_order.data_prova_cliente),
-        data_verifica=_date(work_order.data_verifica_cliente),
-        data_oggi=today.strftime("%d-%m-%Y"),
+        data_prova=date_long_dash(work_order.data_prova_cliente),
+        data_verifica=date_long_dash(work_order.data_verifica_cliente),
+        data_oggi=date_long_dash(today),
         firma_tecnico=work_order.firma_tecnico or "",
         periodic_checks=tuple(
             CollaudiPeriodicCheck(
@@ -235,7 +236,3 @@ def _protesi_lines(raw: str) -> tuple[str, ...]:
     if len(raw) >= _PROTESI_WRAP_AT:
         return (text[0:45], text[45:105], text[60:240])
     return (text,)
-
-
-def _date(value: date | None) -> str:
-    return value.strftime("%d-%m-%Y") if value else ""

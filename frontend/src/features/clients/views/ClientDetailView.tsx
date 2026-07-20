@@ -6,7 +6,7 @@ import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmat
 import { ClientPageHeader } from '../components/ClientPageHeader';
 import { ClientDataSections } from '../components/ClientDataSections';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
-import { Icon } from '../../../shared/ui/Icon';
+import { DocumentErrorAlert, documentActionState } from '../../../shared/files/DocumentActions';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
@@ -70,11 +70,18 @@ export function ClientDetailView() {
       };
     }
     if (action.id === 'privacy') {
+      const documentState = documentActionState({
+        generating,
+        kind: 'privacy',
+        idleLabel: action.label,
+        busyLabel: 'Generazione modulo…',
+        disabled: isEditing,
+      });
       return {
         ...action,
-        label: generating === 'privacy' ? 'Generazione modulo…' : action.label,
+        label: documentState.label,
         onClick:
-          !isEditing && !generating
+          !documentState.disabled
             ? () => openDocument('privacy', () => fetchClientPrivacyForm(data.idClient))
             : undefined,
       };
@@ -105,20 +112,7 @@ export function ClientDetailView() {
         actions={actions}
       >
         {docError && (
-          <div
-            role="alert"
-            className="mb-[28px] flex items-start justify-between gap-3 rounded-[10px] border border-error bg-error/10 px-[20px] py-[14px]"
-          >
-            <span className="font-body-sm text-body-sm text-error">{docError}</span>
-            <button
-              type="button"
-              onClick={clearError}
-              aria-label="Chiudi"
-              className="text-error/70 hover:text-error"
-            >
-              <Icon name="close" className="text-[20px]" />
-            </button>
-          </div>
+          <DocumentErrorAlert error={docError} onClose={clearError} className="mb-[28px]" />
         )}
         <ClientDataSections
           data={data}

@@ -8,7 +8,8 @@ from apps.common.api.serializers import (
     CreatableSerializerMixin,
     NullToEmptyMixin,
     UpdateFieldsSerializer,
-    nullable_text,
+    nullable_text_fields,
+    read_fields,
 )
 
 from apps.health_companies.models import HealthCompany
@@ -17,39 +18,45 @@ from apps.health_companies.models import HealthCompany
 class HealthCompanyListSerializer(NullToEmptyMixin):
     """Columns shown in the Aziende Sanitarie table."""
 
-    idHealthCompany = serializers.CharField(source="id")
-    municipalityCode = serializers.CharField(source="codice_comune")
-    municipality = serializers.CharField(source="comune")
-    regionCode = serializers.CharField(source="codice_regione")
-    regionName = serializers.CharField(source="denominazione_regione")
-    companyCode = serializers.CharField(source="codice_azienda")
-    companyName = serializers.CharField(source="denominazione_azienda")
-    year = serializers.CharField(source="anno")
+    locals().update(read_fields({
+        "idHealthCompany": "id",
+        "municipalityCode": "codice_comune",
+        "municipality": "comune",
+        "regionCode": "codice_regione",
+        "regionName": "denominazione_regione",
+        "companyCode": "codice_azienda",
+        "companyName": "denominazione_azienda",
+        "year": "anno",
+    }))
 
 
 class HealthCompanyDetailSerializer(HealthCompanyListSerializer):
     """Full set of fields shown in the health-company detail view."""
 
-    males = serializers.CharField(source="maschi")
-    females = serializers.CharField(source="femmine")
-    total = serializers.CharField(source="totale")
-    district = serializers.CharField(source="distretto")
+    locals().update(read_fields({
+        "males": "maschi",
+        "females": "femmine",
+        "total": "totale",
+        "district": "distretto",
+    }))
 
 
 class HealthCompanyUpdateSerializer(UpdateFieldsSerializer):
     """Writable serializer for health-company detail edits."""
 
     year = serializers.IntegerField(source="anno", required=False, allow_null=True)
-    municipalityCode = nullable_text("codice_comune")
-    municipality = nullable_text("comune")
-    regionCode = nullable_text("codice_regione")
-    regionName = nullable_text("denominazione_regione")
-    companyCode = nullable_text("codice_azienda")
-    companyName = nullable_text("denominazione_azienda")
-    males = nullable_text("maschi")
-    females = nullable_text("femmine")
-    total = nullable_text("totale")
-    district = nullable_text("distretto")
+    locals().update(nullable_text_fields({
+        "municipalityCode": "codice_comune",
+        "municipality": "comune",
+        "regionCode": "codice_regione",
+        "regionName": "denominazione_regione",
+        "companyCode": "codice_azienda",
+        "companyName": "denominazione_azienda",
+        "males": "maschi",
+        "females": "femmine",
+        "total": "totale",
+        "district": "distretto",
+    }))
 
 
 class HealthCompanyCreateSerializer(CreatableSerializerMixin, HealthCompanyUpdateSerializer):

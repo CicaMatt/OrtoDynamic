@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DetailTableCard,
   type DetailTableColumn,
@@ -27,6 +27,7 @@ const renderStatus = (value: string) => {
 const CANCELLED = 'ANNULLATO';
 const DELIVERED = 'CONSEGNATO';
 const DATE_KEYS = ['cancellationDate', 'orderDate', 'partialDeliveryDate', 'deliveryDate'];
+type ItemEdits = Record<string, Record<string, string>>;
 
 function itemsTotal(items: ReadonlyArray<WorkOrderItem>): string {
   if (items.length === 0) return '';
@@ -73,9 +74,6 @@ const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
   { key: 'orderDate', label: 'Data Ordine', render: formatBirthDate, editDate: true },
 ];
 
-/** Pending edits (status/production/dates) keyed by line id. */
-type ItemEdits = Record<string, Record<string, string>>;
-
 /**
  * Read-only list of a work order's lines; in the work order's edit mode the
  * status/production cells become editable and persist with the global Save.
@@ -89,9 +87,13 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
     [workOrderId, dataVersion],
   );
 
+  const baseItems = useMemo<WorkOrderItem[]>(
+    () => (data ?? []).map((item) => ({ ...item, status: renderStatus(item.status) })),
+    [data],
+  );
+
   const [edits, setEdits] = useState<ItemEdits>({});
 
-  // Discard pending edits when leaving edit mode or when fresh data arrives.
   useEffect(() => {
     if (!isEditing) setEdits({});
   }, [isEditing]);
@@ -99,23 +101,18 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
     setEdits({});
   }, [data]);
 
-  const items: WorkOrderItem[] = (data ?? []).map((item) => ({
-    ...item,
-    status: renderStatus(item.status),
-    ...edits[item.id],
-  }));
+  const items = useMemo<WorkOrderItem[]>(
+    () => baseItems.map((item) => ({ ...item, ...edits[item.id] })),
+    [baseItems, edits],
+  );
   const isDirty = Object.keys(edits).length > 0;
 
-  // Report dirtiness so the global Save button and the unsaved-changes guard
-  // account for pending item edits.
   useEffect(() => {
     if (!isEditing) return;
     markExtraDirty(isDirty);
     return () => markExtraDirty(false);
   }, [isEditing, isDirty, markExtraDirty]);
 
-  // Persist the edits as part of the global Save. The hook reads the latest
-  // edits/items via refs, since it is registered once per edit session.
   const editsRef = useRef(edits);
   editsRef.current = edits;
   const itemsRef = useRef(items);
@@ -123,7 +120,6 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
   useEffect(() => {
     if (!isEditing) return;
     return registerSaveHook(async () => {
-      // The conditional dates are required for their matching status.
       for (const item of itemsRef.current) {
         if (!editsRef.current[item.id]) continue;
         if (item.status === CANCELLED && !item.cancellationDate) {

@@ -10,8 +10,8 @@ import {
   type FieldSectionConfig,
 } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
+import { DocumentErrorAlert, documentActionState } from '../../../shared/files/DocumentActions';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
-import { Icon } from '../../../shared/ui/Icon';
 import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { deleteWorkOrder, fetchWorkOrder, fetchWorkOrderCollaudi } from '../api/workOrders';
@@ -127,6 +127,13 @@ export function WorkOrderDetailView() {
   }
 
   const title = `Lavorazione ${data.idWorkOrder}`;
+  const collaudiState = documentActionState({
+    generating,
+    kind: 'collaudi',
+    idleLabel: 'Scheda Rischi e Collaudi',
+    busyLabel: 'Generazione scheda…',
+    disabled: isEditing,
+  });
   const actions = [
     {
       id: 'edit',
@@ -144,9 +151,9 @@ export function WorkOrderDetailView() {
     {
       id: 'collaudi',
       icon: 'fact_check',
-      label: generating === 'collaudi' ? 'Generazione scheda…' : 'Scheda Rischi e Collaudi',
+      label: collaudiState.label,
       onClick:
-        !isEditing && !generating
+        !collaudiState.disabled
           ? () => openDocument('collaudi', () => fetchWorkOrderCollaudi(data.idWorkOrder))
           : undefined,
     },
@@ -188,20 +195,7 @@ export function WorkOrderDetailView() {
       >
         <div className="space-y-[28px]">
           {docError && (
-            <div
-              role="alert"
-              className="flex items-start justify-between gap-3 rounded-[10px] border border-error bg-error/10 px-[20px] py-[14px]"
-            >
-              <span className="font-body-sm text-body-sm text-error">{docError}</span>
-              <button
-                type="button"
-                onClick={clearError}
-                aria-label="Chiudi"
-                className="text-error/70 hover:text-error"
-              >
-                <Icon name="close" className="text-[20px]" />
-              </button>
-            </div>
+            <DocumentErrorAlert error={docError} onClose={clearError} />
           )}
           <FieldSectionList
             data={data}

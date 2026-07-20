@@ -32,6 +32,31 @@ def nullable_text(source=None):
     return optional_text(source, allow_null=True)
 
 
+def read_fields(mapping, *, field_class=serializers.CharField, **field_kwargs):
+    """Build simple read-only serializer fields from API name -> model attribute."""
+    fields = {}
+    for api_name, source in mapping.items():
+        kwargs = dict(field_kwargs)
+        if source and source != api_name:
+            kwargs["source"] = source
+        fields[api_name] = field_class(**kwargs)
+    return fields
+
+
+def optional_text_fields(mapping):
+    return {
+        api_name: optional_text(source)
+        for api_name, source in mapping.items()
+    }
+
+
+def nullable_text_fields(mapping):
+    return {
+        api_name: nullable_text(source)
+        for api_name, source in mapping.items()
+    }
+
+
 def person_display_name(person):
     """
     Display name "Nome Cognome" for a person-like row (client/doctor), or "" when

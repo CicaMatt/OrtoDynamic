@@ -19,6 +19,13 @@ from datetime import date
 from pathlib import Path
 
 from .fpdf_canvas import FpdfCanvas
+from .formatting import (
+    client_address_line,
+    date_long_slash,
+    italian_money,
+    person_name,
+    whole_or_italian_decimal,
+)
 from .pdf_background import compose_on_template
 from .pdf_layout import (
     new_titled_document,
@@ -83,17 +90,17 @@ def prepare_ddt(quote, client, items, *, today: date, show_prices: bool = False)
     description_limit = _DESCRIPTION_WITH_PRICES_LIMIT if show_prices else _DESCRIPTION_LIMIT
     return DdtDocument(
         ddt_number=_ddt_number(quote),
-        generated_date=today.strftime("%d/%m/%Y"),
+        generated_date=date_long_slash(today),
         numero_autorizzazione=quote.numero_autorizzazione or "",
-        destinatario=_destinatario(client),
-        indirizzo_completo=_indirizzo_completo(client),
+        destinatario=person_name(client, order="last_first"),
+        indirizzo_completo=client_address_line(client),
         items=tuple(
             DdtItem(
                 codice=item.codice or "",
                 descrizione=_truncate(item.descrizione or "", limit=description_limit),
-                quantita=_format_quantity(item.quantita),
-                prezzo_unitario=_format_money(getattr(item, "prezzo", None)),
-                importo=_format_money(getattr(item, "importo", None)),
+                quantita=whole_or_italian_decimal(item.quantita),
+                prezzo_unitario=italian_money(getattr(item, "prezzo", None)),
+                importo=italian_money(getattr(item, "importo", None)),
             )
             for item in items
         ),
@@ -191,39 +198,8 @@ def _ddt_number(quote) -> str:
     return str(quote.id)
 
 
-def _destinatario(client) -> str:
-    return f"{client.cognome or ''} {client.nome or ''}".strip()
-
-
-def _indirizzo_completo(client) -> str:
-    indirizzo = client.indirizzo or ""
-    cap = client.cap or ""
-    citta = client.citta or ""
-    provincia = client.provincia or ""
-    return f"{indirizzo} - {cap} {citta} ({provincia})".strip()
-
-
 def _truncate(text: str, limit: int = _DESCRIPTION_LIMIT, marker: str = _TRIM_MARKER) -> str:
     """Trim to at most `limit` characters, the marker included (matches mb_strimwidth)."""
     if len(text) <= limit:
         return text
     return text[: limit - len(marker)] + marker
-
-
-def _italian_decimals(value: float) -> str:
-    """`value` with Italian separators: '.' for thousands, ',' for decimals (1.234,50)."""
-    integer_part, decimal_part = f"{value:,.2f}".split(".")
-    return f"{integer_part.replace(',', '.')},{decimal_part}"
-
-
-def _format_quantity(value) -> str:
-    """Whole numbers as plain integers; otherwise Italian decimals (1.234,50)."""
-    quantity = float(value) if value not in (None, "") else 0.0
-    if quantity == int(quantity):
-        return str(int(quantity))
-    return _italian_decimals(quantity)
-
-
-def _format_money(value) -> str:
-    amount = float(value) if value not in (None, "") else 0.0
-    return f"{_italian_decimals(amount)} €"

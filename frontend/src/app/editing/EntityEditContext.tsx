@@ -7,95 +7,48 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { createClient, updateClient, type ClientUpdate } from '../../features/clients/api/clients';
-import { createDoctor, updateDoctor, type DoctorUpdate } from '../../features/doctors/api/doctors';
-import {
-  createHealthCompany,
-  updateHealthCompany,
-  type HealthCompanyUpdate,
-} from '../../features/healthCompanies/api/healthCompanies';
-import { createProduct, updateProduct, type ProductUpdate } from '../../features/products/api/products';
-import {
-  createQuote,
-  updateQuote,
-  type QuoteCreatePayload,
-  type QuoteUpdate,
-} from '../../features/quotes/api/quotes';
-import { toNullableNumber } from '../../features/quotes/components/quoteItemMath';
-import { addDaysIso, todayIso } from '../../shared/format/format';
-import { updateWorkOrder, type WorkOrderUpdate } from '../../features/workOrders/api/workOrders';
+import { clientEditConfig } from '../../features/clients/editConfig';
+import { doctorEditConfig } from '../../features/doctors/editConfig';
+import { healthCompanyEditConfig } from '../../features/healthCompanies/editConfig';
+import { productEditConfig } from '../../features/products/editConfig';
+import { quoteEditConfig } from '../../features/quotes/editConfig';
+import { workOrderEditConfig } from '../../features/workOrders/editConfig';
 import type { Client, ClientOrthopedic } from '../../features/clients/types';
 import type { Doctor } from '../../features/doctors/types';
 import type { HealthCompany } from '../../features/healthCompanies/types';
 import type { Product } from '../../features/products/types';
 import type { Quote, QuoteItemDraft } from '../../features/quotes/types';
 import type { WorkOrder } from '../../features/workOrders/types';
+import type {
+  EditMode,
+  EditPayloadContext,
+  EditTarget,
+  EntityDraft,
+  EntityDraftMap,
+  EntityEditConfig,
+  EntityKind,
+  SaveResult,
+} from './types';
+import { buildCreatePayload, diffDraft } from './types';
 
-const EDITABLE_CLIENT_KEYS = [
-  'name', 'surname', 'fiscalCode', 'gender', 'birthMunicipality', 'birthDate',
-  'address', 'city', 'province', 'postalCode', 'country', 'phone', 'mobile', 'email',
-  'district', 'doctorId', 'note',
-] as const satisfies readonly (keyof Client)[];
+export type { EditMode, EditTarget, EntityKind, SaveResult } from './types';
 
-const EDITABLE_CLIENT_ORTHO_KEYS = [
-  'shoeSize', 'shoeModel', 'width', 'collar', 'ankle', 'spur', 'lift', 'inclinedPlane',
-  'insoleType', 'collarPassage', 'anklePassage', 'braceType', 'shoulderStraps', 'upToArmpit',
-  'frontFabricHeight', 'totalFrameHeight', 'axillaryDistance', 'waist', 'pelvisSize', 'measure24',
-  'neck', 'humerus', 'arm', 'wrist', 'pelvis', 'thigh', 'leg', 'clientNote', 'other',
-] as const satisfies readonly (keyof ClientOrthopedic)[];
+const entityEditConfigs = {
+  client: clientEditConfig,
+  doctor: doctorEditConfig,
+  healthCompany: healthCompanyEditConfig,
+  product: productEditConfig,
+  quote: quoteEditConfig,
+  workOrder: workOrderEditConfig,
+} satisfies { [K in EntityKind]: EntityEditConfig<K> };
 
-const EDITABLE_DOCTOR_KEYS = [
-  'surname', 'name', 'address', 'phone', 'email', 'note',
-] as const satisfies readonly (keyof Doctor)[];
-
-const EDITABLE_HEALTH_COMPANY_KEYS = [
-  'municipalityCode', 'municipality', 'regionCode', 'regionName', 'companyCode',
-  'companyName', 'year', 'males', 'females', 'total', 'district',
-] as const satisfies readonly (keyof HealthCompany)[];
-
-const EDITABLE_PRODUCT_KEYS = [
-  'code', 'description', 'price', 'year',
-] as const satisfies readonly (keyof Product)[];
-
-// `status` is intentionally excluded: it changes only through the guarded
-// transition endpoint, never as a free-form field edit or on create. `total` is
-// excluded too: the server derives it from the line items' importi, so it is
-// never sent from here. `quote` (preventivo) is excluded as well: it has no form
-// field, so it is never set on create and left untouched on edit.
-const EDITABLE_QUOTE_KEYS = [
-  'clientId', 'doctorId', 'quoteNumber', 'quoteType', 'creationDate', 'quoteDate',
-  'entryBy', 'diagnosis', 'therapeuticProgram', 'detailedPrescription',
-  'authorizationNumber', 'acceptanceDate', 'authorizationReceiptDate', 'expiryDays', 'maxExpiry',
-  'measurementsOk', 'commissionsPaid', 'orderNumber', 'model', 'measurements', 'invoiceNumber',
-  'note', 'privateNote', 'finalNote',
-] as const satisfies readonly (keyof Quote)[];
-
-// `status` is intentionally excluded: it changes only through the status
-// endpoint (the "Cambia Stato" action), never as a free-form field edit.
-const EDITABLE_WORK_ORDER_KEYS = [
-  'quoteId', 'clientId', 'creationDate', 'completionDate', 'deliveryDate',
-  'cancellationDate', 'maxExpiry', 'clientTrial', 'clientTrialOutcome', 'clientTrialDate',
-  'clientCheck', 'clientCheckOutcome', 'clientCheckDate', 'doctorSignature', 'technicalService',
-  'serviceStatus', 'complaintReason', 'device', 'warranty', 'serviceDeliveryDate', 'testOutcome',
-  'testOutcomeDate', 'serviceDoctorSignature', 'technicianSignature', 'interventionDescription',
-  'technicalNotes',
-] as const satisfies readonly (keyof WorkOrder)[];
-
-export type EditTarget =
-  | { type: 'client'; id: string }
-  | { type: 'doctor'; id: string }
-  | { type: 'healthCompany'; id: string }
-  | { type: 'product'; id: string }
-  | { type: 'quote'; id: string }
-  | { type: 'workOrder'; id: string };
-
-export type EntityKind = EditTarget['type'];
-
-/** `edit` updates an existing record; `create` inserts a new one. */
-export type EditMode = 'edit' | 'create';
-
-/** Result of a save: `created` is set only when a new record was inserted. */
-export type SaveResult = { ok: boolean; created?: { type: EntityKind; id: string } };
+type EditSession = {
+  target: EditTarget;
+  mode: EditMode;
+  draft: EntityDraft | null;
+  original: EntityDraft | null;
+  requiredFields: string[];
+};
 
 type EntityEditValue = {
   editing: boolean;
@@ -158,112 +111,37 @@ type EntityEditValue = {
 
 const EntityEditContext = createContext<EntityEditValue | null>(null);
 
-function diff<T extends object>(draft: T | null, original: T | null, keys: readonly (keyof T)[]) {
-  const changes: Record<string, unknown> = {};
-  if (!draft || !original) return changes;
-  for (const key of keys) {
-    if (draft[key] !== original[key]) changes[key as string] = draft[key];
-  }
-  return changes;
+function cloneDraft<T extends object>(draft: T): T {
+  return { ...draft };
 }
 
-/** Collect the given keys from a draft into a full (non-diff) payload, for creation. */
-function buildCreatePayload<T extends object>(
-  draft: T | null,
-  keys: readonly (keyof T)[],
-): Record<string, unknown> {
-  const payload: Record<string, unknown> = {};
-  if (!draft) return payload;
-  for (const key of keys) payload[key as string] = draft[key];
-  return payload;
-}
-
-/** A blank client used to seed the creation form. */
-function makeEmptyClient(): Client {
-  return {
-    idClient: '', name: '', surname: '', fiscalCode: '', phone: '', mobile: '', email: '',
-    birthDate: '', birthMunicipality: '', address: '', city: '', province: '', postalCode: '',
-    country: '', district: '', doctorId: '', gender: '', note: '',
-  };
-}
-
-/** A blank doctor used to seed the creation form. */
-function makeEmptyDoctor(): Doctor {
-  return { idDoctor: '', surname: '', name: '', address: '', phone: '', email: '', note: '' };
-}
-
-/** A blank health company used to seed the creation form. */
-function makeEmptyHealthCompany(): HealthCompany {
-  return {
-    idHealthCompany: '', municipalityCode: '', municipality: '', regionCode: '', regionName: '',
-    companyCode: '', companyName: '', year: '', males: '', females: '', total: '', district: '',
-  };
-}
-
-/** A blank product used to seed the creation form. */
-function makeEmptyProduct(): Product {
-  return { idProduct: '', code: '', description: '', price: '', year: '' };
-}
-
-/** A blank quote used to seed the creation form (status is server-assigned). */
-function makeEmptyQuote(): Quote {
-  return {
-    idQuote: '', clientId: '', doctorId: '', clientName: '', clientCity: '', doctorName: '', workOrderId: '', quoteNumber: '', quoteType: '', status: '',
-    creationDate: '', quoteDate: '', total: '', entryBy: '', diagnosis: '',
-    therapeuticProgram: '', detailedPrescription: '', authorizationNumber: '',
-    acceptanceDate: '', authorizationReceiptDate: '', expiryDays: '', maxExpiry: '',
-    measurementsOk: '', commissionsPaid: '', orderNumber: '', model: '', measurements: '',
-    invoiceNumber: '', quote: '', note: '', privateNote: '', finalNote: '',
-  };
-}
-
-/**
- * Quote's "Data Massima Scadenza" derived from "Giorni Massima Scadenza": today
- * plus that many days, as an ISO date. Blank when the days are missing or not a
- * non-negative whole number, so the field clears rather than showing a bad date.
- */
-function maxExpiryFromDays(days: string): string {
-  const count = Number(days);
-  if (days.trim() === '' || !Number.isInteger(count) || count < 0) return '';
-  return addDaysIso(todayIso(), count);
-}
-
-/** Shared client conversions: blank birth date → null, doctor id → number/null. */
-function normalizeClientPayload(payload: ClientUpdate): ClientUpdate {
-  if (payload.birthDate === '') payload.birthDate = null;
-  if ('doctorId' in payload) {
-    payload.doctorId = payload.doctorId === '' ? null : Number(payload.doctorId);
-  }
-  return payload;
+function sessionDraft<K extends EntityKind>(session: EditSession | null, type: K): EntityDraftMap[K] | null {
+  return session?.target.type === type ? (session.draft as EntityDraftMap[K] | null) : null;
 }
 
 export function EntityEditProvider({ children }: { children: ReactNode }) {
-  const [editing, setEditing] = useState(false);
-  const [mode, setMode] = useState<EditMode>('edit');
-  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
-  const [requiredFields, setRequiredFields] = useState<string[]>([]);
+  const [session, setSession] = useState<EditSession | null>(null);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
-  const [clientDraft, setClientDraft] = useState<Client | null>(null);
-  const [clientOriginal, setClientOriginal] = useState<Client | null>(null);
   const [clientOrthopedicDraft, setClientOrthopedicDraft] = useState<ClientOrthopedic | null>(null);
   const [clientOrthopedicOriginal, setClientOrthopedicOriginal] = useState<ClientOrthopedic | null>(null);
-  const [doctorDraft, setDoctorDraft] = useState<Doctor | null>(null);
-  const [doctorOriginal, setDoctorOriginal] = useState<Doctor | null>(null);
-  const [healthCompanyDraft, setHealthCompanyDraft] = useState<HealthCompany | null>(null);
-  const [healthCompanyOriginal, setHealthCompanyOriginal] = useState<HealthCompany | null>(null);
-  const [productDraft, setProductDraft] = useState<Product | null>(null);
-  const [productOriginal, setProductOriginal] = useState<Product | null>(null);
-  const [quoteDraft, setQuoteDraft] = useState<Quote | null>(null);
-  const [quoteOriginal, setQuoteOriginal] = useState<Quote | null>(null);
   const [quoteItemDrafts, setQuoteItemDrafts] = useState<QuoteItemDraft[]>([]);
-  const [workOrderDraft, setWorkOrderDraft] = useState<WorkOrder | null>(null);
-  const [workOrderOriginal, setWorkOrderOriginal] = useState<WorkOrder | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
   // Sub-editors (e.g. work order items) that persist as part of the next save.
   const saveHooksRef = useRef<Set<() => Promise<void>>>(new Set());
   const [extraDirty, setExtraDirty] = useState(false);
+
+  const editing = session !== null;
+  const mode = session?.mode ?? 'edit';
+  const editTarget = session?.target ?? null;
+
+  const clientDraft = sessionDraft(session, 'client');
+  const doctorDraft = sessionDraft(session, 'doctor');
+  const healthCompanyDraft = sessionDraft(session, 'healthCompany');
+  const productDraft = sessionDraft(session, 'product');
+  const quoteDraft = sessionDraft(session, 'quote');
+  const workOrderDraft = sessionDraft(session, 'workOrder');
 
   const registerSaveHook = useCallback((hook: () => Promise<void>) => {
     saveHooksRef.current.add(hook);
@@ -274,231 +152,79 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
 
   const markExtraDirty = useCallback((dirty: boolean) => setExtraDirty(dirty), []);
 
-  const reset = useCallback(() => {
-    setClientDraft(null);
-    setClientOriginal(null);
+  const resetSubEditors = useCallback(() => {
     setClientOrthopedicDraft(null);
     setClientOrthopedicOriginal(null);
-    setDoctorDraft(null);
-    setDoctorOriginal(null);
-    setHealthCompanyDraft(null);
-    setHealthCompanyOriginal(null);
-    setProductDraft(null);
-    setProductOriginal(null);
-    setQuoteDraft(null);
-    setQuoteOriginal(null);
     setQuoteItemDrafts([]);
-    setWorkOrderDraft(null);
-    setWorkOrderOriginal(null);
-    setMode('edit');
-    setRequiredFields([]);
     setInvalidFields([]);
     setSaveError(null);
     setExtraDirty(false);
   }, []);
 
   const endSession = useCallback(() => {
-    setEditing(false);
-    setEditTarget(null);
-    reset();
-  }, [reset]);
+    setSession(null);
+    resetSubEditors();
+  }, [resetSubEditors]);
 
-  const startClientEdit = useCallback(
-    (code: string) => {
-      reset();
-      setEditTarget({ type: 'client', id: code });
-      setEditing(true);
+  const startEdit = useCallback(
+    (type: EntityKind, id: string) => {
+      resetSubEditors();
+      setSession({ target: { type, id } as EditTarget, mode: 'edit', draft: null, original: null, requiredFields: [] });
     },
-    [reset],
+    [resetSubEditors],
   );
 
-  const startClientCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof Client>) => {
-      reset();
-      const empty = makeEmptyClient();
-      setClientDraft(empty);
-      setClientOriginal(empty);
-      setRequiredFields(requiredKeys.map(String));
-      setMode('create');
-      setEditTarget({ type: 'client', id: '' });
-      setEditing(true);
+  const startCreate = useCallback(
+    <K extends EntityKind>(type: K, requiredKeys: ReadonlyArray<keyof EntityDraftMap[K]>) => {
+      resetSubEditors();
+      const config = entityEditConfigs[type];
+      if (!config.makeEmptyDraft) {
+        setSaveError('Creazione non supportata per questa entità.');
+        setSession({ target: { type, id: '' } as EditTarget, mode: 'create', draft: null, original: null, requiredFields: [] });
+        return;
+      }
+      const empty = config.makeEmptyDraft();
+      setSession({
+        target: { type, id: '' } as EditTarget,
+        mode: 'create',
+        draft: empty,
+        original: cloneDraft(empty),
+        requiredFields: requiredKeys.map(String),
+      });
     },
-    [reset],
+    [resetSubEditors],
   );
 
-  const startDoctorEdit = useCallback(
-    (id: string) => {
-      reset();
-      setEditTarget({ type: 'doctor', id });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const startDoctorCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof Doctor>) => {
-      reset();
-      const empty = makeEmptyDoctor();
-      setDoctorDraft(empty);
-      setDoctorOriginal(empty);
-      setRequiredFields(requiredKeys.map(String));
-      setMode('create');
-      setEditTarget({ type: 'doctor', id: '' });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const startHealthCompanyEdit = useCallback(
-    (id: string) => {
-      reset();
-      setEditTarget({ type: 'healthCompany', id });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const startHealthCompanyCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof HealthCompany>) => {
-      reset();
-      const empty = makeEmptyHealthCompany();
-      setHealthCompanyDraft(empty);
-      setHealthCompanyOriginal(empty);
-      setRequiredFields(requiredKeys.map(String));
-      setMode('create');
-      setEditTarget({ type: 'healthCompany', id: '' });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const startProductEdit = useCallback(
-    (id: string) => {
-      reset();
-      setEditTarget({ type: 'product', id });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const startProductCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof Product>) => {
-      reset();
-      const empty = makeEmptyProduct();
-      setProductDraft(empty);
-      setProductOriginal(empty);
-      setRequiredFields(requiredKeys.map(String));
-      setMode('create');
-      setEditTarget({ type: 'product', id: '' });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const startQuoteEdit = useCallback(
-    (id: string) => {
-      reset();
-      setEditTarget({ type: 'quote', id });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const startQuoteCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof Quote>) => {
-      reset();
-      // New quotes default their creation date to today (overridable in the form).
-      const empty: Quote = { ...makeEmptyQuote(), creationDate: todayIso() };
-      setQuoteDraft(empty);
-      setQuoteOriginal(empty);
-      setRequiredFields(requiredKeys.map(String));
-      setMode('create');
-      setEditTarget({ type: 'quote', id: '' });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const startWorkOrderEdit = useCallback(
-    (id: string) => {
-      reset();
-      setEditTarget({ type: 'workOrder', id });
-      setEditing(true);
-    },
-    [reset],
-  );
-
-  const seedClient = useCallback((client: Client) => {
-    setClientDraft((prev) => prev ?? { ...client });
-    setClientOriginal((prev) => prev ?? { ...client });
+  const seedDraft = useCallback(<K extends EntityKind>(type: K, draft: EntityDraftMap[K]) => {
+    setSession((prev) => {
+      if (!prev || prev.target.type !== type) return prev;
+      return {
+        ...prev,
+        draft: prev.draft ?? cloneDraft(draft),
+        original: prev.original ?? cloneDraft(draft),
+      };
+    });
   }, []);
 
-  const seedClientOrthopedic = useCallback((ortho: ClientOrthopedic) => {
-    setClientOrthopedicDraft((prev) => prev ?? { ...ortho });
-    setClientOrthopedicOriginal((prev) => prev ?? { ...ortho });
-  }, []);
-
-  const seedDoctor = useCallback((doctor: Doctor) => {
-    setDoctorDraft((prev) => prev ?? { ...doctor });
-    setDoctorOriginal((prev) => prev ?? { ...doctor });
-  }, []);
-
-  const seedHealthCompany = useCallback((company: HealthCompany) => {
-    setHealthCompanyDraft((prev) => prev ?? { ...company });
-    setHealthCompanyOriginal((prev) => prev ?? { ...company });
-  }, []);
-
-  const seedProduct = useCallback((product: Product) => {
-    setProductDraft((prev) => prev ?? { ...product });
-    setProductOriginal((prev) => prev ?? { ...product });
-  }, []);
-
-  const seedQuote = useCallback((quote: Quote) => {
-    setQuoteDraft((prev) => prev ?? { ...quote });
-    setQuoteOriginal((prev) => prev ?? { ...quote });
-  }, []);
-
-  const seedWorkOrder = useCallback((workOrder: WorkOrder) => {
-    setWorkOrderDraft((prev) => prev ?? { ...workOrder });
-    setWorkOrderOriginal((prev) => prev ?? { ...workOrder });
-  }, []);
-
-  const setClientField = useCallback((key: keyof Client, value: string) => {
-    setClientDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
-    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
-  }, []);
+  const setEntityField = useCallback(
+    <K extends EntityKind>(type: K, key: keyof EntityDraftMap[K], value: string) => {
+      setSession((prev) => {
+        if (!prev || prev.target.type !== type || !prev.draft) return prev;
+        const config = entityEditConfigs[type] as unknown as EntityEditConfig<K>;
+        const draft = prev.draft as EntityDraftMap[K];
+        const nextDraft = config.applyFieldChange
+          ? config.applyFieldChange(draft, key, value)
+          : { ...draft, [key]: value };
+        if (!nextDraft) return prev;
+        return { ...prev, draft: nextDraft };
+      });
+      setInvalidFields((prev) => (prev.length ? prev.filter((field) => field !== key) : prev));
+    },
+    [],
+  );
 
   const setClientOrthopedicField = useCallback((key: keyof ClientOrthopedic, value: string) => {
     setClientOrthopedicDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
-  }, []);
-
-  const setDoctorField = useCallback((key: keyof Doctor, value: string) => {
-    setDoctorDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
-    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
-  }, []);
-
-  const setHealthCompanyField = useCallback((key: keyof HealthCompany, value: string) => {
-    setHealthCompanyDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
-    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
-  }, []);
-
-  const setProductField = useCallback((key: keyof Product, value: string) => {
-    setProductDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
-    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
-  }, []);
-
-  const setQuoteField = useCallback((key: keyof Quote, value: string) => {
-    // Giorni Massima Scadenza accepts only non-negative integers; reject any other
-    // input so the field — and the date derived from it — stays valid.
-    if (key === 'expiryDays' && !/^\d*$/.test(value)) return;
-    setQuoteDraft((prev) => {
-      if (!prev) return prev;
-      const next = { ...prev, [key]: value };
-      // Data Massima Scadenza is derived from Giorni Massima Scadenza, never typed.
-      if (key === 'expiryDays') next.maxExpiry = maxExpiryFromDays(value);
-      return next;
-    });
-    setInvalidFields((prev) => (prev.length ? prev.filter((k) => k !== key) : prev));
   }, []);
 
   const addQuoteItemDraft = useCallback((draft: QuoteItemDraft) => {
@@ -509,110 +235,140 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setQuoteItemDrafts((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const setWorkOrderField = useCallback((key: keyof WorkOrder, value: string) => {
-    setWorkOrderDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
-  }, []);
-
-  const clientChanges = useMemo(
-    () => diff(clientDraft, clientOriginal, EDITABLE_CLIENT_KEYS),
-    [clientDraft, clientOriginal],
+  const startClientEdit = useCallback((code: string) => startEdit('client', code), [startEdit]);
+  const startClientCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof Client>) => startCreate('client', requiredKeys),
+    [startCreate],
   );
+  const startDoctorEdit = useCallback((id: string) => startEdit('doctor', id), [startEdit]);
+  const startDoctorCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof Doctor>) => startCreate('doctor', requiredKeys),
+    [startCreate],
+  );
+  const startHealthCompanyEdit = useCallback(
+    (id: string) => startEdit('healthCompany', id),
+    [startEdit],
+  );
+  const startHealthCompanyCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof HealthCompany>) => startCreate('healthCompany', requiredKeys),
+    [startCreate],
+  );
+  const startProductEdit = useCallback((id: string) => startEdit('product', id), [startEdit]);
+  const startProductCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof Product>) => startCreate('product', requiredKeys),
+    [startCreate],
+  );
+  const startQuoteEdit = useCallback((id: string) => startEdit('quote', id), [startEdit]);
+  const startQuoteCreate = useCallback(
+    (requiredKeys: ReadonlyArray<keyof Quote>) => startCreate('quote', requiredKeys),
+    [startCreate],
+  );
+  const startWorkOrderEdit = useCallback((id: string) => startEdit('workOrder', id), [startEdit]);
+
+  const seedClient = useCallback((client: Client) => seedDraft('client', client), [seedDraft]);
+  const seedClientOrthopedic = useCallback((ortho: ClientOrthopedic) => {
+    setClientOrthopedicDraft((prev) => prev ?? cloneDraft(ortho));
+    setClientOrthopedicOriginal((prev) => prev ?? cloneDraft(ortho));
+  }, []);
+  const seedDoctor = useCallback((doctor: Doctor) => seedDraft('doctor', doctor), [seedDraft]);
+  const seedHealthCompany = useCallback(
+    (company: HealthCompany) => seedDraft('healthCompany', company),
+    [seedDraft],
+  );
+  const seedProduct = useCallback((product: Product) => seedDraft('product', product), [seedDraft]);
+  const seedQuote = useCallback((quote: Quote) => seedDraft('quote', quote), [seedDraft]);
+  const seedWorkOrder = useCallback(
+    (workOrder: WorkOrder) => seedDraft('workOrder', workOrder),
+    [seedDraft],
+  );
+
+  const setClientField = useCallback(
+    (key: keyof Client, value: string) => setEntityField('client', key, value),
+    [setEntityField],
+  );
+  const setDoctorField = useCallback(
+    (key: keyof Doctor, value: string) => setEntityField('doctor', key, value),
+    [setEntityField],
+  );
+  const setHealthCompanyField = useCallback(
+    (key: keyof HealthCompany, value: string) => setEntityField('healthCompany', key, value),
+    [setEntityField],
+  );
+  const setProductField = useCallback(
+    (key: keyof Product, value: string) => setEntityField('product', key, value),
+    [setEntityField],
+  );
+  const setQuoteField = useCallback(
+    (key: keyof Quote, value: string) => setEntityField('quote', key, value),
+    [setEntityField],
+  );
+  const setWorkOrderField = useCallback(
+    (key: keyof WorkOrder, value: string) => setEntityField('workOrder', key, value),
+    [setEntityField],
+  );
+
+  const primaryChanges = useMemo(() => {
+    if (!session) return {};
+    const config = entityEditConfigs[session.target.type];
+    return diffDraft(
+      session.draft as Record<string, unknown> | null,
+      session.original as Record<string, unknown> | null,
+      config.editableKeys as readonly string[],
+    );
+  }, [session]);
+
   const clientOrthopedicChanges = useMemo(
-    () => diff(clientOrthopedicDraft, clientOrthopedicOriginal, EDITABLE_CLIENT_ORTHO_KEYS),
+    () =>
+      diffDraft(
+        clientOrthopedicDraft,
+        clientOrthopedicOriginal,
+        entityEditConfigs.client.clientOrthopedicEditableKeys ?? [],
+      ),
     [clientOrthopedicDraft, clientOrthopedicOriginal],
   );
-  const doctorChanges = useMemo(
-    () => diff(doctorDraft, doctorOriginal, EDITABLE_DOCTOR_KEYS),
-    [doctorDraft, doctorOriginal],
-  );
-  const healthCompanyChanges = useMemo(
-    () => diff(healthCompanyDraft, healthCompanyOriginal, EDITABLE_HEALTH_COMPANY_KEYS),
-    [healthCompanyDraft, healthCompanyOriginal],
-  );
-  const productChanges = useMemo(
-    () => diff(productDraft, productOriginal, EDITABLE_PRODUCT_KEYS),
-    [productDraft, productOriginal],
-  );
-  const quoteChanges = useMemo(
-    () => diff(quoteDraft, quoteOriginal, EDITABLE_QUOTE_KEYS),
-    [quoteDraft, quoteOriginal],
-  );
-  const workOrderChanges = useMemo(
-    () => diff(workOrderDraft, workOrderOriginal, EDITABLE_WORK_ORDER_KEYS),
-    [workOrderDraft, workOrderOriginal],
-  );
+
   const isDirty =
     extraDirty ||
-    Object.keys(clientChanges).length > 0 ||
+    Object.keys(primaryChanges).length > 0 ||
     Object.keys(clientOrthopedicChanges).length > 0 ||
-    Object.keys(doctorChanges).length > 0 ||
-    Object.keys(healthCompanyChanges).length > 0 ||
-    Object.keys(productChanges).length > 0 ||
-    Object.keys(quoteChanges).length > 0 ||
-    quoteItemDrafts.length > 0 ||
-    Object.keys(workOrderChanges).length > 0;
+    quoteItemDrafts.length > 0;
+
+  const payloadContext: EditPayloadContext = useMemo(
+    () => ({ clientOrthopedicChanges, quoteItemDrafts }),
+    [clientOrthopedicChanges, quoteItemDrafts],
+  );
 
   const save = useCallback(async (): Promise<SaveResult> => {
-    if (!editTarget) return { ok: true };
+    if (!session) return { ok: true };
 
-    if (mode === 'create') {
-      const draft = (
-        editTarget.type === 'client'
-          ? clientDraft
-          : editTarget.type === 'doctor'
-            ? doctorDraft
-            : editTarget.type === 'healthCompany'
-              ? healthCompanyDraft
-              : editTarget.type === 'product'
-                ? productDraft
-                : editTarget.type === 'quote'
-                  ? quoteDraft
-                  : null
-      ) as Record<string, unknown> | null;
+    const { target } = session;
+    const config = entityEditConfigs[target.type];
 
-      const missing = requiredFields.filter((key) => !String(draft?.[key] ?? '').trim());
+    if (session.mode === 'create') {
+      const draft = session.draft as Record<string, unknown> | null;
+      const missing = session.requiredFields.filter((key) => !String(draft?.[key] ?? '').trim());
       if (missing.length > 0) {
         setInvalidFields(missing);
         setSaveError('Compila i campi obbligatori evidenziati.');
         return { ok: false };
       }
 
+      if (!config.create || !session.draft) {
+        setSaveError('Creazione non supportata per questa entità.');
+        return { ok: false };
+      }
+
       setSaving(true);
       setSaveError(null);
       try {
-        let createdId: string;
-        if (editTarget.type === 'client') {
-          const created = await createClient(
-            normalizeClientPayload(buildCreatePayload(clientDraft, EDITABLE_CLIENT_KEYS) as ClientUpdate),
-          );
-          createdId = created.idClient;
-        } else if (editTarget.type === 'doctor') {
-          const created = await createDoctor(
-            buildCreatePayload(doctorDraft, EDITABLE_DOCTOR_KEYS) as DoctorUpdate,
-          );
-          createdId = created.idDoctor;
-        } else if (editTarget.type === 'healthCompany') {
-          const created = await createHealthCompany(
-            normalizeHealthCompanyPayload(
-              buildCreatePayload(healthCompanyDraft, EDITABLE_HEALTH_COMPANY_KEYS) as HealthCompanyUpdate,
-            ),
-          );
-          createdId = created.idHealthCompany;
-        } else if (editTarget.type === 'product') {
-          const created = await createProduct(
-            normalizeProductPayload(buildCreatePayload(productDraft, EDITABLE_PRODUCT_KEYS) as ProductUpdate),
-          );
-          createdId = created.idProduct;
-        } else if (editTarget.type === 'quote') {
-          const created = await createQuote(buildQuoteCreatePayload(quoteDraft, quoteItemDrafts));
-          createdId = created.idQuote;
-        } else {
-          setSaveError('Creazione non supportata per questa entità.');
-          return { ok: false };
-        }
+        const createPayload = config.buildCreatePayload
+          ? config.buildCreatePayload(session.draft as never, payloadContext)
+          : buildCreatePayload(session.draft as Record<string, unknown>, config.editableKeys as readonly string[]);
+        const created = await config.create(createPayload);
+        const createdId = config.getCreatedId?.(created as never) ?? '';
         endSession();
-        setDataVersion((v) => v + 1);
-        return { ok: true, created: { type: editTarget.type, id: createdId } };
+        setDataVersion((version) => version + 1);
+        return { ok: true, created: { type: target.type, id: createdId } };
       } catch (error) {
         setSaveError(error instanceof Error ? error.message : 'Errore durante il salvataggio.');
         return { ok: false };
@@ -621,49 +377,26 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const payload = buildPayload(editTarget, {
-      clientChanges,
-      clientOrthopedicChanges,
-      doctorChanges,
-      healthCompanyChanges,
-      productChanges,
-      quoteChanges,
-      workOrderChanges,
-    });
+    const payload = config.buildUpdatePayload
+      ? config.buildUpdatePayload(primaryChanges, payloadContext)
+      : { ...primaryChanges };
     const hasFieldChanges = Object.keys(payload).length > 0;
     // Nothing changed (neither fields nor a sub-editor): just close the session.
     if (!hasFieldChanges && !extraDirty) {
       endSession();
       return { ok: true };
     }
-    if (hasFieldChanges && editTarget.type === 'client') {
-      normalizeClientPayload(payload as ClientUpdate);
-    }
 
     setSaving(true);
     setSaveError(null);
     try {
-      if (hasFieldChanges) {
-        if (editTarget.type === 'client') {
-          await updateClient(editTarget.id, payload as ClientUpdate);
-        } else if (editTarget.type === 'doctor') {
-          await updateDoctor(editTarget.id, payload as DoctorUpdate);
-        } else if (editTarget.type === 'healthCompany') {
-          await updateHealthCompany(editTarget.id, payload as HealthCompanyUpdate);
-        } else if (editTarget.type === 'product') {
-          await updateProduct(editTarget.id, payload as ProductUpdate);
-        } else if (editTarget.type === 'quote') {
-          await updateQuote(editTarget.id, payload as QuoteUpdate);
-        } else {
-          await updateWorkOrder(editTarget.id, payload as WorkOrderUpdate);
-        }
-      }
+      if (hasFieldChanges) await config.update(target.id, payload);
       // Persist any registered sub-editors (e.g. work order item edits).
       for (const hook of saveHooksRef.current) {
         await hook();
       }
       endSession();
-      setDataVersion((v) => v + 1);
+      setDataVersion((version) => version + 1);
       return { ok: true };
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Errore durante il salvataggio.');
@@ -671,26 +404,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     } finally {
       setSaving(false);
     }
-  }, [
-    editTarget,
-    mode,
-    clientDraft,
-    doctorDraft,
-    healthCompanyDraft,
-    productDraft,
-    quoteDraft,
-    quoteItemDrafts,
-    requiredFields,
-    clientChanges,
-    clientOrthopedicChanges,
-    doctorChanges,
-    healthCompanyChanges,
-    productChanges,
-    quoteChanges,
-    workOrderChanges,
-    extraDirty,
-    endSession,
-  ]);
+  }, [endSession, extraDirty, payloadContext, primaryChanges, session]);
 
   const value: EntityEditValue = {
     editing,
@@ -749,116 +463,4 @@ export function useEntityEdit() {
   const ctx = useContext(EntityEditContext);
   if (!ctx) throw new Error('useEntityEdit must be used inside EntityEditProvider');
   return ctx;
-}
-
-function buildPayload(
-  target: EditTarget,
-  changes: {
-    clientChanges: Record<string, unknown>;
-    clientOrthopedicChanges: Record<string, unknown>;
-    doctorChanges: Record<string, unknown>;
-    healthCompanyChanges: Record<string, unknown>;
-    productChanges: Record<string, unknown>;
-    quoteChanges: Record<string, unknown>;
-    workOrderChanges: Record<string, unknown>;
-  },
-) {
-  if (target.type === 'client') {
-    return { ...changes.clientChanges, ...changes.clientOrthopedicChanges } as ClientUpdate;
-  }
-  if (target.type === 'doctor') {
-    return { ...changes.doctorChanges } as DoctorUpdate;
-  }
-  if (target.type === 'healthCompany') {
-    return normalizeHealthCompanyPayload({ ...changes.healthCompanyChanges } as HealthCompanyUpdate);
-  }
-  if (target.type === 'product') {
-    return normalizeProductPayload({ ...changes.productChanges } as ProductUpdate);
-  }
-
-  if (target.type === 'quote') {
-    return buildQuotePayload(changes.quoteChanges);
-  }
-
-  return buildWorkOrderPayload(changes.workOrderChanges);
-}
-
-/** Normalize health-company edits/creates: blank year → null, otherwise numeric. */
-function normalizeHealthCompanyPayload(payload: HealthCompanyUpdate): HealthCompanyUpdate {
-  if (payload.year === '') payload.year = null;
-  if ('year' in payload && payload.year !== null) payload.year = Number(payload.year);
-  return payload;
-}
-
-/** Normalize product edits/creates: blank year/price → null, price otherwise numeric. */
-function normalizeProductPayload(payload: ProductUpdate): ProductUpdate {
-  if (payload.year === '') payload.year = null;
-  if (payload.price === '') payload.price = null;
-  if ('price' in payload && payload.price !== null) payload.price = Number(payload.price);
-  return payload;
-}
-
-/** Blank a set of date keys to null (native date inputs emit '', which the API rejects). */
-function blankDatesToNull(payload: Record<string, unknown>, dateKeys: readonly string[]) {
-  for (const key of dateKeys) {
-    if (payload[key] === '') payload[key] = null;
-  }
-}
-
-const QUOTE_DATE_KEYS = ['creationDate', 'quoteDate', 'acceptanceDate', 'authorizationReceiptDate'];
-
-/** Normalize quote edits: blank dates/numbers become null, FK ids become numbers. */
-function buildQuotePayload(quoteChanges: Record<string, unknown>): QuoteUpdate {
-  const payload = { ...quoteChanges } as QuoteUpdate;
-  blankDatesToNull(payload, QUOTE_DATE_KEYS);
-  if ('clientId' in payload) {
-    payload.clientId = payload.clientId === '' ? null : Number(payload.clientId);
-  }
-  if ('doctorId' in payload) {
-    payload.doctorId = payload.doctorId === '' ? null : Number(payload.doctorId);
-  }
-  return payload;
-}
-
-/**
- * Full create payload for a new quote, plus any pending line items. `status` is
- * not an editable field — the server assigns it (INSERITO) — so it is simply
- * absent. Blank dates/numbers become null and FK ids become numbers, reusing the
- * edit normalization. Items carry only the client-controlled inputs (the product
- * and the typed quantity/discount); prezzo and importo are derived server-side.
- * The `items` key is omitted when there are none, so quotes without lines send
- * exactly as before.
- */
-function buildQuoteCreatePayload(
-  draft: Quote | null,
-  itemDrafts: QuoteItemDraft[],
-): QuoteCreatePayload {
-  const payload: QuoteCreatePayload = buildQuotePayload(buildCreatePayload(draft, EDITABLE_QUOTE_KEYS));
-  const items = itemDrafts
-    .filter((item) => item.productId.trim() !== '')
-    .map((item) => ({
-      productId: Number(item.productId),
-      quantity: toNullableNumber(item.quantity),
-      discount: toNullableNumber(item.discount),
-    }));
-  if (items.length > 0) payload.items = items;
-  return payload;
-}
-
-const WORK_ORDER_DATE_KEYS = [
-  'creationDate', 'completionDate', 'deliveryDate', 'cancellationDate', 'clientTrialDate',
-  'clientCheckDate', 'serviceDeliveryDate', 'testOutcomeDate',
-];
-
-/** Normalize work-order edits: blank dates become null, FK ids become numbers. */
-function buildWorkOrderPayload(workOrderChanges: Record<string, unknown>): WorkOrderUpdate {
-  const payload = { ...workOrderChanges } as WorkOrderUpdate;
-  blankDatesToNull(payload, WORK_ORDER_DATE_KEYS);
-  if ('quoteId' in payload) {
-    payload.quoteId = payload.quoteId === '' ? null : Number(payload.quoteId);
-  }
-  if ('clientId' in payload) {
-    payload.clientId = payload.clientId === '' ? null : Number(payload.clientId);
-  }
-  return payload;
 }

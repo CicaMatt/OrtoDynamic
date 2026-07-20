@@ -11,8 +11,9 @@ from rest_framework import serializers
 from apps.common.api.serializers import (
     NullToEmptyMixin,
     UpdateFieldsSerializer,
-    nullable_text,
+    nullable_text_fields,
     person_display_name,
+    read_fields,
 )
 from apps.work_orders.models import WorkOrder, WorkOrderItem
 
@@ -20,49 +21,59 @@ from apps.work_orders.models import WorkOrder, WorkOrderItem
 class WorkOrderSerializer(NullToEmptyMixin):
     """Full column set shown in both the Lavorazioni table and detail view."""
 
-    idWorkOrder = serializers.CharField(source="id")
-
-    # Links
-    quoteId = serializers.CharField(source="id_preventivo")
-    clientId = serializers.CharField(source="id_cliente")
+    locals().update(read_fields({
+        "idWorkOrder": "id",
+        # Links
+        "quoteId": "id_preventivo",
+        "clientId": "id_cliente",
+    }))
     # Display name for the linked client, resolved from the object the view
     # attaches (empty when the reference is unset or the row is gone). The frontend
     # shows this in place of the raw id, revealing the id on hover.
     clientName = serializers.SerializerMethodField()
     quoteStatus = serializers.SerializerMethodField()
 
-    # Lifecycle
-    status = serializers.CharField(source="stato")
+    locals().update(read_fields({
+        # Lifecycle
+        "status": "stato",
+    }))
     creationDate = serializers.DateField(source="data_creazione_lavorazione")
     completionDate = serializers.DateField(source="data_fine_lavorazione")
     deliveryDate = serializers.DateField(source="data_consegna")
     cancellationDate = serializers.DateField(source="data_annullamento")
-    maxExpiry = serializers.CharField(source="massima_scadenza")
-
-    # Client trial & check
-    clientTrial = serializers.CharField(source="prova_cliente")
-    clientTrialOutcome = serializers.CharField(source="pos_ril")
+    locals().update(read_fields({
+        "maxExpiry": "massima_scadenza",
+        # Client trial & check
+        "clientTrial": "prova_cliente",
+        "clientTrialOutcome": "pos_ril",
+    }))
     clientTrialDate = serializers.DateField(source="data_prova_cliente")
-    clientCheck = serializers.CharField(source="verifica_cliente")
-    clientCheckOutcome = serializers.CharField(source="verifica_pos_ril")
+    locals().update(read_fields({
+        "clientCheck": "verifica_cliente",
+        "clientCheckOutcome": "verifica_pos_ril",
+    }))
     clientCheckDate = serializers.DateField(source="data_verifica_cliente")
-    doctorSignature = serializers.CharField(source="firma_medico")
-
-    # Technical service
-    technicalService = serializers.CharField(source="assistenza_tecnica")
-    serviceStatus = serializers.CharField(source="stato_lavorazione_assistenza")
-    complaintReason = serializers.CharField(source="ragione_reclamo")
-    device = serializers.CharField(source="presidio")
-    warranty = serializers.CharField(source="garanzia")
+    locals().update(read_fields({
+        "doctorSignature": "firma_medico",
+        # Technical service
+        "technicalService": "assistenza_tecnica",
+        "serviceStatus": "stato_lavorazione_assistenza",
+        "complaintReason": "ragione_reclamo",
+        "device": "presidio",
+        "warranty": "garanzia",
+    }))
     serviceDeliveryDate = serializers.DateField(source="data_consegna_assistenza")
-    testOutcome = serializers.CharField(source="esito_collaudo_assistenza_tecnica")
+    locals().update(read_fields({
+        "testOutcome": "esito_collaudo_assistenza_tecnica",
+    }))
     testOutcomeDate = serializers.DateField(source="data_esito_collaudo_assistenza")
-    serviceDoctorSignature = serializers.CharField(source="firma_medico_assistenza")
-    technicianSignature = serializers.CharField(source="firma_tecnico")
-
-    # Free text
-    interventionDescription = serializers.CharField(source="descrizione_intervento")
-    technicalNotes = serializers.CharField(source="annotazioni_tecniche_assistenza")
+    locals().update(read_fields({
+        "serviceDoctorSignature": "firma_medico_assistenza",
+        "technicianSignature": "firma_tecnico",
+        # Free text
+        "interventionDescription": "descrizione_intervento",
+        "technicalNotes": "annotazioni_tecniche_assistenza",
+    }))
 
     def get_clientName(self, work_order):
         return person_display_name(getattr(work_order, "client", None))
@@ -96,40 +107,47 @@ class WorkOrderUpdateSerializer(UpdateFieldsSerializer):
     cancellationDate = serializers.DateField(
         source="data_annullamento", required=False, allow_null=True
     )
-    maxExpiry = nullable_text("massima_scadenza")
-
-    # Client trial & check
-    clientTrial = nullable_text("prova_cliente")
-    clientTrialOutcome = nullable_text("pos_ril")
+    locals().update(nullable_text_fields({
+        "maxExpiry": "massima_scadenza",
+        # Client trial & check
+        "clientTrial": "prova_cliente",
+        "clientTrialOutcome": "pos_ril",
+    }))
     clientTrialDate = serializers.DateField(
         source="data_prova_cliente", required=False, allow_null=True
     )
-    clientCheck = nullable_text("verifica_cliente")
-    clientCheckOutcome = nullable_text("verifica_pos_ril")
+    locals().update(nullable_text_fields({
+        "clientCheck": "verifica_cliente",
+        "clientCheckOutcome": "verifica_pos_ril",
+    }))
     clientCheckDate = serializers.DateField(
         source="data_verifica_cliente", required=False, allow_null=True
     )
-    doctorSignature = nullable_text("firma_medico")
-
-    # Technical service
-    technicalService = nullable_text("assistenza_tecnica")
-    serviceStatus = nullable_text("stato_lavorazione_assistenza")
-    complaintReason = nullable_text("ragione_reclamo")
-    device = nullable_text("presidio")
-    warranty = nullable_text("garanzia")
+    locals().update(nullable_text_fields({
+        "doctorSignature": "firma_medico",
+        # Technical service
+        "technicalService": "assistenza_tecnica",
+        "serviceStatus": "stato_lavorazione_assistenza",
+        "complaintReason": "ragione_reclamo",
+        "device": "presidio",
+        "warranty": "garanzia",
+    }))
     serviceDeliveryDate = serializers.DateField(
         source="data_consegna_assistenza", required=False, allow_null=True
     )
-    testOutcome = nullable_text("esito_collaudo_assistenza_tecnica")
+    locals().update(nullable_text_fields({
+        "testOutcome": "esito_collaudo_assistenza_tecnica",
+    }))
     testOutcomeDate = serializers.DateField(
         source="data_esito_collaudo_assistenza", required=False, allow_null=True
     )
-    serviceDoctorSignature = nullable_text("firma_medico_assistenza")
-    technicianSignature = nullable_text("firma_tecnico")
-
-    # Free text
-    interventionDescription = nullable_text("descrizione_intervento")
-    technicalNotes = nullable_text("annotazioni_tecniche_assistenza")
+    locals().update(nullable_text_fields({
+        "serviceDoctorSignature": "firma_medico_assistenza",
+        "technicianSignature": "firma_tecnico",
+        # Free text
+        "interventionDescription": "descrizione_intervento",
+        "technicalNotes": "annotazioni_tecniche_assistenza",
+    }))
 
 
 class WorkOrderStatusUpdateSerializer(serializers.Serializer):
@@ -158,7 +176,7 @@ class WorkOrderItemSerializer(NullToEmptyMixin):
     columns are this line's own. Values follow the all-strings contract.
     """
 
-    id = serializers.CharField()
+    locals().update(read_fields({"id": "id"}))
 
     # Joined from the linked item_preventivi row (may be absent).
     productId = serializers.SerializerMethodField()
@@ -170,8 +188,10 @@ class WorkOrderItemSerializer(NullToEmptyMixin):
     discount = serializers.SerializerMethodField()
 
     # This line's own columns.
-    status = serializers.CharField(source="stato")
-    production = serializers.CharField(source="produzione")
+    locals().update(read_fields({
+        "status": "stato",
+        "production": "produzione",
+    }))
     cancellationDate = serializers.DateField(source="data_annullamento")
     orderDate = serializers.DateField(source="data_ordine")
     partialDeliveryDate = serializers.DateField(source="data_consegna_parziale")

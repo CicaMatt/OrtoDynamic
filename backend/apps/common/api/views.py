@@ -1,5 +1,6 @@
 """Small DRF view bases and helpers shared by domain apps."""
 
+from django.http import HttpResponse
 from rest_framework import generics
 
 
@@ -16,6 +17,19 @@ def attach_related(rows, *, id_attr, attr, model):
     for row in rows:
         setattr(row, attr, related.get(getattr(row, id_attr)))
     return rows
+
+
+def attach_many(rows, *relations):
+    rows = list(rows)
+    for relation in relations:
+        attach_related(rows, **relation)
+    return rows
+
+
+def inline_pdf_response(pdf: bytes, filename: str) -> HttpResponse:
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="{filename}"'
+    return response
 
 
 class UnpaginatedListAPIView(generics.ListAPIView):

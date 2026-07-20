@@ -127,6 +127,80 @@ const NUMERIC_INPUTS = {
   },
 } as const;
 
+function QuantityCell({
+  draft,
+  onField,
+}: {
+  draft: QuoteItemDraft;
+  onField: (key: keyof QuoteItemDraft, value: string) => void;
+}) {
+  return (
+    <td className="py-3 px-4 align-top">
+      <EditInput
+        type="number"
+        min={1}
+        value={draft.quantity}
+        onChange={(value) => NUMERIC_INPUTS.quantity(value, (v) => onField('quantity', v))}
+      />
+    </td>
+  );
+}
+
+function DerivedAmountCells({ draft }: { draft: QuoteItemDraft }) {
+  return (
+    <>
+      <td className="py-3 px-4 align-top">
+        <DerivedValue value={formatEuro(draft.price)} />
+      </td>
+      <td className="py-3 px-4 align-top">
+        <DerivedValue value={formatEuro(previewAmount(draft.price, draft.quantity, draft.discount))} />
+      </td>
+    </>
+  );
+}
+
+function DiscountCell({
+  draft,
+  onField,
+}: {
+  draft: QuoteItemDraft;
+  onField: (key: keyof QuoteItemDraft, value: string) => void;
+}) {
+  return (
+    <td className="py-3 px-4 align-top">
+      <EditInput
+        type="number"
+        min={1}
+        value={draft.discount}
+        onChange={(value) => NUMERIC_INPUTS.discount(value, (v) => onField('discount', v))}
+      />
+    </td>
+  );
+}
+
+function RowActionsCell({
+  submitting,
+  canConfirm,
+  onConfirm,
+  onCancel,
+}: {
+  submitting: boolean;
+  canConfirm: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <td className="py-3 px-4 align-top text-right">
+      <ConfirmCancelActions
+        submitting={submitting}
+        canConfirm={canConfirm}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    </td>
+  );
+}
+
 /**
  * Inline row for adding a new line: the product is picked from the live
  * `nomenclatore` lookup (by code or description, kept in sync), and only quantity
@@ -166,36 +240,15 @@ export function ItemDraftRow({
           onSelect={onProductSelect}
         />
       </td>
-      <td className="py-3 px-4 align-top">
-        <EditInput
-          type="number"
-          min={1}
-          value={draft.quantity}
-          onChange={(value) => NUMERIC_INPUTS.quantity(value, (v) => onField('quantity', v))}
-        />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <DerivedValue value={formatEuro(draft.price)} />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <DerivedValue value={formatEuro(previewAmount(draft.price, draft.quantity, draft.discount))} />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <EditInput
-          type="number"
-          min={1}
-          value={draft.discount}
-          onChange={(value) => NUMERIC_INPUTS.discount(value, (v) => onField('discount', v))}
-        />
-      </td>
-      <td className="py-3 px-4 align-top text-right">
-        <ConfirmCancelActions
-          submitting={submitting}
-          canConfirm={canConfirm}
-          onConfirm={onConfirm}
-          onCancel={onCancel}
-        />
-      </td>
+      <QuantityCell draft={draft} onField={onField} />
+      <DerivedAmountCells draft={draft} />
+      <DiscountCell draft={draft} onField={onField} />
+      <RowActionsCell
+        submitting={submitting}
+        canConfirm={canConfirm}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
     </tr>
   );
 }
@@ -229,36 +282,15 @@ export function ItemEditRow({
           <FieldValue value={draft.description} />
         </div>
       </td>
-      <td className="py-3 px-4 align-top">
-        <EditInput
-          type="number"
-          min={1}
-          value={draft.quantity}
-          onChange={(value) => NUMERIC_INPUTS.quantity(value, (v) => onField('quantity', v))}
-        />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <DerivedValue value={formatEuro(draft.price)} />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <DerivedValue value={formatEuro(previewAmount(draft.price, draft.quantity, draft.discount))} />
-      </td>
-      <td className="py-3 px-4 align-top">
-        <EditInput
-          type="number"
-          min={1}
-          value={draft.discount}
-          onChange={(value) => NUMERIC_INPUTS.discount(value, (v) => onField('discount', v))}
-        />
-      </td>
-      <td className="py-3 px-4 align-top text-right">
-        <ConfirmCancelActions
-          submitting={submitting}
-          canConfirm={canConfirm}
-          onConfirm={onConfirm}
-          onCancel={onCancel}
-        />
-      </td>
+      <QuantityCell draft={draft} onField={onField} />
+      <DerivedAmountCells draft={draft} />
+      <DiscountCell draft={draft} onField={onField} />
+      <RowActionsCell
+        submitting={submitting}
+        canConfirm={canConfirm}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
     </tr>
   );
 }
