@@ -42,7 +42,15 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const applyDestination = (destination: NavigationDestination) => {
     const createType = createEntityForRoute(destination.route);
     if (createType && !belongsToCurrentEdit(destination.route)) {
-      edit.start({ type: createType, id: '' }, 'create');
+      if (destination.route.name === 'quote-create') {
+        edit.start(
+          { type: 'quote', id: '' },
+          'create',
+          destination.route.clientId ? { clientId: destination.route.clientId } : undefined,
+        );
+      } else {
+        edit.start({ type: createType, id: '' }, 'create');
+      }
     }
     dispatch({ type: 'apply', destination });
   };

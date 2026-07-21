@@ -60,9 +60,14 @@ function sessionExtras(type: EntityKind) {
   return {};
 }
 
-export function startSession(target: EditTarget, mode: EditMode): EditSession {
+export function startSession<K extends EntityKind>(
+  target: Extract<EditTarget, { type: K }>,
+  mode: EditMode,
+  initialValues?: Partial<EntityDraftMap[K]>,
+): EditSession {
   const config = editConfigFor(target.type);
-  const draft = mode === 'create' ? (config.makeEmptyDraft?.() ?? null) : null;
+  const emptyDraft = mode === 'create' ? (config.makeEmptyDraft?.() ?? null) : null;
+  const draft = emptyDraft && initialValues ? { ...emptyDraft, ...initialValues } : emptyDraft;
   return {
     ...target,
     mode,

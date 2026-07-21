@@ -102,4 +102,13 @@ describe('edit session transitions', () => {
     resetSessionParticipant(workOrder);
     expect(reset).toHaveBeenCalledOnce();
   });
+
+  it('applies create-route initial values without marking the new session dirty', () => {
+    const quote = startSession({ type: 'quote', id: '' }, 'create', { clientId: '21' });
+
+    expect(quote.type).toBe('quote');
+    expect(quote.draft?.clientId).toBe('21');
+    expect(quote.draft?.doctorId).toBe('');
+    expect(isSessionDirty(quote)).toBe(false);
+  });
 });

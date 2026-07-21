@@ -1,4 +1,5 @@
 import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
+import { formatEuro } from '../../../shared/format/format';
 import { productCreateRequiredKeys } from '../editConfig';
 import type { Product } from '../types';
 
@@ -8,7 +9,7 @@ export type ProductField = FieldConfig<Product>;
 export const productFields: ProductField[] = [
   { label: 'ID', key: 'idProduct', readonly: true },
   { label: 'Codice', key: 'code' },
-  { label: 'Prezzo', key: 'price', type: 'number' },
+  { label: 'Prezzo', key: 'price', type: 'number', renderValue: formatEuro },
   { label: 'Anno', key: 'year' },
   { label: 'Descrizione', key: 'description', type: 'textarea' },
 ];

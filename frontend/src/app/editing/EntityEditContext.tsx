@@ -23,7 +23,11 @@ type EntityEditValue = {
   error: string | null;
   isDirty: boolean;
   dataVersion: number;
-  start: (target: EditTarget, mode: EditMode) => void;
+  start: <K extends EntityKind>(
+    target: Extract<EditTarget, { type: K }>,
+    mode: EditMode,
+    initialValues?: Partial<EntityDraftMap[K]>,
+  ) => void;
   seed: <K extends EntityKind>(type: K, draft: EntityDraftMap[K]) => void;
   change: <K extends EntityKind>(type: K, key: keyof EntityDraftMap[K], value: string) => void;
   supplement: (action: SupplementalEditAction) => void;
@@ -48,9 +52,13 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setError(null);
   };
 
-  const start = (target: EditTarget, mode: EditMode) => {
+  const start = <K extends EntityKind>(
+    target: Extract<EditTarget, { type: K }>,
+    mode: EditMode,
+    initialValues?: Partial<EntityDraftMap[K]>,
+  ) => {
     resetSessionParticipant(session);
-    setSessionState(startSession(target, mode));
+    setSessionState(startSession(target, mode, initialValues));
     setError(null);
   };
 
@@ -139,7 +147,7 @@ export function useEntityEditor<K extends EntityKind>(type: K): EntityEditor<K> 
     invalidFields: (active?.invalidFields ?? []) as Array<keyof EntityDraftMap[K]>,
     dataVersion,
     isEditing: (id) => active?.mode === 'edit' && active.id === id,
-    startEdit: (id) => start({ type, id } as EditTarget, 'edit'),
+    startEdit: (id) => start({ type, id } as Extract<EditTarget, { type: K }>, 'edit'),
     seed: (draft) => seedDraft(type, draft),
     change: (key, value) => changeField(type, key, value),
   };

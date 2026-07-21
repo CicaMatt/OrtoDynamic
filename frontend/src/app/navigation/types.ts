@@ -14,7 +14,7 @@ export type Route =
   | { name: 'product-create' }
   | { name: 'product-detail'; productId: string }
   | { name: 'quotes' }
-  | { name: 'quote-create' }
+  | { name: 'quote-create'; clientId?: string }
   | { name: 'quote-detail'; quoteId: string }
   | { name: 'work-orders' }
   | { name: 'work-order-detail'; workOrderId: string }

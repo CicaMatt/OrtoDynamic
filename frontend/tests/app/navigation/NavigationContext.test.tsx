@@ -9,6 +9,7 @@ import type { Client } from '../../../src/features/clients/types';
 import { useClientEditor } from '../../../src/features/clients/useClientEditor';
 import type { Product } from '../../../src/features/products/types';
 import { useProductEditor } from '../../../src/features/products/useProductEditor';
+import { useQuoteEditor } from '../../../src/features/quotes/useQuoteEditor';
 
 const productApi = vi.hoisted(() => ({
   createProduct: vi.fn(),
@@ -51,6 +52,7 @@ function NavigationHarness() {
   const edit = useEntityEdit();
   const clientEditor = useClientEditor();
   const productEditor = useProductEditor();
+  const quoteEditor = useQuoteEditor();
 
   return (
     <>
@@ -64,6 +66,7 @@ function NavigationHarness() {
       <output data-testid="product-id">
         {navigation.route.name === 'product-detail' ? navigation.route.productId : ''}
       </output>
+      <output data-testid="quote-client-id">{quoteEditor.draft?.clientId ?? ''}</output>
       <output data-testid="pending">{navigation.pendingRoute?.name ?? ''}</output>
       <output data-testid="editing">{String(Boolean(edit.session))}</output>
       <output data-testid="dirty">{String(edit.isDirty)}</output>
@@ -83,6 +86,9 @@ function NavigationHarness() {
       </button>
       <button onClick={() => navigation.navigate({ name: 'quote-create' })}>
         open quote create
+      </button>
+      <button onClick={() => navigation.navigate({ name: 'quote-create', clientId: 'C-1' })}>
+        open client quote create
       </button>
       <button onClick={() => navigation.back({ name: 'dashboard' })}>go back</button>
       <button
@@ -160,6 +166,16 @@ describe('NavigationProvider with the real edit provider', () => {
 
     expect(output('view')).toBe('client-detail');
     expect(output('client-id')).toBe('C-1');
+  });
+
+  it('starts quote creation with only the routed client preselected', () => {
+    renderProviders();
+
+    click('open client quote create');
+
+    expect(output('view')).toBe('quote-create');
+    expect(output('quote-client-id')).toBe('C-1');
+    expect(output('dirty')).toBe('false');
   });
 
   it('allows a dirty client to move between its normal and orthopedic views', () => {

@@ -79,6 +79,15 @@ export function ClientDetailView() {
         onClick: !isEditing ? () => startEdit(data.idClient) : undefined,
       };
     }
+    if (action.id === 'quote') {
+      return {
+        ...action,
+        onClick:
+          !isEditing && !generating
+            ? () => navigate({ name: 'quote-create', clientId: data.idClient })
+            : undefined,
+      };
+    }
     if (action.id === 'privacy') {
       const documentState = documentActionState({
         generating,
