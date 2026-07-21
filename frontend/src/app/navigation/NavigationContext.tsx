@@ -144,20 +144,21 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [history, setHistory] = useState<NavigationTarget[]>([]);
 
   const view = currentTarget.view;
+  const currentDetailConfig = detailConfigForView(view);
   const selectedClientCode =
-    detailConfigForView(view)?.paramKey === 'clientCode' ? targetParam(currentTarget, 'clientCode') : null;
+    currentDetailConfig?.paramKey === 'clientCode' ? targetParam(currentTarget, 'clientCode') : null;
   const selectedDoctorId =
-    detailConfigForView(view)?.paramKey === 'doctorId' ? targetParam(currentTarget, 'doctorId') : null;
+    currentDetailConfig?.paramKey === 'doctorId' ? targetParam(currentTarget, 'doctorId') : null;
   const selectedHealthCompanyId =
-    detailConfigForView(view)?.paramKey === 'healthCompanyId'
+    currentDetailConfig?.paramKey === 'healthCompanyId'
       ? targetParam(currentTarget, 'healthCompanyId')
       : null;
   const selectedProductId =
-    detailConfigForView(view)?.paramKey === 'productId' ? targetParam(currentTarget, 'productId') : null;
+    currentDetailConfig?.paramKey === 'productId' ? targetParam(currentTarget, 'productId') : null;
   const selectedQuoteId =
-    detailConfigForView(view)?.paramKey === 'quoteId' ? targetParam(currentTarget, 'quoteId') : null;
+    currentDetailConfig?.paramKey === 'quoteId' ? targetParam(currentTarget, 'quoteId') : null;
   const selectedWorkOrderId =
-    detailConfigForView(view)?.paramKey === 'workOrderId' ? targetParam(currentTarget, 'workOrderId') : null;
+    currentDetailConfig?.paramKey === 'workOrderId' ? targetParam(currentTarget, 'workOrderId') : null;
 
   const isSameEditTarget = (target: NavigationTarget) => {
     if (!edit.editTarget) return false;

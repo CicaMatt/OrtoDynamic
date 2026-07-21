@@ -5,9 +5,7 @@ import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import {
-  FieldSectionList,
-} from '../../../shared/entity/FieldSectionCard';
+import { FieldSectionList } from '../../../shared/entity/FieldSectionCard';
 import {
   DocumentErrorAlert,
   DocumentOptionsDialog,
@@ -259,34 +257,34 @@ function DeliveryFormOptionsDialog({
       description="Scegli la data da stampare in fondo al documento."
       onClose={onClose}
     >
-        <label className="mt-[22px] block">
-          <span className="font-label-caps text-label-caps font-bold uppercase text-outline">Data</span>
-          <input
-            type="date"
-            value={deliveryDate}
-            onChange={(event) => setDeliveryDate(event.target.value)}
-            className="mt-[8px] h-[42px] w-full rounded-[6px] border border-outline-variant bg-white px-[11px] font-body-md text-body-md text-on-surface focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
-          />
-        </label>
+      <label className="mt-[22px] block">
+        <span className="font-label-caps text-label-caps font-bold uppercase text-outline">Data</span>
+        <input
+          type="date"
+          value={deliveryDate}
+          onChange={(event) => setDeliveryDate(event.target.value)}
+          className="mt-[8px] h-[42px] w-full rounded-[6px] border border-outline-variant bg-white px-[11px] font-body-md text-body-md text-on-surface focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary"
+        />
+      </label>
 
-        <div className="mt-[24px] flex justify-end gap-[10px]">
-          <button
-            type="button"
-            disabled={generating}
-            onClick={onClose}
-            className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
-          >
-            Annulla
-          </button>
-          <button
-            type="button"
-            disabled={generating || !deliveryDate}
-            onClick={() => onGenerate(deliveryDate)}
-            className="h-[40px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
-          >
-            Genera
-          </button>
-        </div>
+      <div className="mt-[24px] flex justify-end gap-[10px]">
+        <button
+          type="button"
+          disabled={generating}
+          onClick={onClose}
+          className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+        >
+          Annulla
+        </button>
+        <button
+          type="button"
+          disabled={generating || !deliveryDate}
+          onClick={() => onGenerate(deliveryDate)}
+          className="h-[40px] rounded-[6px] bg-secondary px-[20px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
+        >
+          Genera
+        </button>
+      </div>
     </DocumentOptionsDialog>
   );
 }
@@ -307,37 +305,37 @@ function DdtOptionsDialog({
       description="Scegli se includere prezzo unitario e totale riga per ogni articolo."
       onClose={onClose}
     >
-        <div className="mt-[24px] grid gap-[10px]">
-          <button
-            type="button"
-            disabled={generating}
-            onClick={() => onGenerate(false)}
-            className="flex h-[46px] items-center justify-between rounded-[6px] border border-outline-variant px-[16px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
-          >
-            Senza prezzi
-            <Icon name="visibility_off" className="text-[20px] text-secondary" />
-          </button>
-          <button
-            type="button"
-            disabled={generating}
-            onClick={() => onGenerate(true)}
-            className="flex h-[46px] items-center justify-between rounded-[6px] bg-secondary px-[16px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
-          >
-            Con prezzi
-            <Icon name="euro" className="text-[20px]" />
-          </button>
-        </div>
+      <div className="mt-[24px] grid gap-[10px]">
+        <button
+          type="button"
+          disabled={generating}
+          onClick={() => onGenerate(false)}
+          className="flex h-[46px] items-center justify-between rounded-[6px] border border-outline-variant px-[16px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+        >
+          Senza prezzi
+          <Icon name="visibility_off" className="text-[20px] text-secondary" />
+        </button>
+        <button
+          type="button"
+          disabled={generating}
+          onClick={() => onGenerate(true)}
+          className="flex h-[46px] items-center justify-between rounded-[6px] bg-secondary px-[16px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover disabled:opacity-50"
+        >
+          Con prezzi
+          <Icon name="euro" className="text-[20px]" />
+        </button>
+      </div>
 
-        <div className="mt-[22px] flex justify-end">
-          <button
-            type="button"
-            disabled={generating}
-            onClick={onClose}
-            className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
-          >
-            Annulla
-          </button>
-        </div>
+      <div className="mt-[22px] flex justify-end">
+        <button
+          type="button"
+          disabled={generating}
+          onClick={onClose}
+          className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
+        >
+          Annulla
+        </button>
+      </div>
     </DocumentOptionsDialog>
   );
 }

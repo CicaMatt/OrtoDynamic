@@ -99,6 +99,27 @@ export function QuoteItemsCard({
   const tableSurfaceClass =
     addDraft || edit ? TABLE_SURFACE_DROPDOWN_SPACE_CLASS : TABLE_SURFACE_CLASS;
 
+  const reloadItems = () => {
+    setReloadKey((key) => key + 1);
+    onChanged?.();
+  };
+
+  const validateDraft = (draft: QuoteItemDraft) =>
+    quantityError(draft.quantity) ?? discountError(draft.discount);
+
+  const runItemMutation = async (operation: () => Promise<void>, fallbackError: string) => {
+    setSubmitting(true);
+    setActionError(null);
+    try {
+      await operation();
+      reloadItems();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : fallbackError);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const setAddField = (key: keyof QuoteItemDraft, value: string) =>
     setAddDraft((current) => (current ? { ...current, [key]: value } : current));
 
@@ -121,51 +142,37 @@ export function QuoteItemsCard({
 
   const confirmAdd = async () => {
     if (!addDraft || addDraft.productId.trim() === '') return;
-    const invalid = quantityError(addDraft.quantity) ?? discountError(addDraft.discount);
+    const invalid = validateDraft(addDraft);
     if (invalid) {
       setActionError(invalid);
       return;
     }
-    setSubmitting(true);
-    setActionError(null);
-    try {
+
+    await runItemMutation(async () => {
       await createQuoteItem(quoteId, {
         productId: Number(addDraft.productId),
         quantity: toNullableNumber(addDraft.quantity),
         discount: toNullableNumber(addDraft.discount),
       });
       setAddDraft(null);
-      setReloadKey((key) => key + 1);
-      onChanged?.();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Creazione articolo non riuscita.');
-    } finally {
-      setSubmitting(false);
-    }
+    }, 'Creazione articolo non riuscita.');
   };
 
   const confirmEdit = async () => {
     if (!edit) return;
-    const invalid = quantityError(edit.draft.quantity) ?? discountError(edit.draft.discount);
+    const invalid = validateDraft(edit.draft);
     if (invalid) {
       setActionError(invalid);
       return;
     }
-    setSubmitting(true);
-    setActionError(null);
-    try {
+
+    await runItemMutation(async () => {
       await updateQuoteItem(quoteId, edit.id, {
         quantity: toNullableNumber(edit.draft.quantity),
         discount: toNullableNumber(edit.draft.discount),
       });
       setEdit(null);
-      setReloadKey((key) => key + 1);
-      onChanged?.();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Modifica articolo non riuscita.');
-    } finally {
-      setSubmitting(false);
-    }
+    }, 'Modifica articolo non riuscita.');
   };
 
   const removeItem = async (id: string) => {
@@ -174,8 +181,7 @@ export function QuoteItemsCard({
     setActionError(null);
     try {
       await deleteQuoteItem(quoteId, id);
-      setReloadKey((key) => key + 1);
-      onChanged?.();
+      reloadItems();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Eliminazione articolo non riuscita.');
     } finally {

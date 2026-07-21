@@ -235,76 +235,57 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setQuoteItemDrafts((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const startClientEdit = useCallback((code: string) => startEdit('client', code), [startEdit]);
-  const startClientCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof Client>) => startCreate('client', requiredKeys),
-    [startCreate],
+  const startActions = useMemo(
+    () => ({
+      startClientEdit: (code: string) => startEdit('client', code),
+      startClientCreate: (requiredKeys: ReadonlyArray<keyof Client>) =>
+        startCreate('client', requiredKeys),
+      startDoctorEdit: (id: string) => startEdit('doctor', id),
+      startDoctorCreate: (requiredKeys: ReadonlyArray<keyof Doctor>) =>
+        startCreate('doctor', requiredKeys),
+      startHealthCompanyEdit: (id: string) => startEdit('healthCompany', id),
+      startHealthCompanyCreate: (requiredKeys: ReadonlyArray<keyof HealthCompany>) =>
+        startCreate('healthCompany', requiredKeys),
+      startProductEdit: (id: string) => startEdit('product', id),
+      startProductCreate: (requiredKeys: ReadonlyArray<keyof Product>) =>
+        startCreate('product', requiredKeys),
+      startQuoteEdit: (id: string) => startEdit('quote', id),
+      startQuoteCreate: (requiredKeys: ReadonlyArray<keyof Quote>) =>
+        startCreate('quote', requiredKeys),
+      startWorkOrderEdit: (id: string) => startEdit('workOrder', id),
+    }),
+    [startCreate, startEdit],
   );
-  const startDoctorEdit = useCallback((id: string) => startEdit('doctor', id), [startEdit]);
-  const startDoctorCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof Doctor>) => startCreate('doctor', requiredKeys),
-    [startCreate],
-  );
-  const startHealthCompanyEdit = useCallback(
-    (id: string) => startEdit('healthCompany', id),
-    [startEdit],
-  );
-  const startHealthCompanyCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof HealthCompany>) => startCreate('healthCompany', requiredKeys),
-    [startCreate],
-  );
-  const startProductEdit = useCallback((id: string) => startEdit('product', id), [startEdit]);
-  const startProductCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof Product>) => startCreate('product', requiredKeys),
-    [startCreate],
-  );
-  const startQuoteEdit = useCallback((id: string) => startEdit('quote', id), [startEdit]);
-  const startQuoteCreate = useCallback(
-    (requiredKeys: ReadonlyArray<keyof Quote>) => startCreate('quote', requiredKeys),
-    [startCreate],
-  );
-  const startWorkOrderEdit = useCallback((id: string) => startEdit('workOrder', id), [startEdit]);
 
-  const seedClient = useCallback((client: Client) => seedDraft('client', client), [seedDraft]);
-  const seedClientOrthopedic = useCallback((ortho: ClientOrthopedic) => {
-    setClientOrthopedicDraft((prev) => prev ?? cloneDraft(ortho));
-    setClientOrthopedicOriginal((prev) => prev ?? cloneDraft(ortho));
-  }, []);
-  const seedDoctor = useCallback((doctor: Doctor) => seedDraft('doctor', doctor), [seedDraft]);
-  const seedHealthCompany = useCallback(
-    (company: HealthCompany) => seedDraft('healthCompany', company),
-    [seedDraft],
-  );
-  const seedProduct = useCallback((product: Product) => seedDraft('product', product), [seedDraft]);
-  const seedQuote = useCallback((quote: Quote) => seedDraft('quote', quote), [seedDraft]);
-  const seedWorkOrder = useCallback(
-    (workOrder: WorkOrder) => seedDraft('workOrder', workOrder),
+  const seedActions = useMemo(
+    () => ({
+      seedClient: (client: Client) => seedDraft('client', client),
+      seedClientOrthopedic: (ortho: ClientOrthopedic) => {
+        setClientOrthopedicDraft((prev) => prev ?? cloneDraft(ortho));
+        setClientOrthopedicOriginal((prev) => prev ?? cloneDraft(ortho));
+      },
+      seedDoctor: (doctor: Doctor) => seedDraft('doctor', doctor),
+      seedHealthCompany: (company: HealthCompany) => seedDraft('healthCompany', company),
+      seedProduct: (product: Product) => seedDraft('product', product),
+      seedQuote: (quote: Quote) => seedDraft('quote', quote),
+      seedWorkOrder: (workOrder: WorkOrder) => seedDraft('workOrder', workOrder),
+    }),
     [seedDraft],
   );
 
-  const setClientField = useCallback(
-    (key: keyof Client, value: string) => setEntityField('client', key, value),
-    [setEntityField],
-  );
-  const setDoctorField = useCallback(
-    (key: keyof Doctor, value: string) => setEntityField('doctor', key, value),
-    [setEntityField],
-  );
-  const setHealthCompanyField = useCallback(
-    (key: keyof HealthCompany, value: string) => setEntityField('healthCompany', key, value),
-    [setEntityField],
-  );
-  const setProductField = useCallback(
-    (key: keyof Product, value: string) => setEntityField('product', key, value),
-    [setEntityField],
-  );
-  const setQuoteField = useCallback(
-    (key: keyof Quote, value: string) => setEntityField('quote', key, value),
-    [setEntityField],
-  );
-  const setWorkOrderField = useCallback(
-    (key: keyof WorkOrder, value: string) => setEntityField('workOrder', key, value),
-    [setEntityField],
+  const fieldActions = useMemo(
+    () => ({
+      setClientField: (key: keyof Client, value: string) => setEntityField('client', key, value),
+      setClientOrthopedicField,
+      setDoctorField: (key: keyof Doctor, value: string) => setEntityField('doctor', key, value),
+      setHealthCompanyField: (key: keyof HealthCompany, value: string) =>
+        setEntityField('healthCompany', key, value),
+      setProductField: (key: keyof Product, value: string) => setEntityField('product', key, value),
+      setQuoteField: (key: keyof Quote, value: string) => setEntityField('quote', key, value),
+      setWorkOrderField: (key: keyof WorkOrder, value: string) =>
+        setEntityField('workOrder', key, value),
+    }),
+    [setClientOrthopedicField, setEntityField],
   );
 
   const primaryChanges = useMemo(() => {
@@ -423,33 +404,11 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     quoteDraft,
     quoteItemDrafts,
     workOrderDraft,
-    startClientEdit,
-    startClientCreate,
-    startDoctorEdit,
-    startDoctorCreate,
-    startHealthCompanyEdit,
-    startHealthCompanyCreate,
-    startProductEdit,
-    startProductCreate,
-    startQuoteEdit,
-    startQuoteCreate,
-    startWorkOrderEdit,
-    seedClient,
-    seedClientOrthopedic,
-    seedDoctor,
-    seedHealthCompany,
-    seedProduct,
-    seedQuote,
-    seedWorkOrder,
-    setClientField,
-    setClientOrthopedicField,
-    setDoctorField,
-    setHealthCompanyField,
-    setProductField,
-    setQuoteField,
+    ...startActions,
+    ...seedActions,
+    ...fieldActions,
     addQuoteItemDraft,
     removeQuoteItemDraft,
-    setWorkOrderField,
     cancel: endSession,
     save,
     registerSaveHook,
