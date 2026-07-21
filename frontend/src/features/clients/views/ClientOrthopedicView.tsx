@@ -7,7 +7,7 @@ import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import type { FieldConfig } from '../../../shared/entity/DataCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import type { ClientOrthopedic } from '../types';
 
@@ -55,7 +55,8 @@ const noteFields: Field[] = [
 ];
 
 export function ClientOrthopedicView() {
-  const { selectedClientCode, navigate } = useNavigation();
+  const { clientId } = useRoute('client-detail');
+  const { navigate } = useNavigation();
   const {
     editing,
     editTarget,
@@ -65,14 +66,18 @@ export function ClientOrthopedicView() {
     setClientOrthopedicField,
   } = useEntityEdit();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const isEditingClient = editing && editTarget?.type === 'client' && editTarget.id === selectedClientCode;
+  const isEditingClient = editing && editTarget?.type === 'client' && editTarget.id === clientId;
 
-  const { data: fetched, loading, error } = useApiData(
+  const {
+    data: fetched,
+    loading,
+    error,
+  } = useApiData(
     () =>
-      selectedClientCode
-        ? fetchClientOrthopedic(selectedClientCode)
+      clientId
+        ? fetchClientOrthopedic(clientId)
         : Promise.reject(new Error('Nessun cliente selezionato.')),
-    [selectedClientCode, dataVersion],
+    [clientId, dataVersion],
   );
 
   useEffect(() => {
@@ -81,14 +86,21 @@ export function ClientOrthopedicView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => navigate('client-detail')} backLabel="Torna al dettaglio">
+      <StatusMessage
+        onBack={() => navigate({ name: 'client-detail', clientId, tab: 'general' })}
+        backLabel="Torna al dettaglio"
+      >
         Caricamento dati...
       </StatusMessage>
     );
   }
   if (error || !fetched) {
     return (
-      <StatusMessage onBack={() => navigate('client-detail')} backLabel="Torna al dettaglio" tone="error">
+      <StatusMessage
+        onBack={() => navigate({ name: 'client-detail', clientId, tab: 'general' })}
+        backLabel="Torna al dettaglio"
+        tone="error"
+      >
         {error ?? 'Nessun cliente selezionato.'}
       </StatusMessage>
     );
@@ -110,10 +122,16 @@ export function ClientOrthopedicView() {
       <EntityDetailLayout
         header={
           <ClientPageHeader
-            back={{ label: 'Torna al dettaglio', onClick: () => navigate('client-detail') }}
+            back={{
+              label: 'Torna al dettaglio',
+              onClick: () => navigate({ name: 'client-detail', clientId, tab: 'general' }),
+            }}
             crumbs={[
-              { label: 'Clienti', onClick: () => navigate('clients') },
-              { label: 'Dettaglio', onClick: () => navigate('client-detail') },
+              { label: 'Clienti', onClick: () => navigate({ name: 'clients' }) },
+              {
+                label: 'Dettaglio',
+                onClick: () => navigate({ name: 'client-detail', clientId, tab: 'general' }),
+              },
               { label: 'Dati Ortopedici' },
             ]}
             client={data}
@@ -173,7 +191,7 @@ export function ClientOrthopedicView() {
           onClose={() => setDeleteDialogOpen(false)}
           onConfirm={async () => {
             await deleteClient(data.idClient);
-            navigate('clients');
+            navigate({ name: 'clients' });
           }}
         />
       )}

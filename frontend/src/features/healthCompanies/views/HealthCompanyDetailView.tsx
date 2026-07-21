@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
@@ -16,14 +16,15 @@ const healthCompanyActions = [
 ];
 
 export function HealthCompanyDetailView() {
-  const { selectedHealthCompanyId, navigate, goBack } = useNavigation();
+  const { healthCompanyId } = useRoute('health-company-detail');
+  const { navigate, back } = useNavigation();
   const { healthCompanyDraft, startHealthCompanyEdit, seedHealthCompany, setHealthCompanyField } =
     useEntityEdit();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({
     type: 'healthCompany',
-    selectedId: selectedHealthCompanyId,
+    selectedId: healthCompanyId,
     fetcher: fetchHealthCompany,
     missingMessage: 'Nessuna azienda sanitaria selezionata.',
     draft: healthCompanyDraft,
@@ -32,7 +33,10 @@ export function HealthCompanyDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => goBack('health-companies')} backLabel="Torna alle aziende sanitarie">
+      <StatusMessage
+        onBack={() => back({ name: 'health-companies' })}
+        backLabel="Torna alle aziende sanitarie"
+      >
         Caricamento azienda sanitaria...
       </StatusMessage>
     );
@@ -40,7 +44,7 @@ export function HealthCompanyDetailView() {
   if (error || !data) {
     return (
       <StatusMessage
-        onBack={() => goBack('health-companies')}
+        onBack={() => back({ name: 'health-companies' })}
         backLabel="Torna alle aziende sanitarie"
         tone="error"
       >
@@ -49,7 +53,8 @@ export function HealthCompanyDetailView() {
     );
   }
 
-  const title =  data.municipality || data.companyName || `Azienda sanitaria ${data.idHealthCompany}`;
+  const title =
+    data.municipality || data.companyName || `Azienda sanitaria ${data.idHealthCompany}`;
   const actions = healthCompanyActions.map((action) => {
     if (action.id === 'edit') {
       return {
@@ -69,9 +74,12 @@ export function HealthCompanyDetailView() {
       <EntityDetailLayout
         header={
           <EntityPageHeader
-            back={{ label: 'Torna indietro', onClick: () => goBack('health-companies') }}
+            back={{ label: 'Torna indietro', onClick: () => back({ name: 'health-companies' }) }}
             crumbs={[
-              { label: 'Aziende Sanitarie', onClick: () => navigate('health-companies') },
+              {
+                label: 'Aziende Sanitarie',
+                onClick: () => navigate({ name: 'health-companies' }),
+              },
               { label: 'Dettaglio' },
             ]}
             title={title}
@@ -103,7 +111,7 @@ export function HealthCompanyDetailView() {
           onClose={() => setDeleteDialogOpen(false)}
           onConfirm={async () => {
             await deleteHealthCompany(data.idHealthCompany);
-            navigate('health-companies');
+            navigate({ name: 'health-companies' });
           }}
         />
       )}

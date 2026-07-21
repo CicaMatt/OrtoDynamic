@@ -1,7 +1,8 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { entityCreateRoute, entityDetailRoute } from '../../../app/navigation/routes';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
 import { formatBirthDate, formatEuro, previewText } from '../../../shared/format/format';
-import { ReferenceName } from '../../../shared/ui/ReferenceName';
+import { ReferenceLabel } from '../../../shared/ui/ReferenceLabel';
 import { fetchQuotes } from '../api/quotes';
 import type { Quote } from '../types';
 
@@ -16,7 +17,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     key: 'clientName',
     label: 'Cliente',
     muted: true,
-    renderCell: (quote) => <ReferenceName name={quote.clientName} id={quote.clientId} />,
+    cell: (quote) => <ReferenceLabel name={quote.clientName} id={quote.clientId} />,
   },
   {
     key: 'creationDate',
@@ -75,11 +76,11 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     key: 'doctorName',
     label: 'Medico',
     muted: true,
-    renderCell: (quote) => <ReferenceName name={quote.doctorName} id={quote.doctorId} />,
+    cell: (quote) => <ReferenceLabel name={quote.doctorName} id={quote.doctorId} />,
   },
   { key: 'total', label: 'Totale', muted: true, filterable: false, render: formatEuro },
   { key: 'entryBy', label: 'Inserito Da', muted: true },
-  { key: 'authorizationNumber', label: 'Nº Autorizzazione', muted: true},
+  { key: 'authorizationNumber', label: 'Nº Autorizzazione', muted: true },
   {
     key: 'authorizationReceiptDate',
     label: 'Data Ricezione Autorizzazione',
@@ -121,7 +122,7 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
 ];
 
 export function QuotesView() {
-  const { openQuoteDetail, openQuoteCreate } = useNavigation();
+  const { navigate } = useNavigation();
 
   return (
     <EntityListView
@@ -129,8 +130,8 @@ export function QuotesView() {
       columns={quoteColumns}
       fetchItems={fetchQuotes}
       rowKey={(quote) => quote.idQuote}
-      onRowClick={(quote) => openQuoteDetail(quote.idQuote)}
-      onCreate={openQuoteCreate}
+      onRowClick={(quote) => navigate(entityDetailRoute('quote', quote.idQuote))}
+      onCreate={() => navigate(entityCreateRoute('quote'))}
       categoricalFiltersFirst
       loadingLabel="Caricamento preventivi..."
       emptyLabel="Nessun preventivo trovato."

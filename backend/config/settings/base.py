@@ -124,8 +124,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # --- Django REST Framework --------------------------------------------------
 REST_FRAMEWORK = {
-    "DEFAULT_PAGINATION_CLASS": "apps.common.pagination.DefaultPagination",
-    "PAGE_SIZE": 25,
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],

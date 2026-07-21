@@ -1,74 +1,22 @@
 import { useState } from 'react';
-import { DataCard } from '../../../shared/entity/DataCard';
-import { ScrollableTable } from '../../../shared/entity/ScrollableTable';
-import { formatEuro, formatInteger } from '../../../shared/format/format';
-import { FieldValue } from '../../../shared/ui/FieldValue';
-import { ReferenceName } from '../../../shared/ui/ReferenceName';
 import { useApiData } from '../../../shared/hooks/useApiData';
-import type { Product } from '../../products/types';
+import { createQuoteItem, deleteQuoteItem, fetchQuoteItems, updateQuoteItem } from '../api/quotes';
+import { ItemDraftRow, ItemEditRow, NewItemButton } from '../components/QuoteItemRow';
 import {
-  createQuoteItem,
-  deleteQuoteItem,
-  fetchQuoteItems,
-  updateQuoteItem,
-} from '../api/quotes';
-import type { QuoteItem, QuoteItemDraft } from '../types';
-import {
-  IconButton,
-  ItemDraftRow,
-  ItemEditRow,
-  MessageRow,
-  NewItemButton,
-} from '../components/QuoteItemRow';
-import {
-  discountError,
-  draftFromItem,
-  EMPTY_ITEM_DRAFT,
-  ITEM_COLUMN_COUNT,
-  quantityError,
-  toNullableNumber,
-} from '../components/quoteItemMath';
-import { QuoteTotalSummary } from '../components/QuoteTotalSummary';
-
-/**
- * Read-mode columns in display order; the value is read straight off the item.
- * `wrap` lets a long cell (the product description) flow onto multiple lines
- * instead of forcing the row onto a single, ever-widening line. `format` maps the
- * raw value to its display string (e.g. Euro formatting for prezzo/importo).
- */
-const READ_COLUMNS: ReadonlyArray<{
-  key: keyof QuoteItem;
-  label: string;
-  wrap?: boolean;
-  format?: (raw: string) => string;
-}> = [
-  { key: 'productCode', label: 'Codice Prodotto' },
-  { key: 'productDescription', label: 'Descrizione', wrap: true },
-  { key: 'quantity', label: 'Quantità', format: formatInteger },
-  { key: 'price', label: 'Prezzo', format: formatEuro },
-  { key: 'amount', label: 'Importo', format: formatEuro },
-  { key: 'discount', label: 'Sconto' },
-];
-
-const TABLE_SURFACE_CLASS =
-  'rounded-xl border border-outline-variant/50 bg-surface-container-low transition-[padding] duration-200 ease-out';
-const TABLE_SURFACE_DROPDOWN_SPACE_CLASS = `${TABLE_SURFACE_CLASS} pb-[340px]`;
+  PERSISTED_ITEM_COLUMN_LABELS,
+  PersistedQuoteItemRow,
+  QuoteItemsTable,
+} from '../components/QuoteItemsTable';
+import { draftFromItem, quoteItemDraftError, toNullableNumber } from '../components/quoteItemMath';
+import { useQuoteItemDraft } from '../components/useQuoteItemDraft';
+import type { QuoteItemDraft } from '../types';
 
 /** State of the one line being edited inline: its id plus the working draft. */
 type EditState = { id: string; draft: QuoteItemDraft };
 
 /**
- * A quote's line items (`item_preventivi`), with inline add, edit, and delete.
- * "Aggiungi" opens an empty draft row: the product is picked from the live
- * `nomenclatore` lookup — by code or by description — and only quantity and
- * discount are typed, since prezzo and importo are derived by the backend.
- * Editing a row reopens its quantity/discount for the same recompute (sconto
- * being a 1–100 discount applied to the importo). Each mutation persists
- * immediately and refetches the list so the table always reflects the server.
- *
- * `onChanged` fires after a successful add/edit/delete so the parent can refresh
- * data derived from the items — the quote's Totale, which the server recomputes
- * from them.
+ * Persistence controller for an existing quote's items. Mutations are immediate,
+ * then both the item list and the quote total are refreshed from the server.
  */
 export function QuoteItemsCard({
   quoteId,
@@ -79,13 +27,8 @@ export function QuoteItemsCard({
   total: string;
   onChanged?: () => void;
 }) {
-  const [reloadKey, setReloadKey] = useState(0);
-  const { data, loading, error } = useApiData(
-    () => fetchQuoteItems(quoteId),
-    [quoteId, reloadKey],
-  );
-
-  const [addDraft, setAddDraft] = useState<QuoteItemDraft | null>(null);
+  const { data, loading, error, reload } = useApiData(() => fetchQuoteItems(quoteId), [quoteId]);
+  const add = useQuoteItemDraft();
   const [edit, setEdit] = useState<EditState | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -93,19 +36,13 @@ export function QuoteItemsCard({
 
   const items = data ?? [];
   const busy = submitting || deletingId !== null;
-  // Only one inline operation (add / edit / delete) at a time.
-  const idle = addDraft === null && edit === null && !busy;
+  const idle = add.draft === null && edit === null && !busy;
   const canAdd = !loading && !error && idle;
-  const tableSurfaceClass =
-    addDraft || edit ? TABLE_SURFACE_DROPDOWN_SPACE_CLASS : TABLE_SURFACE_CLASS;
 
   const reloadItems = () => {
-    setReloadKey((key) => key + 1);
+    reload();
     onChanged?.();
   };
-
-  const validateDraft = (draft: QuoteItemDraft) =>
-    quantityError(draft.quantity) ?? discountError(draft.discount);
 
   const runItemMutation = async (operation: () => Promise<void>, fallbackError: string) => {
     setSubmitting(true);
@@ -120,29 +57,15 @@ export function QuoteItemsCard({
     }
   };
 
-  const setAddField = (key: keyof QuoteItemDraft, value: string) =>
-    setAddDraft((current) => (current ? { ...current, [key]: value } : current));
-
-  // Picking from either the code or the product field fills both, plus the price.
-  const selectProduct = (product: Product) =>
-    setAddDraft((current) =>
-      current
-        ? {
-            ...current,
-            productId: product.idProduct,
-            code: product.code,
-            description: product.description,
-            price: product.price,
-          }
-        : current,
+  const setEditField = (key: keyof QuoteItemDraft, value: string) =>
+    setEdit((current) =>
+      current ? { ...current, draft: { ...current.draft, [key]: value } } : current,
     );
 
-  const setEditField = (key: keyof QuoteItemDraft, value: string) =>
-    setEdit((current) => (current ? { ...current, draft: { ...current.draft, [key]: value } } : current));
-
   const confirmAdd = async () => {
-    if (!addDraft || addDraft.productId.trim() === '') return;
-    const invalid = validateDraft(addDraft);
+    const draft = add.draft;
+    if (!draft || draft.productId.trim() === '') return;
+    const invalid = quoteItemDraftError(draft);
     if (invalid) {
       setActionError(invalid);
       return;
@@ -150,17 +73,17 @@ export function QuoteItemsCard({
 
     await runItemMutation(async () => {
       await createQuoteItem(quoteId, {
-        productId: Number(addDraft.productId),
-        quantity: toNullableNumber(addDraft.quantity),
-        discount: toNullableNumber(addDraft.discount),
+        productId: Number(draft.productId),
+        quantity: toNullableNumber(draft.quantity),
+        discount: toNullableNumber(draft.discount),
       });
-      setAddDraft(null);
+      add.clear();
     }, 'Creazione articolo non riuscita.');
   };
 
   const confirmEdit = async () => {
     if (!edit) return;
-    const invalid = validateDraft(edit.draft);
+    const invalid = quoteItemDraftError(edit.draft);
     if (invalid) {
       setActionError(invalid);
       return;
@@ -189,145 +112,58 @@ export function QuoteItemsCard({
     }
   };
 
+  const message = loading
+    ? { content: 'Caricamento articoli...' }
+    : error
+      ? { content: error, tone: 'error' as const }
+      : items.length === 0 && add.draft === null
+        ? { content: 'Nessun articolo per questo preventivo.' }
+        : undefined;
+
   return (
-    <DataCard
-      icon="inventory_2"
-      title="Articoli Preventivo"
-      action={
-        <NewItemButton disabled={!canAdd} onClick={() => setAddDraft({ ...EMPTY_ITEM_DRAFT })} />
-      }
+    <QuoteItemsTable
+      action={<NewItemButton disabled={!canAdd} onClick={add.begin} />}
+      expanded={add.draft !== null || edit !== null}
+      columnLabels={PERSISTED_ITEM_COLUMN_LABELS}
+      message={message}
+      actionError={actionError}
+      total={total}
     >
-      <ScrollableTable surfaceClassName={tableSurfaceClass}>
-        <table className="w-full bg-white text-left font-body-md text-body-md">
-          <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
-            <tr>
-              {READ_COLUMNS.map((column) => (
-                <th
-                  key={column.key}
-                  className="py-3 px-4 uppercase font-bold tracking-wider whitespace-nowrap"
-                >
-                  {column.label}
-                </th>
-              ))}
-              <th className="py-3 px-4 w-px text-right uppercase font-bold tracking-wider">
-                <span className="sr-only">Azioni</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <MessageRow colSpan={ITEM_COLUMN_COUNT}>Caricamento articoli...</MessageRow>
-            ) : error ? (
-              <MessageRow colSpan={ITEM_COLUMN_COUNT} tone="error">{error}</MessageRow>
+      {!loading && !error && (
+        <>
+          {items.map((item) =>
+            edit?.id === item.id ? (
+              <ItemEditRow
+                key={item.id}
+                draft={edit.draft}
+                submitting={submitting}
+                onField={setEditField}
+                onConfirm={confirmEdit}
+                onCancel={() => setEdit(null)}
+              />
             ) : (
-              <>
-                {items.length === 0 && addDraft === null && (
-                  <MessageRow colSpan={ITEM_COLUMN_COUNT}>
-                    Nessun articolo per questo preventivo.
-                  </MessageRow>
-                )}
-                {items.map((item) =>
-                  edit?.id === item.id ? (
-                    <ItemEditRow
-                      key={item.id}
-                      draft={edit.draft}
-                      submitting={submitting}
-                      onField={setEditField}
-                      onConfirm={confirmEdit}
-                      onCancel={() => setEdit(null)}
-                    />
-                  ) : (
-                    <ReadRow
-                      key={item.id}
-                      item={item}
-                      onEdit={() => setEdit({ id: item.id, draft: draftFromItem(item) })}
-                      onDelete={() => removeItem(item.id)}
-                      deleting={deletingId === item.id}
-                      disabled={!idle}
-                    />
-                  ),
-                )}
-                {addDraft && (
-                  <ItemDraftRow
-                    draft={addDraft}
-                    submitting={submitting}
-                    onField={setAddField}
-                    onProductSelect={selectProduct}
-                    onConfirm={confirmAdd}
-                    onCancel={() => setAddDraft(null)}
-                  />
-                )}
-              </>
-            )}
-          </tbody>
-        </table>
-      </ScrollableTable>
-
-      {actionError && <p className="mt-[16px] font-body-sm text-body-sm text-error">{actionError}</p>}
-      <QuoteTotalSummary total={total} />
-    </DataCard>
+              <PersistedQuoteItemRow
+                key={item.id}
+                item={item}
+                onEdit={() => setEdit({ id: item.id, draft: draftFromItem(item) })}
+                onDelete={() => removeItem(item.id)}
+                deleting={deletingId === item.id}
+                disabled={!idle}
+              />
+            ),
+          )}
+          {add.draft && (
+            <ItemDraftRow
+              draft={add.draft}
+              submitting={submitting}
+              onField={add.setField}
+              onProductSelect={add.selectProduct}
+              onConfirm={confirmAdd}
+              onCancel={add.clear}
+            />
+          )}
+        </>
+      )}
+    </QuoteItemsTable>
   );
-}
-
-function ReadRow({
-  item,
-  onEdit,
-  onDelete,
-  deleting,
-  disabled,
-}: {
-  item: QuoteItem;
-  onEdit: () => void;
-  onDelete: () => void;
-  deleting: boolean;
-  disabled: boolean;
-}) {
-  return (
-    <tr className="border-b border-surface-variant last:border-0 hover:bg-surface-container-low transition-colors duration-300">
-      {READ_COLUMNS.map((column) => {
-        const raw = item[column.key];
-        const value = column.format ? column.format(raw) : raw;
-        return (
-          <td
-            key={column.key}
-            className={`py-3 px-4 ${column.wrap ? 'align-top' : 'whitespace-nowrap'}`}
-          >
-            {column.wrap ? (
-              <div className="max-w-[360px] whitespace-normal break-words">
-                {renderReadValue(column.key, value, item)}
-              </div>
-            ) : (
-              renderReadValue(column.key, value, item)
-            )}
-          </td>
-        );
-      })}
-      <td className="py-3 px-4 text-right">
-        <div className="flex items-center justify-end gap-[4px]">
-          <IconButton
-            icon="edit"
-            title="Modifica articolo"
-            tone="neutral"
-            onClick={onEdit}
-            disabled={disabled}
-          />
-          <IconButton
-            icon="delete"
-            title="Elimina articolo"
-            tone="danger"
-            onClick={onDelete}
-            disabled={disabled}
-            busy={deleting}
-          />
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-function renderReadValue(key: keyof QuoteItem, value: string, item: QuoteItem) {
-  if (key === 'productCode' || key === 'productDescription') {
-    return <ReferenceName name={value} id={item.productId} entity="product" />;
-  }
-  return <FieldValue value={value} />;
 }

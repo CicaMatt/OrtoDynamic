@@ -2,7 +2,10 @@ import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { DataTable } from '../../../shared/entity/DataTable';
 import { TableScrollSlider } from '../../../shared/entity/TableScrollSlider';
 import { useApiData } from '../../../shared/hooks/useApiData';
-import { useTableSearchFilter, type SearchFilterColumn } from '../../../shared/hooks/useTableSearchFilter';
+import {
+  useTableSearchFilter,
+  type SearchFilterColumn,
+} from '../../../shared/hooks/useTableSearchFilter';
 import { ViewToolbar } from '../../../shared/ui/ViewToolbar';
 import { fetchQuoteStatuses, fetchQuoteStatusTransitions } from '../api/statuses';
 import type { Status, StatusTransition } from '../types';
@@ -20,13 +23,11 @@ const PANELS: ReadonlyArray<{ value: Panel; label: string }> = [
  * plain reference tables (no creation, editing or detail navigation), each with
  * its own toolbar search and filters.
  */
-const STATE_COLUMNS: ReadonlyArray<SearchFilterColumn<Status>> = [
-  { key: 'name', label: 'Stato', getValue: (status) => status.name },
-];
+const STATE_COLUMNS: ReadonlyArray<SearchFilterColumn<Status>> = [{ key: 'name', label: 'Stato' }];
 
 const TRANSITION_COLUMNS: ReadonlyArray<SearchFilterColumn<StatusTransition>> = [
-  { key: 'fromStatus', label: 'Stato di Partenza', getValue: (transition) => transition.fromStatus },
-  { key: 'toStatus', label: 'Stato di Arrivo', getValue: (transition) => transition.toStatus },
+  { key: 'fromStatus', label: 'Stato di Partenza' },
+  { key: 'toStatus', label: 'Stato di Arrivo' },
 ];
 
 export function ConfigurationsView() {
@@ -58,7 +59,7 @@ export function ConfigurationsView() {
   );
 }
 
-type ConfigPanelProps<T> = {
+type ConfigPanelProps<T extends object> = {
   toggle: ReactNode;
   fetchItems: () => Promise<T[]>;
   columns: ReadonlyArray<SearchFilterColumn<T>>;
@@ -68,19 +69,35 @@ type ConfigPanelProps<T> = {
 };
 
 /** A configuration table with its own header toolbar (panel toggle, search, filters). */
-function ConfigPanel<T>({ toggle, fetchItems, columns, rowKey, loadingLabel, emptyLabel }: ConfigPanelProps<T>) {
+function ConfigPanel<T extends object>({
+  toggle,
+  fetchItems,
+  columns,
+  rowKey,
+  loadingLabel,
+  emptyLabel,
+}: ConfigPanelProps<T>) {
   const { data, loading, error } = useApiData(fetchItems, []);
   const items = useMemo(() => data ?? [], [data]);
   const tableScrollRef = useRef<HTMLDivElement>(null);
-  const { searchValue, setSearchValue, activeFilters, setFilter, clearFilters, filterOptions, filteredItems } =
-    useTableSearchFilter(items, columns);
+  const {
+    searchValue,
+    setSearchValue,
+    activeFilters,
+    setFilter,
+    clearFilters,
+    filterOptions,
+    filteredItems,
+  } = useTableSearchFilter(items, columns);
 
   return (
     <div>
       <header className="flex flex-col items-start gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between lg:gap-0">
         <div>
           <div className="flex flex-wrap items-center gap-4">
-            <h2 className="font-headline-lg text-headline-lg font-bold text-primary">Configurazioni</h2>
+            <h2 className="font-headline-lg text-headline-lg font-bold text-primary">
+              Configurazioni
+            </h2>
             <TableScrollSlider scrollRef={tableScrollRef} />
           </div>
           <p className="mt-[6px] font-body-md text-body-md text-outline">Stati Preventivo</p>

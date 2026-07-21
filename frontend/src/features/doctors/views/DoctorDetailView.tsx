@@ -8,7 +8,7 @@ import { NoteCard } from '../../../shared/entity/NoteCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { doctorFields } from '../components/doctorFields';
 
 const doctorActions = [
@@ -17,13 +17,14 @@ const doctorActions = [
 ];
 
 export function DoctorDetailView() {
-  const { selectedDoctorId, navigate, goBack } = useNavigation();
+  const { doctorId } = useRoute('doctor-detail');
+  const { navigate, back } = useNavigation();
   const { doctorDraft, startDoctorEdit, seedDoctor, setDoctorField } = useEntityEdit();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({
     type: 'doctor',
-    selectedId: selectedDoctorId,
+    selectedId: doctorId,
     fetcher: fetchDoctor,
     missingMessage: 'Nessun medico selezionato.',
     draft: doctorDraft,
@@ -32,14 +33,18 @@ export function DoctorDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => goBack('doctors')} backLabel="Torna ai medici">
+      <StatusMessage onBack={() => back({ name: 'doctors' })} backLabel="Torna ai medici">
         Caricamento medico...
       </StatusMessage>
     );
   }
   if (error || !data) {
     return (
-      <StatusMessage onBack={() => goBack('doctors')} backLabel="Torna ai medici" tone="error">
+      <StatusMessage
+        onBack={() => back({ name: 'doctors' })}
+        backLabel="Torna ai medici"
+        tone="error"
+      >
         {error ?? 'Nessun medico selezionato.'}
       </StatusMessage>
     );
@@ -65,9 +70,9 @@ export function DoctorDetailView() {
       <EntityDetailLayout
         header={
           <EntityPageHeader
-            back={{ label: 'Torna indietro', onClick: () => goBack('doctors') }}
+            back={{ label: 'Torna indietro', onClick: () => back({ name: 'doctors' }) }}
             crumbs={[
-              { label: 'Medici', onClick: () => navigate('doctors') },
+              { label: 'Medici', onClick: () => navigate({ name: 'doctors' }) },
               { label: 'Dettaglio' },
             ]}
             title={title}
@@ -106,7 +111,7 @@ export function DoctorDetailView() {
           onClose={() => setDeleteDialogOpen(false)}
           onConfirm={async () => {
             await deleteDoctor(data.idDoctor);
-            navigate('doctors');
+            navigate({ name: 'doctors' });
           }}
         />
       )}

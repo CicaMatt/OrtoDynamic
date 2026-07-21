@@ -51,7 +51,10 @@ export function IconButton({
       disabled={disabled || busy}
       className={`inline-flex h-[32px] w-[32px] items-center justify-center rounded-[6px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${TONE_CLASS[tone]}`}
     >
-      <Icon name={busy ? 'progress_activity' : icon} className={`text-[20px] ${busy ? 'animate-spin' : ''}`} />
+      <Icon
+        name={busy ? 'progress_activity' : icon}
+        className={`text-[20px] ${busy ? 'animate-spin' : ''}`}
+      />
     </button>
   );
 }
@@ -70,25 +73,6 @@ export function NewItemButton({ disabled, onClick }: { disabled: boolean; onClic
   );
 }
 
-export function MessageRow({
-  colSpan,
-  tone = 'muted',
-  children,
-}: {
-  colSpan: number;
-  tone?: 'muted' | 'error';
-  children: string;
-}) {
-  const toneClass = tone === 'error' ? 'text-error' : 'text-on-surface-variant';
-  return (
-    <tr>
-      <td colSpan={colSpan} className={`py-6 px-4 text-center ${toneClass}`}>
-        {children}
-      </td>
-    </tr>
-  );
-}
-
 /** The trailing confirm/cancel actions shared by the add and edit rows. */
 function ConfirmCancelActions({
   submitting,
@@ -103,7 +87,13 @@ function ConfirmCancelActions({
 }) {
   return (
     <div className="flex items-center justify-end gap-[4px]">
-      <IconButton icon="close" title="Annulla" tone="danger" onClick={onCancel} disabled={submitting} />
+      <IconButton
+        icon="close"
+        title="Annulla"
+        tone="danger"
+        onClick={onCancel}
+        disabled={submitting}
+      />
       <IconButton
         icon="check"
         title="Conferma"
@@ -153,7 +143,9 @@ function DerivedAmountCells({ draft }: { draft: QuoteItemDraft }) {
         <DerivedValue value={formatEuro(draft.price)} />
       </td>
       <td className="py-3 px-4 align-top">
-        <DerivedValue value={formatEuro(previewAmount(draft.price, draft.quantity, draft.discount))} />
+        <DerivedValue
+          value={formatEuro(previewAmount(draft.price, draft.quantity, draft.discount))}
+        />
       </td>
     </>
   );

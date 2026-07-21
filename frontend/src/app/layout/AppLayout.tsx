@@ -39,7 +39,6 @@ const viewComponents = {
   employees: EmployeesView,
   'work-orders': WorkOrdersView,
   'client-detail': ClientDetailView,
-  'client-orthopedic': ClientOrthopedicView,
   'client-create': ClientCreateView,
   'doctor-detail': DoctorDetailView,
   'doctor-create': DoctorCreateView,
@@ -53,8 +52,11 @@ const viewComponents = {
 } as const;
 
 export function AppLayout() {
-  const { view } = useNavigation();
-  const ActiveView = viewComponents[view];
+  const { route } = useNavigation();
+  const ActiveView =
+    route.name === 'client-detail' && route.tab === 'orthopedic'
+      ? ClientOrthopedicView
+      : viewComponents[route.name];
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -84,7 +86,9 @@ function MobileTopBar({ onOpenNav }: { onOpenNav: () => void }) {
       >
         <Icon name="menu" className="text-[26px]" />
       </button>
-      <span className="font-headline-md text-headline-md font-bold text-on-primary">OrtoDynamic</span>
+      <span className="font-headline-md text-headline-md font-bold text-on-primary">
+        OrtoDynamic
+      </span>
     </div>
   );
 }

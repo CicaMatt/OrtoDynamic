@@ -19,8 +19,16 @@ import type { Quote } from '../types';
 
 export function QuoteCreateView() {
   const { navigate } = useNavigation();
-  const { editing, mode, editTarget, quoteDraft, quoteItemDrafts, invalidFields, startQuoteCreate, setQuoteField } =
-    useEntityEdit();
+  const {
+    editing,
+    mode,
+    editTarget,
+    quoteDraft,
+    quoteItemDrafts,
+    invalidFields,
+    startQuoteCreate,
+    setQuoteField,
+  } = useEntityEdit();
 
   const isCreating = editing && mode === 'create' && editTarget?.type === 'quote';
 
@@ -47,7 +55,7 @@ export function QuoteCreateView() {
           backLabel="Torna ai preventivi"
           listLabel="Preventivi"
           title="Nuovo Preventivo"
-          onBack={() => navigate('quotes')}
+          onBack={() => navigate({ name: 'quotes' })}
         />
       }
     >
@@ -66,7 +74,10 @@ export function QuoteCreateView() {
                   options={clientAutocomplete.options}
                   invalid={clientInvalid}
                   onSelect={(option) =>
-                    setQuoteField('clientId', clientAutocomplete.selectValue?.(option) ?? option.value)
+                    setQuoteField(
+                      'clientId',
+                      clientAutocomplete.selectValue?.(option) ?? option.value,
+                    )
                   }
                   placeholder={clientAutocomplete.placeholder}
                   emptyLabel={clientAutocomplete.emptyLabel}
@@ -82,7 +93,10 @@ export function QuoteCreateView() {
                   value={selectedDoctorLabel}
                   options={doctorAutocomplete.options}
                   onSelect={(option) =>
-                    setQuoteField('doctorId', doctorAutocomplete.selectValue?.(option) ?? option.value)
+                    setQuoteField(
+                      'doctorId',
+                      doctorAutocomplete.selectValue?.(option) ?? option.value,
+                    )
                   }
                   placeholder={doctorAutocomplete.placeholder}
                   emptyLabel={doctorAutocomplete.emptyLabel}

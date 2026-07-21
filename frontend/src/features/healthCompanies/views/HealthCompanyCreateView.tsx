@@ -39,7 +39,7 @@ export function HealthCompanyCreateView() {
           backLabel="Torna alle aziende sanitarie"
           listLabel="Aziende Sanitarie"
           title="Nuova Azienda Sanitaria"
-          onBack={() => navigate('health-companies')}
+          onBack={() => navigate({ name: 'health-companies' })}
         />
       }
     >

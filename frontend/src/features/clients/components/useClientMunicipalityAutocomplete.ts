@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { AutocompleteFieldConfig } from '../../../shared/entity/DataCard';
 import type { AutocompleteOption } from '../../../shared/ui/Autocomplete';
-import { useMunicipalities } from '../../municipalities/useMunicipalities';
+import { fetchMunicipalities } from '../../municipalities/api/municipalities';
+import type { Municipality } from '../../municipalities/types';
 import type { Client } from '../types';
+
+let municipalitiesCache: Promise<Municipality[]> | null = null;
 
 /**
  * Autocomplete config for the client's city fields, sourced from `comuni`.
@@ -15,7 +18,28 @@ export function useClientMunicipalityAutocomplete(
   setField: (key: keyof Client, value: string) => void,
   enabled: boolean,
 ): Partial<Record<keyof Client, AutocompleteFieldConfig>> {
-  const { municipalities } = useMunicipalities(enabled);
+  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    if (!municipalitiesCache) {
+      municipalitiesCache = fetchMunicipalities().catch((reason) => {
+        municipalitiesCache = null;
+        throw reason;
+      });
+    }
+    municipalitiesCache
+      .then((data) => {
+        if (active) setMunicipalities(data);
+      })
+      .catch(() => {
+        if (active) setMunicipalities([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [enabled]);
 
   const options = useMemo<AutocompleteOption[]>(
     () =>

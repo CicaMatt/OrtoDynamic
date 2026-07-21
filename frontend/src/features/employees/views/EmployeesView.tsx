@@ -2,7 +2,10 @@ import { useMemo, useRef } from 'react';
 import { DataTable } from '../../../shared/entity/DataTable';
 import { TableScrollSlider } from '../../../shared/entity/TableScrollSlider';
 import { useApiData } from '../../../shared/hooks/useApiData';
-import { useTableSearchFilter, type SearchFilterColumn } from '../../../shared/hooks/useTableSearchFilter';
+import {
+  useTableSearchFilter,
+  type SearchFilterColumn,
+} from '../../../shared/hooks/useTableSearchFilter';
 import { ViewToolbar } from '../../../shared/ui/ViewToolbar';
 import { fetchEmployees } from '../api/employees';
 import type { Employee } from '../types';
@@ -10,10 +13,10 @@ import type { Employee } from '../types';
 // Username and email are near-unique identifiers, so they are searchable but not
 // offered as exact-value filters (which would just list every row).
 const EMPLOYEE_COLUMNS: ReadonlyArray<SearchFilterColumn<Employee>> = [
-  { key: 'username', label: 'Nome Utente', getValue: (employee) => employee.username, filterable: false },
-  { key: 'email', label: 'Email', getValue: (employee) => employee.email, filterable: false },
-  { key: 'firstName', label: 'Nome', getValue: (employee) => employee.firstName },
-  { key: 'lastName', label: 'Cognome', getValue: (employee) => employee.lastName },
+  { key: 'username', label: 'Nome Utente', filterable: false },
+  { key: 'email', label: 'Email', filterable: false },
+  { key: 'firstName', label: 'Nome' },
+  { key: 'lastName', label: 'Cognome' },
 ];
 
 /** Read-only list of employee accounts from `tb_users` (no creation or editing yet). */
@@ -21,14 +24,23 @@ export function EmployeesView() {
   const { data, loading, error } = useApiData(fetchEmployees, []);
   const items = useMemo(() => data ?? [], [data]);
   const tableScrollRef = useRef<HTMLDivElement>(null);
-  const { searchValue, setSearchValue, activeFilters, setFilter, clearFilters, filterOptions, filteredItems } =
-    useTableSearchFilter(items, EMPLOYEE_COLUMNS);
+  const {
+    searchValue,
+    setSearchValue,
+    activeFilters,
+    setFilter,
+    clearFilters,
+    filterOptions,
+    filteredItems,
+  } = useTableSearchFilter(items, EMPLOYEE_COLUMNS);
 
   return (
     <div>
       <header className="flex flex-col items-start gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between lg:gap-0">
         <div className="flex flex-wrap items-center gap-4">
-          <h2 className="font-headline-lg text-headline-lg font-bold text-primary">Gestione Dipendenti</h2>
+          <h2 className="font-headline-lg text-headline-lg font-bold text-primary">
+            Gestione Dipendenti
+          </h2>
           <TableScrollSlider scrollRef={tableScrollRef} />
         </div>
         <ViewToolbar

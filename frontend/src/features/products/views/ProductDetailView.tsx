@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
@@ -16,13 +16,14 @@ const productActions = [
 ];
 
 export function ProductDetailView() {
-  const { selectedProductId, navigate, goBack } = useNavigation();
+  const { productId } = useRoute('product-detail');
+  const { navigate, back } = useNavigation();
   const { productDraft, startProductEdit, seedProduct, setProductField } = useEntityEdit();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({
     type: 'product',
-    selectedId: selectedProductId,
+    selectedId: productId,
     fetcher: fetchProduct,
     missingMessage: 'Nessun prodotto selezionato.',
     draft: productDraft,
@@ -31,14 +32,18 @@ export function ProductDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => goBack('products')} backLabel="Torna ai prodotti">
+      <StatusMessage onBack={() => back({ name: 'products' })} backLabel="Torna ai prodotti">
         Caricamento prodotto...
       </StatusMessage>
     );
   }
   if (error || !data) {
     return (
-      <StatusMessage onBack={() => goBack('products')} backLabel="Torna ai prodotti" tone="error">
+      <StatusMessage
+        onBack={() => back({ name: 'products' })}
+        backLabel="Torna ai prodotti"
+        tone="error"
+      >
         {error ?? 'Nessun prodotto selezionato.'}
       </StatusMessage>
     );
@@ -64,9 +69,9 @@ export function ProductDetailView() {
       <EntityDetailLayout
         header={
           <EntityPageHeader
-            back={{ label: 'Torna indietro', onClick: () => goBack('products') }}
+            back={{ label: 'Torna indietro', onClick: () => back({ name: 'products' }) }}
             crumbs={[
-              { label: 'Prodotti', onClick: () => navigate('products') },
+              { label: 'Prodotti', onClick: () => navigate({ name: 'products' }) },
               { label: 'Dettaglio' },
             ]}
             title={title}
@@ -98,7 +103,7 @@ export function ProductDetailView() {
           onClose={() => setDeleteDialogOpen(false)}
           onConfirm={async () => {
             await deleteProduct(data.idProduct);
-            navigate('products');
+            navigate({ name: 'products' });
           }}
         />
       )}

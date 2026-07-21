@@ -96,7 +96,7 @@ export function useDragScroll<T extends HTMLElement>(externalRef?: RefObject<T>)
       el.removeEventListener('pointercancel', endPress);
       el.removeEventListener('click', onClickCapture, true);
     };
-  }, []);
+  }, [ref]);
 
   return ref;
 }

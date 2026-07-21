@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
@@ -28,12 +28,13 @@ import { QuoteItemsCard } from './QuoteItemsCard';
 import { QuoteStatusDialog } from './QuoteStatusDialog';
 
 export function QuoteDetailView() {
-  const { selectedQuoteId, navigate, goBack } = useNavigation();
+  const { quoteId } = useRoute('quote-detail');
+  const { navigate, back } = useNavigation();
   const { quoteDraft, startQuoteEdit, seedQuote, setQuoteField } = useEntityEdit();
 
   const { data, loading, error, isEditing, reload } = useEntityDetail({
     type: 'quote',
-    selectedId: selectedQuoteId,
+    selectedId: quoteId,
     fetcher: fetchQuote,
     missingMessage: 'Nessun preventivo selezionato.',
     draft: quoteDraft,
@@ -44,27 +45,37 @@ export function QuoteDetailView() {
   const [ddtOptionsOpen, setDdtOptionsOpen] = useState(false);
   const [deliveryFormOptionsOpen, setDeliveryFormOptionsOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const { generating, error: docError, clearError, open: openDocument } =
-    useInlineDocument<'consegna' | 'ddt' | 'scheda'>();
+  const {
+    generating,
+    error: docError,
+    clearError,
+    open: openDocument,
+  } = useInlineDocument<'consegna' | 'ddt' | 'scheda'>();
   const clientAutocomplete = useClientAutocomplete(isEditing);
   const doctorAutocomplete = useDoctorAutocomplete(isEditing);
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => goBack('quotes')} backLabel="Torna ai preventivi">
+      <StatusMessage onBack={() => back({ name: 'quotes' })} backLabel="Torna ai preventivi">
         Caricamento preventivo...
       </StatusMessage>
     );
   }
   if (error || !data) {
     return (
-      <StatusMessage onBack={() => goBack('quotes')} backLabel="Torna ai preventivi" tone="error">
+      <StatusMessage
+        onBack={() => back({ name: 'quotes' })}
+        backLabel="Torna ai preventivi"
+        tone="error"
+      >
         {error ?? 'Nessun preventivo selezionato.'}
       </StatusMessage>
     );
   }
 
-  const title = data.quoteNumber ? `Preventivo Nº ${data.quoteNumber}` : `Preventivo ${data.idQuote}`;
+  const title = data.quoteNumber
+    ? `Preventivo Nº ${data.quoteNumber}`
+    : `Preventivo ${data.idQuote}`;
   const deliveryFormState = documentActionState({
     generating,
     kind: 'consegna',
@@ -117,10 +128,9 @@ export function QuoteDetailView() {
       id: 'scheda',
       icon: 'assignment',
       label: schedaState.label,
-      onClick:
-        !schedaState.disabled
-          ? () => openDocument('scheda', () => fetchQuoteScheda(data.idQuote))
-          : undefined,
+      onClick: !schedaState.disabled
+        ? () => openDocument('scheda', () => fetchQuoteScheda(data.idQuote))
+        : undefined,
     },
     {
       id: 'delete',
@@ -136,9 +146,9 @@ export function QuoteDetailView() {
       <EntityDetailLayout
         header={
           <EntityPageHeader
-            back={{ label: 'Torna indietro', onClick: () => goBack('quotes') }}
+            back={{ label: 'Torna indietro', onClick: () => back({ name: 'quotes' }) }}
             crumbs={[
-              { label: 'Preventivi', onClick: () => navigate('quotes') },
+              { label: 'Preventivi', onClick: () => navigate({ name: 'quotes' }) },
               { label: 'Dettaglio' },
             ]}
             title={title}
@@ -159,9 +169,7 @@ export function QuoteDetailView() {
         actions={actions}
       >
         <div className="space-y-[28px]">
-          {docError && (
-            <DocumentErrorAlert error={docError} onClose={clearError} />
-          )}
+          {docError && <DocumentErrorAlert error={docError} onClose={clearError} />}
           <FieldSectionList
             data={data}
             sections={quoteDetailSectionsBeforeNotes}
@@ -223,7 +231,7 @@ export function QuoteDetailView() {
           onClose={() => setDeleteDialogOpen(false)}
           onConfirm={async () => {
             await deleteQuote(data.idQuote);
-            navigate('quotes');
+            navigate({ name: 'quotes' });
           }}
         />
       )}
@@ -258,7 +266,9 @@ function DeliveryFormOptionsDialog({
       onClose={onClose}
     >
       <label className="mt-[22px] block">
-        <span className="font-label-caps text-label-caps font-bold uppercase text-outline">Data</span>
+        <span className="font-label-caps text-label-caps font-bold uppercase text-outline">
+          Data
+        </span>
         <input
           type="date"
           value={deliveryDate}

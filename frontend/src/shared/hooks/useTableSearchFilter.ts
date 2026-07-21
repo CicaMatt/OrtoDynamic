@@ -1,16 +1,8 @@
 import { useMemo, useState } from 'react';
+import { tableColumnValue, type TableColumn } from '../entity/DataTable';
 
 /** A table column the toolbar can search and filter on. */
-export type SearchFilterColumn<T> = {
-  key: string;
-  label: string;
-  /** The cell's plain-text value, used for both display and search/filter. */
-  getValue: (row: T) => string;
-  /** Included in free-text search unless set to false (default true). */
-  searchable?: boolean;
-  /** Offered as a column filter unless set to false (default true). */
-  filterable?: boolean;
-};
+export type SearchFilterColumn<T extends object> = TableColumn<T>;
 
 /**
  * Drives a `ViewToolbar`'s search box and column filters over an in-memory list:
@@ -29,7 +21,7 @@ type UseTableSearchFilterOptions = {
   categoricalFiltersFirst?: boolean;
 };
 
-export function useTableSearchFilter<T>(
+export function useTableSearchFilter<T extends object>(
   items: T[],
   columns: ReadonlyArray<SearchFilterColumn<T>>,
   { categoricalFiltersFirst = false }: UseTableSearchFilterOptions = {},
@@ -46,17 +38,15 @@ export function useTableSearchFilter<T>(
     if (!categoricalFiltersFirst) return filterable;
     // Stable sort keeps each group's column order; categorical (exact-pick)
     // columns move ahead of the free-text ones.
-    return [...filterable].sort(
-      (a, b) => Number(isCategorical(b)) - Number(isCategorical(a)),
-    );
+    return [...filterable].sort((a, b) => Number(isCategorical(b)) - Number(isCategorical(a)));
   }, [columns, categoricalFiltersFirst]);
 
   const filterOptions = useMemo(
     () =>
       filterableColumns.map((column) => ({
-        key: column.key,
+        key: String(column.key),
         label: column.label,
-        options: uniqueValues(items.map((item) => column.getValue(item))),
+        options: uniqueValues(items.map((item) => tableColumnValue(column, item))),
         // Categorical columns are picked from a fixed dropdown; free-text ones
         // use a substring typeahead. Kept in sync with the matching in
         // `filteredItems`.
@@ -70,13 +60,15 @@ export function useTableSearchFilter<T>(
     return items.filter((item) => {
       const matchesSearch =
         term.length === 0 ||
-        searchableColumns.some((column) => normalize(column.getValue(item)).includes(term));
+        searchableColumns.some((column) =>
+          normalize(tableColumnValue(column, item)).includes(term),
+        );
       const matchesFilters = filterableColumns.every((column) => {
-        const activeValue = activeFilters[column.key];
+        const activeValue = activeFilters[String(column.key)];
         if (!activeValue) return true;
         return isCategorical(column)
-          ? column.getValue(item) === activeValue
-          : normalize(column.getValue(item)).includes(normalize(activeValue));
+          ? tableColumnValue(column, item) === activeValue
+          : normalize(tableColumnValue(column, item)).includes(normalize(activeValue));
       });
       return matchesSearch && matchesFilters;
     });
@@ -101,7 +93,7 @@ export function useTableSearchFilter<T>(
  * Columns excluded from free-text search are treated as categorical (status,
  * type, yes/no): filtered by an exact dropdown pick rather than a typeahead.
  */
-function isCategorical<T>(column: SearchFilterColumn<T>): boolean {
+function isCategorical<T extends object>(column: SearchFilterColumn<T>): boolean {
   return column.searchable === false;
 }
 

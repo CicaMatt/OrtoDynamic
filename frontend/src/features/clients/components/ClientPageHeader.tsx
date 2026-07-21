@@ -1,5 +1,5 @@
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { EntityPageHeader, type Crumb } from '../../../shared/entity/EntityPageHeader';
 import { Icon } from '../../../shared/ui/Icon';
 
@@ -34,18 +34,24 @@ export function ClientPageHeader({
 }
 
 function ClientDataSwitchButton() {
-  const { view, navigate } = useNavigation();
+  const { clientId, tab } = useRoute('client-detail');
+  const { navigate } = useNavigation();
   const { editing } = useEntityEdit();
 
-  const toOrthopedic = view === 'client-detail';
-  const target = toOrthopedic ? 'client-orthopedic' : 'client-detail';
+  const toOrthopedic = tab === 'general';
   const subject = toOrthopedic ? 'Dati Ortopedici' : 'Dati Cliente';
   const icon = toOrthopedic ? 'medical_services' : 'person';
 
   return (
     <button
       type="button"
-      onClick={() => navigate(target)}
+      onClick={() =>
+        navigate({
+          name: 'client-detail',
+          clientId,
+          tab: toOrthopedic ? 'orthopedic' : 'general',
+        })
+      }
       className="inline-flex items-center gap-[8px] h-[40px] rounded-[6px] bg-secondary px-[16px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover transition-colors"
     >
       <Icon name={icon} className="text-[20px]" />

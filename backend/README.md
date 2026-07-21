@@ -68,6 +68,19 @@ cp .env.example .env          # then fill in real database credentials
 python manage.py runserver
 ```
 
+From the repository root, `./scripts/dev/start.sh` starts both backend and
+frontend. It uses `python` from the active environment by default; set
+`BACKEND_PYTHON=/path/to/python` to use another interpreter.
+
+Run every frontend and backend check from the repository root with:
+
+```bash
+./scripts/check.sh
+```
+
+The check script uses the same `BACKEND_PYTHON` override as the development
+launcher.
+
 Settings default to `config.settings.development` (see `manage.py`). The database
 connection points at the existing SQL database via the `DJANGO_DB_*` variables —
 this project does not create the business schema.

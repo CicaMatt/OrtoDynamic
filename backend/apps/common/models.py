@@ -26,13 +26,3 @@ class UnmanagedModel(models.Model):
     class Meta:
         abstract = True
         managed = False
-
-
-class TimestampedModel(models.Model):
-    """Base for tables Django *does* own, adding created/updated bookkeeping."""
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True

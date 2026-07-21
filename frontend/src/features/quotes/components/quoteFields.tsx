@@ -1,10 +1,6 @@
-import {
-  markRequired,
-  optionsFromValues,
-  type FieldConfig,
-} from '../../../shared/entity/DataCard';
+import { markRequired, optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import type { FieldSectionConfig } from '../../../shared/entity/FieldSectionCard';
-import { ReferenceName } from '../../../shared/ui/ReferenceName';
+import { EntityReference } from '../../../app/navigation/EntityReference';
 import type { Quote } from '../types';
 
 type QuoteField = FieldConfig<Quote>;
@@ -29,11 +25,30 @@ export const QUOTE_CREATE_REQUIRED = [
 // `status`, `total`, and `quote` are intentionally excluded: status changes via
 // its guarded endpoint, total is server-derived, and quote has no form field.
 export const QUOTE_EDITABLE_KEYS = [
-  'clientId', 'doctorId', 'quoteNumber', 'quoteType', 'creationDate', 'quoteDate',
-  'entryBy', 'diagnosis', 'therapeuticProgram', 'detailedPrescription',
-  'authorizationNumber', 'acceptanceDate', 'authorizationReceiptDate', 'expiryDays', 'maxExpiry',
-  'measurementsOk', 'commissionsPaid', 'orderNumber', 'model', 'measurements', 'invoiceNumber',
-  'note', 'privateNote', 'finalNote',
+  'clientId',
+  'doctorId',
+  'quoteNumber',
+  'quoteType',
+  'creationDate',
+  'quoteDate',
+  'entryBy',
+  'diagnosis',
+  'therapeuticProgram',
+  'detailedPrescription',
+  'authorizationNumber',
+  'acceptanceDate',
+  'authorizationReceiptDate',
+  'expiryDays',
+  'maxExpiry',
+  'measurementsOk',
+  'commissionsPaid',
+  'orderNumber',
+  'model',
+  'measurements',
+  'invoiceNumber',
+  'note',
+  'privateNote',
+  'finalNote',
 ] as const satisfies readonly (keyof Quote)[];
 
 // `Stato` is read-only here: it changes only via the guarded status action.
@@ -60,13 +75,13 @@ const referenceFields: QuoteField[] = [
     label: 'Cliente',
     key: 'clientId',
     type: 'autocomplete',
-    renderValue: (id, quote) => <ReferenceName name={quote.clientName} id={id} entity="client" />,
+    renderValue: (id, quote) => <EntityReference name={quote.clientName} id={id} entity="client" />,
   },
   {
     label: 'Medico',
     key: 'doctorId',
     type: 'autocomplete',
-    renderValue: (id, quote) => <ReferenceName name={quote.doctorName} id={id} entity="doctor" />,
+    renderValue: (id, quote) => <EntityReference name={quote.doctorName} id={id} entity="doctor" />,
   },
   { label: 'Inserito Da', key: 'entryBy' },
 ];

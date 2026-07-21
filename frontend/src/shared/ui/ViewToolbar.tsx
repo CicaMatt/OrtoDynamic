@@ -11,39 +11,24 @@ export type ToolbarFilter = {
 
 export type ToolbarFilters = Record<string, string>;
 
-export type QuickFilterGroup = {
-  title: string;
-  options: Array<{
-    key: string;
-    label: string;
-    value: string;
-    icon?: string;
-    dotColor?: string;
-  }>;
-};
-
 type ViewToolbarProps = {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   onCreate?: () => void;
-  onActions?: () => void;
   filters?: ToolbarFilter[];
   activeFilters?: ToolbarFilters;
   onFilterChange?: (key: string, value: string) => void;
   onClearFilters?: () => void;
-  quickFilterGroups?: QuickFilterGroup[];
 };
 
 export function ViewToolbar({
   searchValue = '',
   onSearchChange,
   onCreate,
-  onActions,
   filters = [],
   activeFilters = {},
   onFilterChange,
   onClearFilters,
-  quickFilterGroups = [],
 }: ViewToolbarProps) {
   const activeFilterCount = Object.values(activeFilters).filter(Boolean).length;
 
@@ -58,19 +43,7 @@ export function ViewToolbar({
           Nuovo
         </button>
       )}
-      {onActions && (
-        <button
-          onClick={onActions}
-          className="border border-outline-variant text-on-surface font-label-caps text-label-caps px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-surface-container-high transition-colors"
-        >
-          Azioni
-          <Icon name="expand_more" className="text-sm" />
-        </button>
-      )}
-      {(onCreate || onActions) && <div className="h-6 w-px bg-outline-variant mx-2" />}
-      {quickFilterGroups.length > 0 && (
-        <QuickFilters groups={quickFilterGroups} onFilterChange={onFilterChange} />
-      )}
+      {onCreate && <div className="h-6 w-px bg-outline-variant mx-2" />}
       <FilterMenu
         filters={filters}
         activeFilters={activeFilters}
@@ -80,91 +53,6 @@ export function ViewToolbar({
       />
       <ToolbarSearch value={searchValue} onChange={onSearchChange} />
     </div>
-  );
-}
-
-function QuickFilters({
-  groups,
-  onFilterChange,
-}: {
-  groups: QuickFilterGroup[];
-  onFilterChange?: (key: string, value: string) => void;
-}) {
-  const { open, setOpen, containerRef } = useClickOutsideDropdown<HTMLDivElement>();
-  const disabled = groups.length === 0 || !onFilterChange;
-
-  return (
-    <div className="relative" ref={containerRef}>
-      <button
-        onClick={() => setOpen((value) => !value)}
-        disabled={disabled}
-        className="border border-outline-variant text-on-surface font-label-caps text-label-caps px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-surface-container-high transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Filtri Rapidi
-        <Icon name="expand_more" className="text-sm" />
-      </button>
-      {open && onFilterChange && (
-        <QuickFiltersDropdown
-          groups={groups}
-          onSelect={(key, value) => {
-            onFilterChange(key, value);
-            setOpen(false);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function QuickFiltersDropdown({
-  groups,
-  onSelect,
-}: {
-  groups: QuickFilterGroup[];
-  onSelect: (key: string, value: string) => void;
-}) {
-  return (
-    <DropdownShell align="left" size="sm" padding="sm">
-      {groups.map((group, groupIndex) => (
-        <div key={group.title}>
-          {groupIndex > 0 && <div className="h-px bg-outline-variant/30 my-2" />}
-          <DropdownHeader>{group.title}</DropdownHeader>
-          {group.options.map((option) => (
-            <DropdownOption
-              key={`${option.key}-${option.value}`}
-              onClick={() => onSelect(option.key, option.value)}
-              dotColor={option.dotColor}
-              icon={option.icon}
-              label={option.label}
-            />
-          ))}
-        </div>
-      ))}
-    </DropdownShell>
-  );
-}
-
-function DropdownHeader({ children }: { children: ReactNode }) {
-  return <div className="px-3 py-2 text-[10px] font-bold text-outline uppercase tracking-wider">{children}</div>;
-}
-
-type DropdownOptionProps = {
-  label: string;
-  onClick: () => void;
-  icon?: string;
-  dotColor?: string;
-};
-
-function DropdownOption({ label, onClick, icon, dotColor }: DropdownOptionProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-surface-container-low text-body-sm transition-colors text-on-surface group text-left"
-    >
-      {dotColor && <span className={`w-2 h-2 rounded-full ${dotColor}`} />}
-      {icon && <Icon name={icon} className="text-[18px] text-outline group-hover:text-primary" />}
-      {label}
-    </button>
   );
 }
 
@@ -260,24 +148,9 @@ function useClickOutsideDropdown<T extends HTMLElement>() {
   return { open, setOpen, containerRef };
 }
 
-function DropdownShell({
-  align = 'right',
-  size = 'md',
-  padding = 'md',
-  children,
-}: {
-  align?: 'left' | 'right';
-  size?: 'sm' | 'md';
-  padding?: 'none' | 'sm' | 'md';
-  children: ReactNode;
-}) {
-  const alignClass = align === 'left' ? 'left-0' : 'right-0';
-  const sizeClass = size === 'sm' ? 'w-56' : 'w-72';
-  const paddingClass = padding === 'sm' ? 'py-2' : padding === 'md' ? 'p-4' : '';
+function DropdownShell({ children }: { children: ReactNode }) {
   return (
-    <div
-      className={`absolute ${alignClass} mt-2 ${sizeClass} bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-outline-variant/30 ${paddingClass} z-50`}
-    >
+    <div className="absolute right-0 mt-2 w-72 bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-outline-variant/30 p-4 z-50">
       {children}
     </div>
   );
@@ -397,7 +270,11 @@ function FilterCombobox({
               return (
                 <li
                   key={entry.option}
-                  className={startsSubstringGroup ? 'mt-1 pt-1 border-t border-outline-variant/30' : undefined}
+                  className={
+                    startsSubstringGroup
+                      ? 'mt-1 pt-1 border-t border-outline-variant/30'
+                      : undefined
+                  }
                 >
                   <button
                     type="button"
@@ -417,13 +294,7 @@ function FilterCombobox({
   );
 }
 
-function ToolbarSearch({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange?: (value: string) => void;
-}) {
+function ToolbarSearch({ value, onChange }: { value: string; onChange?: (value: string) => void }) {
   return (
     <div className="relative">
       <Icon

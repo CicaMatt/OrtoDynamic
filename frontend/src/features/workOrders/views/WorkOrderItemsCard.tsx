@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  DetailTableCard,
-  type DetailTableColumn,
-} from '../../../shared/entity/DetailTableCard';
+import { DetailTableCard, type DetailTableColumn } from '../../../shared/entity/DetailTableCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { formatBirthDate, formatEuro, formatInteger } from '../../../shared/format/format';
 import { FieldValue } from '../../../shared/ui/FieldValue';
-import { ReferenceName } from '../../../shared/ui/ReferenceName';
+import { EntityReference } from '../../../app/navigation/EntityReference';
 import { fetchWorkOrderItems, updateWorkOrderItem } from '../api/workOrders';
 import type { WorkOrderItem } from '../types';
 
@@ -59,7 +56,12 @@ const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
     editableWhen: (item) => item.status === DELIVERED,
     invalidWhen: (item) => item.status === DELIVERED && !item.deliveryDate,
   },
-  { key: 'partialDeliveryDate', label: 'Data Consegna Parziale', render: formatBirthDate, editDate: true },
+  {
+    key: 'partialDeliveryDate',
+    label: 'Data Consegna Parziale',
+    render: formatBirthDate,
+    editDate: true,
+  },
   { key: 'price', label: 'Prezzo', render: formatEuro },
   { key: 'amount', label: 'Importo', render: formatEuro },
   { key: 'discount', label: 'Sconto' },
@@ -156,7 +158,7 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
       ? {
           ...column,
           renderNode: (value: string, item: WorkOrderItem) => (
-            <ReferenceName name={value} id={item.productId} entity="product" />
+            <EntityReference name={value} id={item.productId} entity="product" />
           ),
         }
       : column,

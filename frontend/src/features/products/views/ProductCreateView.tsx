@@ -9,8 +9,15 @@ import type { Product } from '../types';
 
 export function ProductCreateView() {
   const { navigate } = useNavigation();
-  const { editing, mode, editTarget, productDraft, invalidFields, startProductCreate, setProductField } =
-    useEntityEdit();
+  const {
+    editing,
+    mode,
+    editTarget,
+    productDraft,
+    invalidFields,
+    startProductCreate,
+    setProductField,
+  } = useEntityEdit();
 
   const isCreating = editing && mode === 'create' && editTarget?.type === 'product';
 
@@ -29,7 +36,7 @@ export function ProductCreateView() {
           backLabel="Torna ai prodotti"
           listLabel="Prodotti"
           title="Nuovo Prodotto"
-          onBack={() => navigate('products')}
+          onBack={() => navigate({ name: 'products' })}
         />
       }
     >

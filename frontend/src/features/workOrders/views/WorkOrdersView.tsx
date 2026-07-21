@@ -1,7 +1,8 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { entityDetailRoute } from '../../../app/navigation/routes';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
 import { formatBirthDate, previewText } from '../../../shared/format/format';
-import { ReferenceName } from '../../../shared/ui/ReferenceName';
+import { ReferenceLabel } from '../../../shared/ui/ReferenceLabel';
 import { fetchWorkOrders } from '../api/workOrders';
 import type { WorkOrder } from '../types';
 
@@ -19,7 +20,7 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     label: 'Cliente',
     muted: true,
     filterable: false,
-    renderCell: (workOrder) => <ReferenceName name={workOrder.clientName} id={workOrder.clientId} />,
+    cell: (workOrder) => <ReferenceLabel name={workOrder.clientName} id={workOrder.clientId} />,
   },
   {
     key: 'creationDate',
@@ -101,7 +102,12 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
     filterable: false,
     render: formatBirthDate,
   },
-  { key: 'serviceDoctorSignature', label: 'Firma Medico Assistenza', muted: true, filterable: false },
+  {
+    key: 'serviceDoctorSignature',
+    label: 'Firma Medico Assistenza',
+    muted: true,
+    filterable: false,
+  },
   {
     key: 'interventionDescription',
     label: 'Descrizione Intervento',
@@ -121,7 +127,7 @@ const workOrderColumns: ReadonlyArray<EntityColumn<WorkOrder>> = [
 ];
 
 export function WorkOrdersView() {
-  const { openWorkOrderDetail } = useNavigation();
+  const { navigate } = useNavigation();
 
   return (
     <EntityListView
@@ -129,7 +135,7 @@ export function WorkOrdersView() {
       columns={workOrderColumns}
       fetchItems={fetchWorkOrders}
       rowKey={(workOrder) => workOrder.idWorkOrder}
-      onRowClick={(workOrder) => openWorkOrderDetail(workOrder.idWorkOrder)}
+      onRowClick={(workOrder) => navigate(entityDetailRoute('workOrder', workOrder.idWorkOrder))}
       loadingLabel="Caricamento lavorazioni..."
       emptyLabel="Nessuna lavorazione trovata."
     />

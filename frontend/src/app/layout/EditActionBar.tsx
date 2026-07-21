@@ -1,10 +1,11 @@
 import { useEntityEdit } from '../editing/EntityEditContext';
 import { useNavigation } from '../navigation/NavigationContext';
+import { entityDetailRoute, entityListRoute } from '../navigation/routes';
 
 /** Floating Salva / Annulla bar shown while an entity is being edited or created. */
 export function EditActionBar() {
   const { editing, mode, editTarget, saving, saveError, save, cancel } = useEntityEdit();
-  const { openEntityDetail, goToEntityList } = useNavigation();
+  const { replace } = useNavigation();
   if (!editing) return null;
 
   const creating = mode === 'create';
@@ -13,7 +14,7 @@ export function EditActionBar() {
     const result = await save();
     // On a successful create, land on the new record's detail view.
     if (result.ok && result.created) {
-      openEntityDetail(result.created.type, result.created.id);
+      replace(entityDetailRoute(result.created.type, result.created.id));
     }
   };
 
@@ -21,14 +22,16 @@ export function EditActionBar() {
     const creatingType = creating ? editTarget?.type : null;
     cancel();
     // Leaving a create form returns to the entity's list.
-    if (creatingType) goToEntityList(creatingType);
+    if (creatingType) replace(entityListRoute(creatingType));
   };
 
   const saveLabel = saving ? 'Salvataggio…' : creating ? 'Crea' : 'Salva';
 
   return (
     <div className="fixed bottom-[24px] right-[32px] z-50 flex flex-col items-stretch gap-[10px] rounded-[10px] border border-surface-variant bg-white px-[12px] py-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
-      {saveError && <span className="max-w-[260px] font-body-sm text-body-sm text-error">{saveError}</span>}
+      {saveError && (
+        <span className="max-w-[260px] font-body-sm text-body-sm text-error">{saveError}</span>
+      )}
       <button
         onClick={handleCancel}
         disabled={saving}

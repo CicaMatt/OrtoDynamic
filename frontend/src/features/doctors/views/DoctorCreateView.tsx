@@ -10,8 +10,15 @@ import type { Doctor } from '../types';
 
 export function DoctorCreateView() {
   const { navigate } = useNavigation();
-  const { editing, mode, editTarget, doctorDraft, invalidFields, startDoctorCreate, setDoctorField } =
-    useEntityEdit();
+  const {
+    editing,
+    mode,
+    editTarget,
+    doctorDraft,
+    invalidFields,
+    startDoctorCreate,
+    setDoctorField,
+  } = useEntityEdit();
 
   const isCreating = editing && mode === 'create' && editTarget?.type === 'doctor';
 
@@ -30,7 +37,7 @@ export function DoctorCreateView() {
           backLabel="Torna ai medici"
           listLabel="Medici"
           title="Nuovo Medico"
-          onBack={() => navigate('doctors')}
+          onBack={() => navigate({ name: 'doctors' })}
         />
       }
     >

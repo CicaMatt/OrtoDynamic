@@ -11,7 +11,7 @@ import { useInlineDocument } from '../../../shared/files/useInlineDocument';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { useClientDoctorAutocomplete } from '../components/useClientDoctorAutocomplete';
 import { useClientMunicipalityAutocomplete } from '../components/useClientMunicipalityAutocomplete';
 
@@ -23,12 +23,13 @@ const clientActions = [
 ];
 
 export function ClientDetailView() {
-  const { selectedClientCode, navigate, goBack } = useNavigation();
+  const { clientId } = useRoute('client-detail');
+  const { navigate, back } = useNavigation();
   const { clientDraft, startClientEdit, seedClient, setClientField } = useEntityEdit();
 
   const { data, loading, error, isEditing } = useEntityDetail({
     type: 'client',
-    selectedId: selectedClientCode,
+    selectedId: clientId,
     fetcher: fetchClient,
     missingMessage: 'Nessun cliente selezionato.',
     draft: clientDraft,
@@ -37,7 +38,12 @@ export function ClientDetailView() {
 
   const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditing);
   const doctorFields = useClientDoctorAutocomplete(isEditing);
-  const { generating, error: docError, clearError, open: openDocument } = useInlineDocument<'privacy'>();
+  const {
+    generating,
+    error: docError,
+    clearError,
+    open: openDocument,
+  } = useInlineDocument<'privacy'>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const doctorId = data?.doctorId?.trim() ?? '';
   const { data: doctor } = useApiData(
@@ -48,14 +54,18 @@ export function ClientDetailView() {
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => goBack('clients')} backLabel="Torna ai clienti">
+      <StatusMessage onBack={() => back({ name: 'clients' })} backLabel="Torna ai clienti">
         Caricamento cliente...
       </StatusMessage>
     );
   }
   if (error || !data) {
     return (
-      <StatusMessage onBack={() => goBack('clients')} backLabel="Torna ai clienti" tone="error">
+      <StatusMessage
+        onBack={() => back({ name: 'clients' })}
+        backLabel="Torna ai clienti"
+        tone="error"
+      >
         {error ?? 'Nessun cliente selezionato.'}
       </StatusMessage>
     );
@@ -80,10 +90,9 @@ export function ClientDetailView() {
       return {
         ...action,
         label: documentState.label,
-        onClick:
-          !documentState.disabled
-            ? () => openDocument('privacy', () => fetchClientPrivacyForm(data.idClient))
-            : undefined,
+        onClick: !documentState.disabled
+          ? () => openDocument('privacy', () => fetchClientPrivacyForm(data.idClient))
+          : undefined,
       };
     }
     if (action.id === 'delete') {
@@ -100,9 +109,9 @@ export function ClientDetailView() {
       <EntityDetailLayout
         header={
           <ClientPageHeader
-            back={{ label: 'Torna indietro', onClick: () => goBack('clients') }}
+            back={{ label: 'Torna indietro', onClick: () => back({ name: 'clients' }) }}
             crumbs={[
-              { label: 'Clienti', onClick: () => navigate('clients') },
+              { label: 'Clienti', onClick: () => navigate({ name: 'clients' }) },
               { label: 'Dettaglio' },
             ]}
             client={data}
@@ -131,7 +140,7 @@ export function ClientDetailView() {
           onClose={() => setDeleteDialogOpen(false)}
           onConfirm={async () => {
             await deleteClient(data.idClient);
-            navigate('clients');
+            navigate({ name: 'clients' });
           }}
         />
       )}

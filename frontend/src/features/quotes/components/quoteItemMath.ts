@@ -10,19 +10,6 @@ export const EMPTY_ITEM_DRAFT: QuoteItemDraft = {
   discount: '',
 };
 
-/** Column headers shared by both line-item cards, in display order. */
-export const ITEM_COLUMN_LABELS = [
-  'Codice Nomenclatore',
-  'Prodotto',
-  'Quantità',
-  'Prezzo',
-  'Importo',
-  'Sconto',
-] as const;
-
-/** One column per header plus the trailing actions column. */
-export const ITEM_COLUMN_COUNT = ITEM_COLUMN_LABELS.length + 1;
-
 /** Parse an amount input into the number the API expects, or `null` when blank. */
 export function toNullableNumber(raw: string): number | null {
   const trimmed = raw.trim();
@@ -91,6 +78,11 @@ export function quantityError(raw: string): string | null {
     return 'La quantità deve essere almeno 1.';
   }
   return null;
+}
+
+/** Return the first validation error shared by both quote-item controllers. */
+export function quoteItemDraftError(draft: QuoteItemDraft): string | null {
+  return quantityError(draft.quantity) ?? discountError(draft.discount);
 }
 
 /** Reject quantity keystrokes that would make the value lower than 1. */

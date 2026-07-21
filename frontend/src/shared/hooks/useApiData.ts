@@ -1,9 +1,14 @@
-import { useEffect, useState, type DependencyList } from 'react';
+import { useEffect, useReducer, useState, type DependencyList } from 'react';
 
 type ApiDataState<T> = {
   data: T | null;
   loading: boolean;
   error: string | null;
+};
+
+type ApiData<T> = ApiDataState<T> & {
+  /** Re-run the current request without making callers own a counter. */
+  reload: () => void;
 };
 
 /**
@@ -12,8 +17,9 @@ type ApiDataState<T> = {
  * Re-runs whenever `deps` change, and guards against state updates after the
  * component unmounts or the dependencies change mid-flight.
  */
-export function useApiData<T>(fetcher: () => Promise<T>, deps: DependencyList): ApiDataState<T> {
+export function useApiData<T>(fetcher: () => Promise<T>, deps: DependencyList): ApiData<T> {
   const [state, setState] = useState<ApiDataState<T>>({ data: null, loading: true, error: null });
+  const [requestGeneration, reload] = useReducer((generation: number) => generation + 1, 0);
 
   useEffect(() => {
     let active = true;
@@ -34,7 +40,7 @@ export function useApiData<T>(fetcher: () => Promise<T>, deps: DependencyList): 
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [...deps, requestGeneration]);
 
-  return state;
+  return { ...state, reload };
 }

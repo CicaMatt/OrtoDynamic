@@ -4,6 +4,6 @@
 set -e
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 trap 'kill 0' EXIT
-/opt/anaconda3/envs/ortodynamic/bin/python backend/manage.py runserver &
+"${BACKEND_PYTHON:-python}" backend/manage.py runserver &
 npm --prefix frontend run dev &
 wait

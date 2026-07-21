@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "lint": "eslint . --max-warnings 0",
+    "format:check": "prettier --check eslint.config.js vite.config.ts package.json tsconfig.json tsconfig.node.json tests src/app/navigation src/app/layout/AppLayout.tsx src/app/layout/EditActionBar.tsx src/app/layout/SideNavBar.tsx src/app/layout/UnsavedChangesDialog.tsx src/shared/ui/ViewToolbar.tsx src/shared/ui/ReferenceLabel.tsx src/shared/entity/DataTable.tsx src/shared/entity/DetailTableCard.tsx src/shared/entity/EntityListView.tsx src/shared/hooks/useApiData.ts src/shared/hooks/useTableSearchFilter.ts src/features/clients/components/ClientDataSections.tsx src/features/clients/components/ClientPageHeader.tsx src/features/clients/views/ClientCreateView.tsx src/features/clients/views/ClientDetailView.tsx src/features/clients/views/ClientOrthopedicView.tsx src/features/clients/views/ClientsView.tsx src/features/doctors/views/DoctorCreateView.tsx src/features/doctors/views/DoctorDetailView.tsx src/features/doctors/views/DoctorsView.tsx src/features/employees/views/EmployeesView.tsx src/features/configurations/views/ConfigurationsView.tsx src/features/healthCompanies/views/HealthCompaniesView.tsx src/features/healthCompanies/views/HealthCompanyCreateView.tsx src/features/healthCompanies/views/HealthCompanyDetailView.tsx src/features/products/views/ProductCreateView.tsx src/features/products/views/ProductDetailView.tsx src/features/products/views/ProductsView.tsx src/features/quotes/components/QuoteItemRow.tsx src/features/quotes/components/QuoteItemsTable.tsx src/features/quotes/components/quoteFields.tsx src/features/quotes/components/quoteItemMath.ts src/features/quotes/components/useQuoteItemDraft.ts src/features/quotes/views/QuoteCreateView.tsx src/features/quotes/views/QuoteDetailView.tsx src/features/quotes/views/QuoteItemsCard.tsx src/features/quotes/views/QuoteItemsDraftCard.tsx src/features/quotes/views/QuotesView.tsx src/features/workOrders/views/WorkOrderDetailView.tsx src/features/workOrders/views/WorkOrderItemsCard.tsx src/features/workOrders/views/WorkOrdersView.tsx",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -13,14 +17,23 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@tailwindcss/forms": "^0.5.9",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
+    "prettier": "^3.9.6",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "typescript-eslint": "^8.65.0",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.9"
   }
 }

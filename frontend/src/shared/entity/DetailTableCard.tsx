@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react';
 import { DataCard, EditInput, optionsFromValues } from './DataCard';
-import { ScrollableTable } from './ScrollableTable';
+import { DataTable, tableColumnValue, type TableColumn } from './DataTable';
 import { TableScrollSlider } from './TableScrollSlider';
 import { FieldValue } from '../ui/FieldValue';
 
@@ -57,130 +57,61 @@ export function DetailTableCard<T extends object>({
   footer?: ReactNode;
 }) {
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const tableColumns: ReadonlyArray<TableColumn<T>> = columns.map((column) => ({
+    key: column.key,
+    label: column.label,
+    cellClassName: (item) => {
+      const editable = isEditableCell(column, item, editing, onCellChange);
+      return editable ? 'min-w-[200px]' : '';
+    },
+    cell: (item) => {
+      const raw = tableColumnValue(column, item);
+      const value = column.render ? column.render(raw) : raw;
+      if (isEditableCell(column, item, editing, onCellChange)) {
+        return (
+          <EditInput
+            type={column.editOptions ? 'select' : 'date'}
+            value={raw}
+            options={column.editOptions ? optionsFromValues(column.editOptions) : undefined}
+            invalid={column.invalidWhen?.(item) ?? false}
+            onChange={(nextValue) => onCellChange!(item, column.key, nextValue)}
+          />
+        );
+      }
+      return column.renderNode ? column.renderNode(value, item, raw) : <FieldValue value={value} />;
+    },
+  }));
 
   return (
     <DataCard icon={icon} title={title} action={<TableScrollSlider scrollRef={tableScrollRef} />}>
-      <ScrollableTable
+      <DataTable
+        columns={tableColumns}
+        rows={items}
+        loading={loading}
+        error={error}
+        loadingLabel={loadingLabel}
+        emptyLabel={emptyLabel}
+        rowKey={rowKey}
         surfaceClassName="rounded-xl border border-outline-variant/50"
         scrollRef={tableScrollRef}
-      >
-        <table className="w-full text-left font-body-md text-body-md">
-          <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">
-            <tr>
-              {columns.map((column) => (
-                <th
-                  key={String(column.key)}
-                  className="py-3 px-4 uppercase font-bold tracking-wider whitespace-nowrap"
-                >
-                  {column.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <DetailTableBody
-              items={items}
-              columns={columns}
-              rowKey={rowKey}
-              loading={loading}
-              error={error}
-              loadingLabel={loadingLabel}
-              emptyLabel={emptyLabel}
-              editing={editing}
-              onCellChange={onCellChange}
-            />
-          </tbody>
-        </table>
-      </ScrollableTable>
+        rowClassName="border-b border-surface-variant last:border-0 hover:bg-surface-container-low transition-colors duration-300"
+        bodyCellClassName="py-3 px-4 whitespace-nowrap"
+      />
       {footer}
     </DataCard>
   );
 }
 
-function DetailTableBody<T extends object>({
-  items,
-  columns,
-  rowKey,
-  loading,
-  error,
-  loadingLabel,
-  emptyLabel,
-  editing,
-  onCellChange,
-}: {
-  items: T[];
-  columns: ReadonlyArray<DetailTableColumn<T>>;
-  rowKey: (item: T) => string;
-  loading: boolean;
-  error: string | null;
-  loadingLabel: string;
-  emptyLabel: string;
-  editing: boolean;
-  onCellChange?: (item: T, key: keyof T, value: string) => void;
-}) {
-  if (loading) return <MessageRow columnCount={columns.length}>{loadingLabel}</MessageRow>;
-  if (error) {
-    return (
-      <MessageRow columnCount={columns.length} tone="error">
-        {error}
-      </MessageRow>
-    );
-  }
-  if (items.length === 0) return <MessageRow columnCount={columns.length}>{emptyLabel}</MessageRow>;
-
-  return (
-    <>
-      {items.map((item) => (
-        <tr
-          key={rowKey(item)}
-          className="border-b border-surface-variant last:border-0 hover:bg-surface-container-low transition-colors duration-300"
-        >
-          {columns.map((column) => {
-            const raw = String(item[column.key] ?? '');
-            const value = column.render ? column.render(raw) : raw;
-            const cellEditable =
-              editing &&
-              (column.editOptions || column.editDate) &&
-              onCellChange &&
-              (column.editableWhen?.(item) ?? true);
-            const cellClassName = `py-3 px-4 whitespace-nowrap ${cellEditable ? 'min-w-[200px]' : ''}`;
-            return (
-              <td key={String(column.key)} className={cellClassName}>
-                {cellEditable ? (
-                  <EditInput
-                    type={column.editOptions ? 'select' : 'date'}
-                    value={raw}
-                    options={column.editOptions ? optionsFromValues(column.editOptions) : undefined}
-                    invalid={column.invalidWhen?.(item) ?? false}
-                    onChange={(value) => onCellChange!(item, column.key, value)}
-                  />
-                ) : (
-                  column.renderNode ? column.renderNode(value, item, raw) : <FieldValue value={value} />
-                )}
-              </td>
-            );
-          })}
-        </tr>
-      ))}
-    </>
-  );
-}
-
-function MessageRow({
-  columnCount,
-  tone = 'muted',
-  children,
-}: {
-  columnCount: number;
-  tone?: 'muted' | 'error';
-  children: ReactNode;
-}) {
-  const toneClass = tone === 'error' ? 'text-error' : 'text-on-surface-variant';
-  return (
-    <tr>
-      <td colSpan={columnCount} className={`py-6 px-4 text-center ${toneClass}`}>
-        {children}
-      </td>
-    </tr>
+function isEditableCell<T extends object>(
+  column: DetailTableColumn<T>,
+  item: T,
+  editing: boolean,
+  onCellChange: ((item: T, key: keyof T, value: string) => void) | undefined,
+): boolean {
+  return Boolean(
+    editing &&
+    (column.editOptions || column.editDate) &&
+    onCellChange &&
+    (column.editableWhen?.(item) ?? true),
   );
 }

@@ -1,6 +1,7 @@
 import { fetchClients } from '../api/clients';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { entityCreateRoute, entityDetailRoute } from '../../../app/navigation/routes';
 import type { ClientListItem } from '../types';
 import { formatBirthDate } from '../../../shared/format/format';
 
@@ -25,7 +26,7 @@ const clientColumns: ReadonlyArray<EntityColumn<ClientListItem>> = [
 ];
 
 export function ClientsView() {
-  const { openClientDetail, openClientCreate } = useNavigation();
+  const { navigate } = useNavigation();
 
   return (
     <EntityListView
@@ -33,8 +34,8 @@ export function ClientsView() {
       columns={clientColumns}
       fetchItems={fetchClients}
       rowKey={(client) => client.idClient}
-      onRowClick={(client) => openClientDetail(client.idClient)}
-      onCreate={openClientCreate}
+      onRowClick={(client) => navigate(entityDetailRoute('client', client.idClient))}
+      onCreate={() => navigate(entityCreateRoute('client'))}
       loadingLabel="Caricamento clienti..."
       emptyLabel="Nessun cliente trovato."
     />

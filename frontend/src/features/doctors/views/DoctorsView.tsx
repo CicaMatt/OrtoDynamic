@@ -1,10 +1,11 @@
 import { fetchDoctors } from '../api/doctors';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { entityCreateRoute, entityDetailRoute } from '../../../app/navigation/routes';
 import type { DoctorListItem } from '../types';
 
 const doctorColumns: ReadonlyArray<EntityColumn<DoctorListItem>> = [
-  { key: 'idDoctor', label: 'ID Medico', primary: true, filterable: false  },
+  { key: 'idDoctor', label: 'ID Medico', primary: true, filterable: false },
   { key: 'surname', label: 'Cognome' },
   { key: 'name', label: 'Nome' },
   { key: 'address', label: 'Indirizzo', muted: true },
@@ -13,7 +14,7 @@ const doctorColumns: ReadonlyArray<EntityColumn<DoctorListItem>> = [
 ];
 
 export function DoctorsView() {
-  const { openDoctorDetail, openDoctorCreate } = useNavigation();
+  const { navigate } = useNavigation();
 
   return (
     <EntityListView
@@ -21,8 +22,8 @@ export function DoctorsView() {
       columns={doctorColumns}
       fetchItems={fetchDoctors}
       rowKey={(doctor) => doctor.idDoctor}
-      onRowClick={(doctor) => openDoctorDetail(doctor.idDoctor)}
-      onCreate={openDoctorCreate}
+      onRowClick={(doctor) => navigate(entityDetailRoute('doctor', doctor.idDoctor))}
+      onCreate={() => navigate(entityCreateRoute('doctor'))}
       loadingLabel="Caricamento medici..."
       emptyLabel="Nessun medico trovato."
     />

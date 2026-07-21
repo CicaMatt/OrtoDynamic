@@ -11,8 +11,15 @@ import type { Client } from '../types';
 
 export function ClientCreateView() {
   const { navigate } = useNavigation();
-  const { editing, mode, editTarget, clientDraft, invalidFields, startClientCreate, setClientField } =
-    useEntityEdit();
+  const {
+    editing,
+    mode,
+    editTarget,
+    clientDraft,
+    invalidFields,
+    startClientCreate,
+    setClientField,
+  } = useEntityEdit();
 
   const isCreatingClient = editing && mode === 'create' && editTarget?.type === 'client';
 
@@ -34,7 +41,7 @@ export function ClientCreateView() {
           backLabel="Torna ai clienti"
           listLabel="Clienti"
           title="Nuovo Cliente"
-          onBack={() => navigate('clients')}
+          onBack={() => navigate({ name: 'clients' })}
         />
       }
     >

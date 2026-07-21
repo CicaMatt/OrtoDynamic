@@ -14,7 +14,6 @@ PDF bytes.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
 from pathlib import Path
 
 from .fpdf_canvas import FpdfCanvas
@@ -295,4 +294,3 @@ def _birth(document: SchedaDocument) -> str:
     if document.data_nascita:
         return f"{document.comune_nascita} il {document.data_nascita}".strip()
     return document.comune_nascita
-

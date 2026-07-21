@@ -2,30 +2,41 @@ import { Icon } from '../../shared/ui/Icon';
 import { useAuth } from '../../features/auth/AuthContext';
 import type { AuthUser } from '../../features/auth/types';
 import { useNavigation } from '../navigation/NavigationContext';
-import type { View } from '../navigation/types';
+import { sectionForRoute } from '../navigation/routes';
+import type { NavigationSection, Route } from '../navigation/types';
 
 type NavEntry = {
-  view: View;
+  route: Route;
+  section: NavigationSection;
   icon: string;
   label: string;
-  matches: View[];
 };
 
 const mainNav: NavEntry[] = [
-  { view: 'dashboard', icon: 'dashboard', label: 'Dashboard', matches: ['dashboard'] },
-  { view: 'clients', icon: 'group', label: 'Clienti', matches: ['clients', 'client-detail', 'client-orthopedic', 'client-create'] },
-  { view: 'quotes', icon: 'request_quote', label: 'Preventivi', matches: ['quotes', 'quote-detail'] },
-  { view: 'work-orders', icon: 'engineering', label: 'Lavorazioni', matches: ['work-orders', 'work-order-detail'] },
-  { view: 'settings', icon: 'settings', label: 'Configurazioni', matches: ['settings'] },
-  { view: 'products', icon: 'inventory_2', label: 'Prodotti', matches: ['products', 'product-detail', 'product-create'] },
-  { view: 'doctors', icon: 'medical_services', label: 'Medici', matches: ['doctors', 'doctor-detail', 'doctor-create'] },
+  { route: { name: 'dashboard' }, section: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { route: { name: 'clients' }, section: 'clients', icon: 'group', label: 'Clienti' },
+  { route: { name: 'quotes' }, section: 'quotes', icon: 'request_quote', label: 'Preventivi' },
   {
-    view: 'health-companies',
+    route: { name: 'work-orders' },
+    section: 'work-orders',
+    icon: 'engineering',
+    label: 'Lavorazioni',
+  },
+  { route: { name: 'settings' }, section: 'settings', icon: 'settings', label: 'Configurazioni' },
+  { route: { name: 'products' }, section: 'products', icon: 'inventory_2', label: 'Prodotti' },
+  { route: { name: 'doctors' }, section: 'doctors', icon: 'medical_services', label: 'Medici' },
+  {
+    route: { name: 'health-companies' },
+    section: 'health-companies',
     icon: 'local_hospital',
     label: 'Aziende Sanitarie',
-    matches: ['health-companies', 'health-company-detail', 'health-company-create'],
   },
-  { view: 'employees', icon: 'badge', label: 'Gestione Dipendenti', matches: ['employees'] },
+  {
+    route: { name: 'employees' },
+    section: 'employees',
+    icon: 'badge',
+    label: 'Gestione Dipendenti',
+  },
 ];
 
 /**
@@ -33,11 +44,12 @@ const mainNav: NavEntry[] = [
  * shown when `open` and dismissed via the backdrop or after a navigation.
  */
 export function SideNavBar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { view, navigate } = useNavigation();
+  const { route, navigate } = useNavigation();
   const { user, logout } = useAuth();
+  const activeSection = sectionForRoute(route);
 
   // Selecting a destination (or logging out) also dismisses the mobile drawer.
-  const handleNavigate = (next: View) => {
+  const handleNavigate = (next: Route) => {
     navigate(next);
     onClose();
   };
@@ -66,11 +78,11 @@ export function SideNavBar({ open, onClose }: { open: boolean; onClose: () => vo
         <ul className="flex flex-col gap-2 flex-grow">
           {mainNav.map((item) => (
             <NavItem
-              key={item.view}
+              key={item.section}
               icon={item.icon}
               label={item.label}
-              active={item.matches.includes(view)}
-              onClick={() => handleNavigate(item.view)}
+              active={activeSection === item.section}
+              onClick={() => handleNavigate(item.route)}
             />
           ))}
         </ul>
@@ -130,7 +142,11 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
 
   return (
     <li>
-      <button className={`${base} px-4 ${tone}`} style={{ width: 'calc(100% - 1rem)' }} onClick={onClick}>
+      <button
+        className={`${base} px-4 ${tone}`}
+        style={{ width: 'calc(100% - 1rem)' }}
+        onClick={onClick}
+      >
         <Icon name={icon} filled={active} className="text-[22px]" />
         <span className="truncate">{label}</span>
       </button>
@@ -148,7 +164,15 @@ function SideNavFooter({ onLogout }: { onLogout: () => void }) {
   );
 }
 
-function FooterItem({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
+function FooterItem({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <li>
       <button

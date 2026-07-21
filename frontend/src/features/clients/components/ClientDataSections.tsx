@@ -1,12 +1,9 @@
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import type { AutocompleteFieldConfig } from '../../../shared/entity/DataCard';
 import { NoteCard } from '../../../shared/entity/NoteCard';
-import { ReferenceName } from '../../../shared/ui/ReferenceName';
+import { EntityReference } from '../../../app/navigation/EntityReference';
 import type { Client } from '../types';
-import {
-  clientCreateFieldGroups,
-  clientFieldGroups,
-} from './clientFields';
+import { clientCreateFieldGroups, clientFieldGroups } from './clientFields';
 
 type ClientDataSectionsProps = {
   data: Client;
@@ -36,7 +33,9 @@ export function ClientDataSections({
         field.key === 'doctorId'
           ? {
               ...field,
-              renderValue: (id: string) => <ReferenceName name={doctorName} id={id} entity="doctor" />,
+              renderValue: (id: string) => (
+                <EntityReference name={doctorName} id={id} entity="doctor" />
+              ),
             }
           : field,
       );

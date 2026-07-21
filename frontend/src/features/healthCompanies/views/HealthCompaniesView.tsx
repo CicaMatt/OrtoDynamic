@@ -1,5 +1,6 @@
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { entityCreateRoute, entityDetailRoute } from '../../../app/navigation/routes';
 import { fetchHealthCompanies } from '../api/healthCompanies';
 import type { HealthCompanyListItem } from '../types';
 
@@ -15,7 +16,7 @@ const healthCompanyColumns: ReadonlyArray<EntityColumn<HealthCompanyListItem>> =
 ];
 
 export function HealthCompaniesView() {
-  const { openHealthCompanyDetail, openHealthCompanyCreate } = useNavigation();
+  const { navigate } = useNavigation();
 
   return (
     <EntityListView
@@ -23,8 +24,10 @@ export function HealthCompaniesView() {
       columns={healthCompanyColumns}
       fetchItems={fetchHealthCompanies}
       rowKey={(company) => company.idHealthCompany}
-      onRowClick={(company) => openHealthCompanyDetail(company.idHealthCompany)}
-      onCreate={openHealthCompanyCreate}
+      onRowClick={(company) =>
+        navigate(entityDetailRoute('healthCompany', company.idHealthCompany))
+      }
+      onCreate={() => navigate(entityCreateRoute('healthCompany'))}
       loadingLabel="Caricamento aziende sanitarie..."
       emptyLabel="Nessuna azienda sanitaria trovata."
     />

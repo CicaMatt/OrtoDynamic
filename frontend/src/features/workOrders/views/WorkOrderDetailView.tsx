@@ -1,18 +1,15 @@
 import { useState } from 'react';
 import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import {
-  FieldSectionList,
-  type FieldSectionConfig,
-} from '../../../shared/entity/FieldSectionCard';
+import { FieldSectionList, type FieldSectionConfig } from '../../../shared/entity/FieldSectionCard';
 import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import { DocumentErrorAlert, documentActionState } from '../../../shared/files/DocumentActions';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
-import { ReferenceName } from '../../../shared/ui/ReferenceName';
+import { EntityReference } from '../../../app/navigation/EntityReference';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { deleteWorkOrder, fetchWorkOrder, fetchWorkOrderCollaudi } from '../api/workOrders';
 import type { WorkOrder } from '../types';
@@ -46,14 +43,14 @@ const referenceFields: WorkOrderField[] = [
     label: 'ID Preventivo',
     key: 'quoteId',
     type: 'number',
-    renderValue: (id) => <ReferenceName name={id} id={id} entity="quote" />,
+    renderValue: (id) => <EntityReference name={id} id={id} entity="quote" />,
   },
   {
     label: 'Cliente',
     key: 'clientId',
     type: 'number',
     renderValue: (id, workOrder) => (
-      <ReferenceName name={workOrder.clientName} id={id} entity="client" />
+      <EntityReference name={workOrder.clientName} id={id} entity="client" />
     ),
   },
 ];
@@ -91,12 +88,13 @@ const workOrderSections: FieldSectionConfig<WorkOrder>[] = [
 ];
 
 export function WorkOrderDetailView() {
-  const { selectedWorkOrderId, navigate, goBack } = useNavigation();
+  const { workOrderId } = useRoute('work-order-detail');
+  const { navigate, back } = useNavigation();
   const { workOrderDraft, startWorkOrderEdit, seedWorkOrder, setWorkOrderField } = useEntityEdit();
 
   const { data, loading, error, isEditing, reload } = useEntityDetail({
     type: 'workOrder',
-    selectedId: selectedWorkOrderId,
+    selectedId: workOrderId,
     fetcher: fetchWorkOrder,
     missingMessage: 'Nessuna lavorazione selezionata.',
     draft: workOrderDraft,
@@ -105,11 +103,19 @@ export function WorkOrderDetailView() {
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const { generating, error: docError, clearError, open: openDocument } = useInlineDocument<'collaudi'>();
+  const {
+    generating,
+    error: docError,
+    clearError,
+    open: openDocument,
+  } = useInlineDocument<'collaudi'>();
 
   if (loading) {
     return (
-      <StatusMessage onBack={() => goBack('work-orders')} backLabel="Torna alle lavorazioni">
+      <StatusMessage
+        onBack={() => back({ name: 'work-orders' })}
+        backLabel="Torna alle lavorazioni"
+      >
         Caricamento lavorazione...
       </StatusMessage>
     );
@@ -117,7 +123,7 @@ export function WorkOrderDetailView() {
   if (error || !data) {
     return (
       <StatusMessage
-        onBack={() => goBack('work-orders')}
+        onBack={() => back({ name: 'work-orders' })}
         backLabel="Torna alle lavorazioni"
         tone="error"
       >
@@ -152,10 +158,9 @@ export function WorkOrderDetailView() {
       id: 'collaudi',
       icon: 'fact_check',
       label: collaudiState.label,
-      onClick:
-        !collaudiState.disabled
-          ? () => openDocument('collaudi', () => fetchWorkOrderCollaudi(data.idWorkOrder))
-          : undefined,
+      onClick: !collaudiState.disabled
+        ? () => openDocument('collaudi', () => fetchWorkOrderCollaudi(data.idWorkOrder))
+        : undefined,
     },
     {
       id: 'delete',
@@ -171,9 +176,9 @@ export function WorkOrderDetailView() {
       <EntityDetailLayout
         header={
           <EntityPageHeader
-            back={{ label: 'Torna indietro', onClick: () => goBack('work-orders') }}
+            back={{ label: 'Torna indietro', onClick: () => back({ name: 'work-orders' }) }}
             crumbs={[
-              { label: 'Lavorazioni', onClick: () => navigate('work-orders') },
+              { label: 'Lavorazioni', onClick: () => navigate({ name: 'work-orders' }) },
               { label: 'Dettaglio' },
             ]}
             title={title}
@@ -194,9 +199,7 @@ export function WorkOrderDetailView() {
         actions={actions}
       >
         <div className="space-y-[28px]">
-          {docError && (
-            <DocumentErrorAlert error={docError} onClose={clearError} />
-          )}
+          {docError && <DocumentErrorAlert error={docError} onClose={clearError} />}
           <FieldSectionList
             data={data}
             sections={workOrderSections}
@@ -222,14 +225,16 @@ export function WorkOrderDetailView() {
           warnings={[
             'Saranno eliminati anche gli articoli associati alla lavorazione.',
             ...(data.quoteId
-              ? [`Sarà eliminato anche il Preventivo associato ${data.quoteId}, con i suoi articoli.`]
+              ? [
+                  `Sarà eliminato anche il Preventivo associato ${data.quoteId}, con i suoi articoli.`,
+                ]
               : []),
           ]}
           confirmLabel="Elimina Lavorazione"
           onClose={() => setDeleteDialogOpen(false)}
           onConfirm={async () => {
             await deleteWorkOrder(data.idWorkOrder);
-            navigate('work-orders');
+            navigate({ name: 'work-orders' });
           }}
         />
       )}

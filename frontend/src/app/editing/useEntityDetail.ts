@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useApiData } from '../../shared/hooks/useApiData';
 import { useEntityEdit, type EntityKind } from './EntityEditContext';
 
@@ -49,20 +49,18 @@ export function useEntityDetail<T>({
   seed,
 }: UseEntityDetailParams<T>): EntityDetail<T> {
   const { editing, editTarget, dataVersion } = useEntityEdit();
-  const [reloadKey, setReloadKey] = useState(0);
 
   const isEditing = editing && editTarget?.type === type && editTarget.id === selectedId;
 
-  const { data: entity, loading, error } = useApiData(
+  const { data: entity, loading, error, reload } = useApiData(
     () => (selectedId ? fetcher(selectedId) : Promise.reject(new Error(missingMessage))),
-    [selectedId, dataVersion, reloadKey],
+    [selectedId, dataVersion],
   );
 
   useEffect(() => {
     if (isEditing && entity) seed(entity);
   }, [isEditing, entity, seed]);
 
-  const reload = useCallback(() => setReloadKey((key) => key + 1), []);
   const data = isEditing && draft ? draft : entity;
 
   return { data, loading, error, isEditing, reload };
