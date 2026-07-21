@@ -36,18 +36,15 @@ describe('navigation state', () => {
     });
   });
 
-  it('defers, dismisses, and later applies a destination without losing history', () => {
+  it('defers and dismisses a destination without losing current history', () => {
     const destination = destinationForNavigation(initialNavigationState, { name: 'products' });
     const deferred = navigationReducer(initialNavigationState, { type: 'defer', destination });
 
     expect(navigationReducer(deferred, { type: 'dismiss-pending' })).toEqual(
       initialNavigationState,
     );
-    expect(navigationReducer(deferred, { type: 'apply-pending' })).toEqual({
-      route: { name: 'products' },
-      history: [{ name: 'dashboard' }],
-      pending: null,
-    });
+    expect(deferred.route).toEqual({ name: 'dashboard' });
+    expect(deferred.history).toEqual([]);
   });
 
   it('treats both client tabs as one edit target and derives sidebar ownership', () => {

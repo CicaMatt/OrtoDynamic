@@ -6,10 +6,10 @@ import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import { NoteCard } from '../../../shared/entity/NoteCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { doctorFields } from '../components/doctorFields';
+import { useDoctorEditor } from '../useDoctorEditor';
 
 const doctorActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Medico' },
@@ -19,7 +19,7 @@ const doctorActions = [
 export function DoctorDetailView() {
   const { doctorId } = useRoute('doctor-detail');
   const { navigate, back } = useNavigation();
-  const { doctorDraft, startDoctorEdit, seedDoctor, setDoctorField } = useEntityEdit();
+  const { draft, startEdit, seed, change } = useDoctorEditor();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({
@@ -27,8 +27,8 @@ export function DoctorDetailView() {
     selectedId: doctorId,
     fetcher: fetchDoctor,
     missingMessage: 'Nessun medico selezionato.',
-    draft: doctorDraft,
-    seed: seedDoctor,
+    draft,
+    seed,
   });
 
   if (loading) {
@@ -56,7 +56,7 @@ export function DoctorDetailView() {
       return {
         ...action,
         active: isEditing,
-        onClick: !isEditing ? () => startDoctorEdit(data.idDoctor) : undefined,
+        onClick: !isEditing ? () => startEdit(data.idDoctor) : undefined,
       };
     }
     return {
@@ -92,13 +92,13 @@ export function DoctorDetailView() {
           data={data}
           fields={doctorFields}
           editing={isEditing}
-          onChange={setDoctorField}
+          onChange={change}
         />
 
         <NoteCard
           value={data.note}
           editing={isEditing}
-          onChange={(value) => setDoctorField('note', value)}
+          onChange={(value) => change('note', value)}
           className="mt-[28px]"
         />
       </EntityDetailLayout>

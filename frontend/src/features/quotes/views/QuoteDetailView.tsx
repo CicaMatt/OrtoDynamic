@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
@@ -26,19 +25,20 @@ import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocom
 import { quoteDetailNoteSections, quoteDetailSectionsBeforeNotes } from '../components/quoteFields';
 import { QuoteItemsCard } from './QuoteItemsCard';
 import { QuoteStatusDialog } from './QuoteStatusDialog';
+import { useQuoteEditor } from '../useQuoteEditor';
 
 export function QuoteDetailView() {
   const { quoteId } = useRoute('quote-detail');
   const { navigate, back } = useNavigation();
-  const { quoteDraft, startQuoteEdit, seedQuote, setQuoteField } = useEntityEdit();
+  const { draft, startEdit, seed, change } = useQuoteEditor();
 
   const { data, loading, error, isEditing, reload } = useEntityDetail({
     type: 'quote',
     selectedId: quoteId,
     fetcher: fetchQuote,
     missingMessage: 'Nessun preventivo selezionato.',
-    draft: quoteDraft,
-    seed: seedQuote,
+    draft,
+    seed,
   });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -104,7 +104,7 @@ export function QuoteDetailView() {
       icon: 'edit',
       label: 'Modifica Dati Preventivo',
       active: isEditing,
-      onClick: !isEditing ? () => startQuoteEdit(data.idQuote) : undefined,
+      onClick: !isEditing ? () => startEdit(data.idQuote) : undefined,
     },
     {
       id: 'status',
@@ -174,7 +174,7 @@ export function QuoteDetailView() {
             data={data}
             sections={quoteDetailSectionsBeforeNotes}
             editing={isEditing}
-            onChange={setQuoteField}
+            onChange={change}
             autocompleteFields={{ clientId: clientAutocomplete, doctorId: doctorAutocomplete }}
           />
           <QuoteItemsCard quoteId={data.idQuote} total={data.total} onChanged={reload} />
@@ -182,7 +182,7 @@ export function QuoteDetailView() {
             data={data}
             sections={quoteDetailNoteSections}
             editing={isEditing}
-            onChange={setQuoteField}
+            onChange={change}
           />
         </div>
       </EntityDetailLayout>

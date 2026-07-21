@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
@@ -9,6 +8,7 @@ import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { deleteProduct, fetchProduct } from '../api/products';
 import { productFields } from '../components/productFields';
+import { useProductEditor } from '../useProductEditor';
 
 const productActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Prodotto' },
@@ -18,7 +18,7 @@ const productActions = [
 export function ProductDetailView() {
   const { productId } = useRoute('product-detail');
   const { navigate, back } = useNavigation();
-  const { productDraft, startProductEdit, seedProduct, setProductField } = useEntityEdit();
+  const { draft, startEdit, seed, change } = useProductEditor();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({
@@ -26,8 +26,8 @@ export function ProductDetailView() {
     selectedId: productId,
     fetcher: fetchProduct,
     missingMessage: 'Nessun prodotto selezionato.',
-    draft: productDraft,
-    seed: seedProduct,
+    draft,
+    seed,
   });
 
   if (loading) {
@@ -55,7 +55,7 @@ export function ProductDetailView() {
       return {
         ...action,
         active: isEditing,
-        onClick: !isEditing ? () => startProductEdit(data.idProduct) : undefined,
+        onClick: !isEditing ? () => startEdit(data.idProduct) : undefined,
       };
     }
     return {
@@ -91,7 +91,7 @@ export function ProductDetailView() {
           data={data}
           fields={productFields}
           editing={isEditing}
-          onChange={setProductField}
+          onChange={change}
         />
       </EntityDetailLayout>
 

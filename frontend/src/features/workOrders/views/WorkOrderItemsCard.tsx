@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DetailTableCard, type DetailTableColumn } from '../../../shared/entity/DetailTableCard';
 import { useApiData } from '../../../shared/hooks/useApiData';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { formatBirthDate, formatEuro, formatInteger } from '../../../shared/format/format';
 import { FieldValue } from '../../../shared/ui/FieldValue';
 import { EntityReference } from '../../../app/navigation/EntityReference';
 import { fetchWorkOrderItems, updateWorkOrderItem } from '../api/workOrders';
 import type { WorkOrderItem } from '../types';
+import { useWorkOrderEditor } from '../useWorkOrderEditor';
 
 const ITEM_STATUSES = ['IN LAVORAZIONE', 'ORDINATO', 'PRONTO', 'CONSEGNATO', 'ANNULLATO'];
 const ITEM_PRODUCTIONS = ['ESTERNA', 'INTERNA'];
@@ -81,8 +81,8 @@ const itemColumns: ReadonlyArray<DetailTableColumn<WorkOrderItem>> = [
  * status/production cells become editable and persist with the global Save.
  */
 export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
-  const { editing, editTarget, dataVersion, registerSaveHook, markExtraDirty } = useEntityEdit();
-  const isEditing = editing && editTarget?.type === 'workOrder' && editTarget.id === workOrderId;
+  const { dataVersion, isEditing: isEditingOrder, setItemsParticipant } = useWorkOrderEditor();
+  const isEditing = isEditingOrder(workOrderId);
 
   const { data, loading, error } = useApiData(
     () => fetchWorkOrderItems(workOrderId),
@@ -109,37 +109,39 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
   );
   const isDirty = Object.keys(edits).length > 0;
 
-  useEffect(() => {
-    if (!isEditing) return;
-    markExtraDirty(isDirty);
-    return () => markExtraDirty(false);
-  }, [isEditing, isDirty, markExtraDirty]);
+  const participant = useMemo(
+    () => ({
+      dirty: isDirty,
+      reset: () => setEdits({}),
+      save: async () => {
+        for (const item of items) {
+          if (!edits[item.id]) continue;
+          if (item.status === CANCELLED && !item.cancellationDate) {
+            throw new Error(
+              `Articolo ${item.productId || item.id}: indicare la Data Annullamento.`,
+            );
+          }
+          if (item.status === DELIVERED && !item.deliveryDate) {
+            throw new Error(`Articolo ${item.productId || item.id}: indicare la Data Consegna.`);
+          }
+        }
+        for (const [id, change] of Object.entries(edits)) {
+          const payload: Record<string, string | null> = {};
+          for (const [key, value] of Object.entries(change)) {
+            payload[key] = DATE_KEYS.includes(key) && value === '' ? null : value;
+          }
+          await updateWorkOrderItem(workOrderId, id, payload);
+        }
+      },
+    }),
+    [edits, isDirty, items, workOrderId],
+  );
 
-  const editsRef = useRef(edits);
-  editsRef.current = edits;
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
   useEffect(() => {
     if (!isEditing) return;
-    return registerSaveHook(async () => {
-      for (const item of itemsRef.current) {
-        if (!editsRef.current[item.id]) continue;
-        if (item.status === CANCELLED && !item.cancellationDate) {
-          throw new Error(`Articolo ${item.productId || item.id}: indicare la Data Annullamento.`);
-        }
-        if (item.status === DELIVERED && !item.deliveryDate) {
-          throw new Error(`Articolo ${item.productId || item.id}: indicare la Data Consegna.`);
-        }
-      }
-      for (const [id, change] of Object.entries(editsRef.current)) {
-        const payload: Record<string, string | null> = {};
-        for (const [key, value] of Object.entries(change)) {
-          payload[key] = DATE_KEYS.includes(key) && value === '' ? null : value;
-        }
-        await updateWorkOrderItem(workOrderId, id, payload);
-      }
-    });
-  }, [isEditing, registerSaveHook, workOrderId]);
+    setItemsParticipant(participant);
+    return () => setItemsParticipant(null);
+  }, [isEditing, participant, setItemsParticipant]);
 
   const onCellChange = (item: WorkOrderItem, key: keyof WorkOrderItem, value: string) => {
     setEdits((prev) => {

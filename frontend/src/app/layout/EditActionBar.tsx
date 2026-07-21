@@ -4,11 +4,11 @@ import { entityDetailRoute, entityListRoute } from '../navigation/routes';
 
 /** Floating Salva / Annulla bar shown while an entity is being edited or created. */
 export function EditActionBar() {
-  const { editing, mode, editTarget, saving, saveError, save, cancel } = useEntityEdit();
+  const { session, saving, error, save, cancel } = useEntityEdit();
   const { replace } = useNavigation();
-  if (!editing) return null;
+  if (!session) return null;
 
-  const creating = mode === 'create';
+  const creating = session.mode === 'create';
 
   const handleSave = async () => {
     const result = await save();
@@ -19,7 +19,7 @@ export function EditActionBar() {
   };
 
   const handleCancel = () => {
-    const creatingType = creating ? editTarget?.type : null;
+    const creatingType = creating ? session.type : null;
     cancel();
     // Leaving a create form returns to the entity's list.
     if (creatingType) replace(entityListRoute(creatingType));
@@ -29,9 +29,7 @@ export function EditActionBar() {
 
   return (
     <div className="fixed bottom-[24px] right-[32px] z-50 flex flex-col items-stretch gap-[10px] rounded-[10px] border border-surface-variant bg-white px-[12px] py-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
-      {saveError && (
-        <span className="max-w-[260px] font-body-sm text-body-sm text-error">{saveError}</span>
-      )}
+      {error && <span className="max-w-[260px] font-body-sm text-body-sm text-error">{error}</span>}
       <button
         onClick={handleCancel}
         disabled={saving}

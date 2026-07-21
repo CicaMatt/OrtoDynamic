@@ -1,7 +1,7 @@
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { EntityPageHeader, type Crumb } from '../../../shared/entity/EntityPageHeader';
 import { Icon } from '../../../shared/ui/Icon';
+import { useClientEditor } from '../useClientEditor';
 
 type ClientHeaderData = {
   name: string;
@@ -36,7 +36,7 @@ export function ClientPageHeader({
 function ClientDataSwitchButton() {
   const { clientId, tab } = useRoute('client-detail');
   const { navigate } = useNavigation();
-  const { editing } = useEntityEdit();
+  const { session } = useClientEditor();
 
   const toOrthopedic = tab === 'general';
   const subject = toOrthopedic ? 'Dati Ortopedici' : 'Dati Cliente';
@@ -55,7 +55,7 @@ function ClientDataSwitchButton() {
       className="inline-flex items-center gap-[8px] h-[40px] rounded-[6px] bg-secondary px-[16px] font-body-md text-body-md font-semibold text-on-secondary hover:bg-secondary-hover transition-colors"
     >
       <Icon name={icon} className="text-[20px]" />
-      {editing ? 'Modifica' : 'Visualizza'} {subject}
+      {session ? 'Modifica' : 'Visualizza'} {subject}
     </button>
   );
 }

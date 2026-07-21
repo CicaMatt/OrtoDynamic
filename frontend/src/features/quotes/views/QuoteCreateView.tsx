@@ -1,52 +1,29 @@
-import { useEffect } from 'react';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
 import { DataCard, InfoBlock } from '../../../shared/entity/DataCard';
 import { FieldSectionList } from '../../../shared/entity/FieldSectionCard';
 import { Autocomplete } from '../../../shared/ui/Autocomplete';
-import {
-  QUOTE_CREATE_REQUIRED,
-  quoteCreateNoteSections,
-  quoteCreateSectionsBeforeNotes,
-} from '../components/quoteFields';
+import { quoteCreateNoteSections, quoteCreateSectionsBeforeNotes } from '../components/quoteFields';
 import { draftItemsTotal } from '../components/quoteItemMath';
 import { useClientAutocomplete } from '../../clients/components/useClientAutocomplete';
 import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocomplete';
 import { QuoteItemsDraftCard } from './QuoteItemsDraftCard';
-import type { Quote } from '../types';
+import { useQuoteEditor } from '../useQuoteEditor';
 
 export function QuoteCreateView() {
   const { navigate } = useNavigation();
-  const {
-    editing,
-    mode,
-    editTarget,
-    quoteDraft,
-    quoteItemDrafts,
-    invalidFields,
-    startQuoteCreate,
-    setQuoteField,
-  } = useEntityEdit();
+  const { draft, items, invalidFields, change } = useQuoteEditor();
+  const clientAutocomplete = useClientAutocomplete(true);
+  const doctorAutocomplete = useDoctorAutocomplete(true);
 
-  const isCreating = editing && mode === 'create' && editTarget?.type === 'quote';
+  if (!draft) throw new Error('Quote create route requires an active create session.');
 
-  useEffect(() => {
-    if (!isCreating) startQuoteCreate(QUOTE_CREATE_REQUIRED);
-  }, [isCreating, startQuoteCreate]);
-
-  const clientAutocomplete = useClientAutocomplete(isCreating);
-  const doctorAutocomplete = useDoctorAutocomplete(isCreating);
-
-  if (!isCreating || !quoteDraft) return null;
-
-  const invalidKeys = invalidFields as Array<keyof Quote>;
-  const clientInvalid = invalidKeys.includes('clientId');
-  const selectedClientLabel = clientAutocomplete.displayValue?.(quoteDraft.clientId) ?? '';
-  const selectedDoctorLabel = doctorAutocomplete.displayValue?.(quoteDraft.doctorId) ?? '';
+  const clientInvalid = invalidFields.includes('clientId');
+  const selectedClientLabel = clientAutocomplete.displayValue?.(draft.clientId) ?? '';
+  const selectedDoctorLabel = doctorAutocomplete.displayValue?.(draft.doctorId) ?? '';
   // Totale is derived: previewed from the pending items, set on the server on save.
-  const total = draftItemsTotal(quoteItemDrafts);
+  const total = draftItemsTotal(items);
 
   return (
     <EntityDetailLayout
@@ -74,10 +51,7 @@ export function QuoteCreateView() {
                   options={clientAutocomplete.options}
                   invalid={clientInvalid}
                   onSelect={(option) =>
-                    setQuoteField(
-                      'clientId',
-                      clientAutocomplete.selectValue?.(option) ?? option.value,
-                    )
+                    change('clientId', clientAutocomplete.selectValue?.(option) ?? option.value)
                   }
                   placeholder={clientAutocomplete.placeholder}
                   emptyLabel={clientAutocomplete.emptyLabel}
@@ -93,10 +67,7 @@ export function QuoteCreateView() {
                   value={selectedDoctorLabel}
                   options={doctorAutocomplete.options}
                   onSelect={(option) =>
-                    setQuoteField(
-                      'doctorId',
-                      doctorAutocomplete.selectValue?.(option) ?? option.value,
-                    )
+                    change('doctorId', doctorAutocomplete.selectValue?.(option) ?? option.value)
                   }
                   placeholder={doctorAutocomplete.placeholder}
                   emptyLabel={doctorAutocomplete.emptyLabel}
@@ -105,29 +76,29 @@ export function QuoteCreateView() {
             />
             <InfoBlock
               label="Inserito Da"
-              value={quoteDraft.entryBy}
+              value={draft.entryBy}
               editing
-              onChange={(value) => setQuoteField('entryBy', value)}
+              onChange={(value) => change('entryBy', value)}
             />
           </div>
         </DataCard>
 
         <FieldSectionList
-          data={quoteDraft}
+          data={draft}
           sections={quoteCreateSectionsBeforeNotes}
           editing
-          onChange={setQuoteField}
-          invalidKeys={invalidKeys}
+          onChange={change}
+          invalidKeys={invalidFields}
         />
 
         <QuoteItemsDraftCard total={total} />
 
         <FieldSectionList
-          data={quoteDraft}
+          data={draft}
           sections={quoteCreateNoteSections}
           editing
-          onChange={setQuoteField}
-          invalidKeys={invalidKeys}
+          onChange={change}
+          invalidKeys={invalidFields}
         />
       </div>
     </EntityDetailLayout>

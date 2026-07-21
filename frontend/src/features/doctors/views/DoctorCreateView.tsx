@@ -1,34 +1,15 @@
-import { useEffect } from 'react';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import { NoteCard } from '../../../shared/entity/NoteCard';
-import { DOCTOR_CREATE_REQUIRED, doctorCreateFields } from '../components/doctorFields';
-import type { Doctor } from '../types';
+import { doctorCreateFields } from '../components/doctorFields';
+import { useDoctorEditor } from '../useDoctorEditor';
 
 export function DoctorCreateView() {
   const { navigate } = useNavigation();
-  const {
-    editing,
-    mode,
-    editTarget,
-    doctorDraft,
-    invalidFields,
-    startDoctorCreate,
-    setDoctorField,
-  } = useEntityEdit();
-
-  const isCreating = editing && mode === 'create' && editTarget?.type === 'doctor';
-
-  useEffect(() => {
-    if (!isCreating) startDoctorCreate(DOCTOR_CREATE_REQUIRED);
-  }, [isCreating, startDoctorCreate]);
-
-  if (!isCreating || !doctorDraft) return null;
-
-  const invalidKeys = invalidFields as Array<keyof Doctor>;
+  const { draft, invalidFields, change } = useDoctorEditor();
+  if (!draft) throw new Error('Doctor create route requires an active create session.');
 
   return (
     <EntityDetailLayout
@@ -44,17 +25,17 @@ export function DoctorCreateView() {
       <FieldSectionCard
         icon="medical_services"
         title="Dati Medico"
-        data={doctorDraft}
+        data={draft}
         fields={doctorCreateFields}
         editing
-        onChange={setDoctorField}
-        invalidKeys={invalidKeys}
+        onChange={change}
+        invalidKeys={invalidFields}
       />
 
       <NoteCard
-        value={doctorDraft.note}
+        value={draft.note}
         editing
-        onChange={(value) => setDoctorField('note', value)}
+        onChange={(value) => change('note', value)}
         className="mt-[28px]"
       />
     </EntityDetailLayout>

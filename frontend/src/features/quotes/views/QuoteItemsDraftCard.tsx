@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { ItemDraftRow, NewItemButton } from '../components/QuoteItemRow';
 import { PendingQuoteItemRow, QuoteItemsTable } from '../components/QuoteItemsTable';
 import { quoteItemDraftError } from '../components/quoteItemMath';
 import { useQuoteItemDraft } from '../components/useQuoteItemDraft';
+import { useQuoteEditor } from '../useQuoteEditor';
 
 /**
  * Local controller for items belonging to a quote that has not been saved yet.
  * Confirmed rows stay in the edit session and are persisted with the quote.
  */
 export function QuoteItemsDraftCard({ total }: { total: string }) {
-  const { quoteItemDrafts, addQuoteItemDraft, removeQuoteItemDraft } = useEntityEdit();
+  const { items, addItem, removeItem } = useQuoteEditor();
   const itemDraft = useQuoteItemDraft();
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -21,13 +21,13 @@ export function QuoteItemsDraftCard({ total }: { total: string }) {
       setActionError(invalid);
       return;
     }
-    addQuoteItemDraft(itemDraft.draft);
+    addItem(itemDraft.draft);
     itemDraft.clear();
     setActionError(null);
   };
 
   const message =
-    quoteItemDrafts.length === 0 && itemDraft.draft === null
+    items.length === 0 && itemDraft.draft === null
       ? { content: 'Nessun articolo. Aggiungine uno con «Aggiungi».' }
       : undefined;
 
@@ -39,8 +39,8 @@ export function QuoteItemsDraftCard({ total }: { total: string }) {
       actionError={actionError}
       total={total}
     >
-      {quoteItemDrafts.map((item, index) => (
-        <PendingQuoteItemRow key={index} item={item} onDelete={() => removeQuoteItemDraft(index)} />
+      {items.map((item, index) => (
+        <PendingQuoteItemRow key={index} item={item} onDelete={() => removeItem(index)} />
       ))}
       {itemDraft.draft && (
         <ItemDraftRow

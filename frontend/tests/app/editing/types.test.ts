@@ -20,7 +20,7 @@ describe('edit payload helpers', () => {
       code: 'A-1',
       description: 'Tutore',
     });
-    expect(buildCreatePayload<{ code: string }>(null, ['code'])).toEqual({});
+    expect(buildCreatePayload(null, ['code'])).toEqual({});
   });
 
   it('normalizes only blank declared date fields to null', () => {

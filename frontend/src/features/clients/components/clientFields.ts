@@ -1,4 +1,5 @@
 import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
+import { clientCreateRequiredKeys } from '../editConfig';
 import type { Client } from '../types';
 
 export type ClientField = FieldConfig<Client>;
@@ -31,14 +32,9 @@ export const contactFields: ClientField[] = [
   { label: 'Medico', key: 'doctorId', type: 'autocomplete' },
 ];
 
-/** Fields required by the creation form (UX-level only; the DB stays permissive). */
-export const CLIENT_CREATE_REQUIRED = [
-  'name', 'surname', 'birthDate', 'gender', 'address', 'province', 'city', 'phone',
-] as const satisfies readonly (keyof Client)[];
-
-export const personalCreateFields = markRequired(personalFields, CLIENT_CREATE_REQUIRED);
-export const addressCreateFields = markRequired(addressFields, CLIENT_CREATE_REQUIRED);
-export const contactCreateFields = markRequired(contactFields, CLIENT_CREATE_REQUIRED);
+export const personalCreateFields = markRequired(personalFields, clientCreateRequiredKeys);
+export const addressCreateFields = markRequired(addressFields, clientCreateRequiredKeys);
+export const contactCreateFields = markRequired(contactFields, clientCreateRequiredKeys);
 
 export const clientFieldGroups = {
   personal: personalFields,

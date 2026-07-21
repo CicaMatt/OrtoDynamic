@@ -62,8 +62,7 @@ export function destinationForReplacement(
 type NavigationAction =
   | { type: 'apply'; destination: NavigationDestination }
   | { type: 'defer'; destination: NavigationDestination }
-  | { type: 'dismiss-pending' }
-  | { type: 'apply-pending' };
+  | { type: 'dismiss-pending' };
 
 export function navigationReducer(
   state: NavigationState,
@@ -76,7 +75,5 @@ export function navigationReducer(
       return { ...state, pending: action.destination };
     case 'dismiss-pending':
       return { ...state, pending: null };
-    case 'apply-pending':
-      return state.pending ? { ...state.pending, pending: null } : state;
   }
 }

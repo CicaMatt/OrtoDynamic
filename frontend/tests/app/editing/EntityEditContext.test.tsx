@@ -3,12 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { WorkOrderItemsCard } from '../../../src/features/workOrders/views/WorkOrderItemsCard';
 import type { WorkOrder, WorkOrderItem } from '../../../src/features/workOrders/types';
-import { NavigationProvider } from '../../../src/app/navigation/NavigationContext';
+import { NavigationProvider, useNavigation } from '../../../src/app/navigation/NavigationContext';
 import { EntityEditProvider, useEntityEdit } from '../../../src/app/editing/EntityEditContext';
+import { useQuoteEditor } from '../../../src/features/quotes/useQuoteEditor';
+import { useWorkOrderEditor } from '../../../src/features/workOrders/useWorkOrderEditor';
+import { useClientEditor } from '../../../src/features/clients/useClientEditor';
+import type { Client, ClientOrthopedic } from '../../../src/features/clients/types';
 
 const quoteApi = vi.hoisted(() => ({
   createQuote: vi.fn(),
   updateQuote: vi.fn(),
+}));
+const clientApi = vi.hoisted(() => ({
+  updateClient: vi.fn(),
 }));
 const workOrderApi = vi.hoisted(() => ({
   fetchWorkOrderItems: vi.fn(),
@@ -17,6 +24,7 @@ const workOrderApi = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/features/quotes/api/quotes', () => quoteApi);
+vi.mock('../../../src/features/clients/api/clients', () => clientApi);
 vi.mock('../../../src/features/workOrders/api/workOrders', () => workOrderApi);
 
 const workOrder: WorkOrder = {
@@ -52,6 +60,64 @@ const workOrder: WorkOrder = {
   technicalNotes: '',
 };
 
+const client: Client = {
+  idClient: 'C-1',
+  name: 'Ada',
+  surname: 'Rossi',
+  fiscalCode: '',
+  phone: '',
+  mobile: '',
+  email: '',
+  birthDate: '',
+  birthMunicipality: '',
+  address: '',
+  city: '',
+  province: '',
+  postalCode: '',
+  country: '',
+  district: '',
+  doctorId: '',
+  gender: '',
+  note: '',
+};
+
+const orthopedic = Object.fromEntries(
+  [
+    'idClient',
+    'name',
+    'surname',
+    'shoeSize',
+    'shoeModel',
+    'width',
+    'collar',
+    'ankle',
+    'spur',
+    'lift',
+    'inclinedPlane',
+    'insoleType',
+    'collarPassage',
+    'anklePassage',
+    'braceType',
+    'shoulderStraps',
+    'upToArmpit',
+    'frontFabricHeight',
+    'totalFrameHeight',
+    'axillaryDistance',
+    'waist',
+    'pelvisSize',
+    'measure24',
+    'neck',
+    'humerus',
+    'arm',
+    'wrist',
+    'pelvis',
+    'thigh',
+    'leg',
+    'clientNote',
+    'other',
+  ].map((key) => [key, key === 'idClient' ? 'C-1' : '']),
+) as ClientOrthopedic;
+
 const workOrderItem: WorkOrderItem = {
   id: 'I-1',
   productId: 'P-9',
@@ -71,15 +137,17 @@ const workOrderItem: WorkOrderItem = {
 
 function QuoteHarness() {
   const edit = useEntityEdit();
+  const quote = useQuoteEditor();
+  const { navigate } = useNavigation();
   return (
     <>
       <output data-testid="dirty">{String(edit.isDirty)}</output>
-      <output data-testid="editing">{String(edit.editing)}</output>
-      <output data-testid="save-error">{edit.saveError ?? ''}</output>
-      <button onClick={() => edit.startQuoteCreate(['clientId'])}>start quote create</button>
+      <output data-testid="editing">{String(Boolean(edit.session))}</output>
+      <output data-testid="save-error">{edit.error ?? ''}</output>
+      <button onClick={() => navigate({ name: 'quote-create' })}>start quote create</button>
       <button
         onClick={() =>
-          edit.addQuoteItemDraft({
+          quote.addItem({
             productId: '7',
             code: 'T-7',
             description: 'Tutore',
@@ -91,21 +159,63 @@ function QuoteHarness() {
       >
         add quote item
       </button>
-      <button onClick={() => edit.setQuoteField('clientId', '21')}>fill quote</button>
+      <button
+        onClick={() => {
+          quote.change('clientId', '21');
+          quote.change('quoteType', 'Asl');
+          quote.change('diagnosis', 'Diagnosi');
+          quote.change('detailedPrescription', 'Prescrizione');
+        }}
+      >
+        fill quote
+      </button>
       <button onClick={() => void edit.save()}>save quote</button>
+    </>
+  );
+}
+
+function ClientHarness() {
+  const edit = useEntityEdit();
+  const editor = useClientEditor();
+  return (
+    <>
+      <output data-testid="dirty">{String(edit.isDirty)}</output>
+      <output data-testid="editing">{String(Boolean(edit.session))}</output>
+      <button onClick={() => editor.startEdit('C-1')}>start client edit</button>
+      <button
+        onClick={() => {
+          editor.seed(client);
+          editor.seedOrthopedic(orthopedic);
+        }}
+      >
+        seed client
+      </button>
+      <button
+        onClick={() => {
+          editor.change('phone', '0811234567');
+          editor.changeOrthopedic('shoeSize', '42');
+        }}
+      >
+        edit client tabs
+      </button>
+      <button onClick={() => void edit.save()}>save client</button>
     </>
   );
 }
 
 function WorkOrderHarness() {
   const edit = useEntityEdit();
+  const editor = useWorkOrderEditor();
   return (
     <>
       <output data-testid="dirty">{String(edit.isDirty)}</output>
-      <output data-testid="editing">{String(edit.editing)}</output>
-      <output data-testid="save-error">{edit.saveError ?? ''}</output>
-      <button onClick={() => edit.startWorkOrderEdit('W-1')}>start work order edit</button>
-      <button onClick={() => edit.seedWorkOrder(workOrder)}>seed work order</button>
+      <output data-testid="editing">{String(Boolean(edit.session))}</output>
+      <output data-testid="save-error">{edit.error ?? ''}</output>
+      <button onClick={() => editor.startEdit('W-1')}>start work order edit</button>
+      <button onClick={() => editor.seed(workOrder)}>seed work order</button>
+      <button onClick={() => editor.change('technicalNotes', 'Controllare chiusura')}>
+        edit work order
+      </button>
       <button onClick={() => void edit.save()}>save work order</button>
       <WorkOrderItemsCard workOrderId="W-1" />
     </>
@@ -127,12 +237,36 @@ describe('EntityEditProvider sub-flows', () => {
     workOrderApi.fetchWorkOrderItems.mockResolvedValue([workOrderItem]);
     workOrderApi.updateWorkOrderItem.mockResolvedValue({});
     workOrderApi.updateWorkOrder.mockResolvedValue({});
+    clientApi.updateClient.mockResolvedValue({});
+  });
+
+  it('saves client general and orthopedic changes as one session', async () => {
+    render(
+      <EntityEditProvider>
+        <ClientHarness />
+      </EntityEditProvider>,
+    );
+
+    click('start client edit');
+    click('seed client');
+    expect(output('dirty')).toBe('false');
+    click('edit client tabs');
+    expect(output('dirty')).toBe('true');
+    click('save client');
+
+    await waitFor(() => expect(output('editing')).toBe('false'));
+    expect(clientApi.updateClient).toHaveBeenCalledWith('C-1', {
+      phone: '0811234567',
+      shoeSize: '42',
+    });
   });
 
   it('counts pending quote items as dirty and includes them in the create payload', async () => {
     render(
       <EntityEditProvider>
-        <QuoteHarness />
+        <NavigationProvider>
+          <QuoteHarness />
+        </NavigationProvider>
       </EntityEditProvider>,
     );
 
@@ -185,14 +319,20 @@ describe('EntityEditProvider sub-flows', () => {
     const cancellationInput = itemRow?.children[10]?.querySelector('input[type="date"]');
     expect(cancellationInput).not.toBeNull();
     fireEvent.change(cancellationInput!, { target: { value: '2026-07-21' } });
+    click('edit work order');
     click('save work order');
 
     await waitFor(() => expect(output('editing')).toBe('false'));
+    expect(workOrderApi.updateWorkOrder).toHaveBeenCalledWith('W-1', {
+      technicalNotes: 'Controllare chiusura',
+    });
     expect(workOrderApi.updateWorkOrderItem).toHaveBeenCalledWith('W-1', 'I-1', {
       status: 'ANNULLATO',
       deliveryDate: null,
       cancellationDate: '2026-07-21',
     });
-    expect(workOrderApi.updateWorkOrder).not.toHaveBeenCalled();
+    expect(workOrderApi.updateWorkOrder.mock.invocationCallOrder[0]).toBeLessThan(
+      workOrderApi.updateWorkOrderItem.mock.invocationCallOrder[0],
+    );
   });
 });

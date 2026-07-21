@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
@@ -9,6 +8,7 @@ import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { deleteHealthCompany, fetchHealthCompany } from '../api/healthCompanies';
 import { healthCompanyFields } from '../components/healthCompanyFields';
+import { useHealthCompanyEditor } from '../useHealthCompanyEditor';
 
 const healthCompanyActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Azienda' },
@@ -18,8 +18,7 @@ const healthCompanyActions = [
 export function HealthCompanyDetailView() {
   const { healthCompanyId } = useRoute('health-company-detail');
   const { navigate, back } = useNavigation();
-  const { healthCompanyDraft, startHealthCompanyEdit, seedHealthCompany, setHealthCompanyField } =
-    useEntityEdit();
+  const { draft, startEdit, seed, change } = useHealthCompanyEditor();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({
@@ -27,8 +26,8 @@ export function HealthCompanyDetailView() {
     selectedId: healthCompanyId,
     fetcher: fetchHealthCompany,
     missingMessage: 'Nessuna azienda sanitaria selezionata.',
-    draft: healthCompanyDraft,
-    seed: seedHealthCompany,
+    draft,
+    seed,
   });
 
   if (loading) {
@@ -60,7 +59,7 @@ export function HealthCompanyDetailView() {
       return {
         ...action,
         active: isEditing,
-        onClick: !isEditing ? () => startHealthCompanyEdit(data.idHealthCompany) : undefined,
+        onClick: !isEditing ? () => startEdit(data.idHealthCompany) : undefined,
       };
     }
     return {
@@ -99,7 +98,7 @@ export function HealthCompanyDetailView() {
           data={data}
           fields={healthCompanyFields}
           editing={isEditing}
-          onChange={setHealthCompanyField}
+          onChange={change}
         />
       </EntityDetailLayout>
 

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
@@ -15,6 +14,7 @@ import { deleteWorkOrder, fetchWorkOrder, fetchWorkOrderCollaudi } from '../api/
 import type { WorkOrder } from '../types';
 import { WorkOrderItemsCard } from './WorkOrderItemsCard';
 import { WorkOrderStatusDialog } from './WorkOrderStatusDialog';
+import { useWorkOrderEditor } from '../useWorkOrderEditor';
 
 type WorkOrderField = FieldConfig<WorkOrder>;
 
@@ -90,15 +90,15 @@ const workOrderSections: FieldSectionConfig<WorkOrder>[] = [
 export function WorkOrderDetailView() {
   const { workOrderId } = useRoute('work-order-detail');
   const { navigate, back } = useNavigation();
-  const { workOrderDraft, startWorkOrderEdit, seedWorkOrder, setWorkOrderField } = useEntityEdit();
+  const { draft, startEdit, seed, change } = useWorkOrderEditor();
 
   const { data, loading, error, isEditing, reload } = useEntityDetail({
     type: 'workOrder',
     selectedId: workOrderId,
     fetcher: fetchWorkOrder,
     missingMessage: 'Nessuna lavorazione selezionata.',
-    draft: workOrderDraft,
-    seed: seedWorkOrder,
+    draft,
+    seed,
   });
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -146,7 +146,7 @@ export function WorkOrderDetailView() {
       icon: 'edit',
       label: 'Modifica Dati Lavorazione',
       active: isEditing,
-      onClick: !isEditing ? () => startWorkOrderEdit(data.idWorkOrder) : undefined,
+      onClick: !isEditing ? () => startEdit(data.idWorkOrder) : undefined,
     },
     {
       id: 'status',
@@ -204,7 +204,7 @@ export function WorkOrderDetailView() {
             data={data}
             sections={workOrderSections}
             editing={isEditing}
-            onChange={setWorkOrderField}
+            onChange={change}
           />
           <WorkOrderItemsCard workOrderId={data.idWorkOrder} />
         </div>

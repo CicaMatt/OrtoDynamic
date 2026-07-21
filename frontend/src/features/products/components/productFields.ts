@@ -1,4 +1,5 @@
 import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
+import { productCreateRequiredKeys } from '../editConfig';
 import type { Product } from '../types';
 
 export type ProductField = FieldConfig<Product>;
@@ -12,13 +13,8 @@ export const productFields: ProductField[] = [
   { label: 'Descrizione', key: 'description', type: 'textarea' },
 ];
 
-/** Fields required by the creation form (DB enforces Codice/Descrizione/Prezzo NOT NULL). */
-export const PRODUCT_CREATE_REQUIRED = [
-  'code', 'description', 'price',
-] as const satisfies readonly (keyof Product)[];
-
 /** Create form: drop the DB-assigned id, mark required fields. */
 export const productCreateFields = markRequired(
   productFields.filter((field) => field.key !== 'idProduct'),
-  PRODUCT_CREATE_REQUIRED,
+  productCreateRequiredKeys,
 );

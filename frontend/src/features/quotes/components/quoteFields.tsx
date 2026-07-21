@@ -1,6 +1,7 @@
 import { markRequired, optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
 import type { FieldSectionConfig } from '../../../shared/entity/FieldSectionCard';
 import { EntityReference } from '../../../app/navigation/EntityReference';
+import { quoteCreateRequiredKeys } from '../editConfig';
 import type { Quote } from '../types';
 
 type QuoteField = FieldConfig<Quote>;
@@ -9,47 +10,6 @@ type QuoteField = FieldConfig<Quote>;
 const detailTypeOptions = optionsFromValues(['Asl', 'Privato', 'Inail']);
 const createTypeOptions = optionsFromValues(['Asl', 'Inail', 'Privato']);
 const yesNoOptions = optionsFromValues(['Si', 'No']);
-
-/**
- * Fields the create form requires. `clientId` is filled by the Cliente lookup
- * (rendered separately); `status` is intentionally absent because the server
- * assigns it (INSERITO).
- */
-export const QUOTE_CREATE_REQUIRED = [
-  'clientId',
-  'quoteType',
-  'diagnosis',
-  'detailedPrescription',
-] as const satisfies readonly (keyof Quote)[];
-
-// `status`, `total`, and `quote` are intentionally excluded: status changes via
-// its guarded endpoint, total is server-derived, and quote has no form field.
-export const QUOTE_EDITABLE_KEYS = [
-  'clientId',
-  'doctorId',
-  'quoteNumber',
-  'quoteType',
-  'creationDate',
-  'quoteDate',
-  'entryBy',
-  'diagnosis',
-  'therapeuticProgram',
-  'detailedPrescription',
-  'authorizationNumber',
-  'acceptanceDate',
-  'authorizationReceiptDate',
-  'expiryDays',
-  'maxExpiry',
-  'measurementsOk',
-  'commissionsPaid',
-  'orderNumber',
-  'model',
-  'measurements',
-  'invoiceNumber',
-  'note',
-  'privateNote',
-  'finalNote',
-] as const satisfies readonly (keyof Quote)[];
 
 // `Stato` is read-only here: it changes only via the guarded status action.
 const detailIdentityFields: QuoteField[] = [
@@ -66,7 +26,7 @@ const createIdentityFields: QuoteField[] = markRequired(
     { label: 'Data Creazione', key: 'creationDate', type: 'date' },
     { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
   ],
-  ['quoteType'],
+  quoteCreateRequiredKeys,
 );
 
 // In read mode the client/doctor show by name with their id revealed on hover.
@@ -91,10 +51,7 @@ const clinicalFields: QuoteField[] = [
   { label: 'Prescrizione Dettagliata Protesi', key: 'detailedPrescription', type: 'textarea' },
 ];
 
-const createClinicalFields: QuoteField[] = markRequired(clinicalFields, [
-  'diagnosis',
-  'detailedPrescription',
-]);
+const createClinicalFields: QuoteField[] = markRequired(clinicalFields, quoteCreateRequiredKeys);
 
 const authorizationFields: QuoteField[] = [
   { label: 'Nº Autorizzazione', key: 'authorizationNumber' },

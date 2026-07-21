@@ -1,33 +1,14 @@
-import { useEffect } from 'react';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import { PRODUCT_CREATE_REQUIRED, productCreateFields } from '../components/productFields';
-import type { Product } from '../types';
+import { productCreateFields } from '../components/productFields';
+import { useProductEditor } from '../useProductEditor';
 
 export function ProductCreateView() {
   const { navigate } = useNavigation();
-  const {
-    editing,
-    mode,
-    editTarget,
-    productDraft,
-    invalidFields,
-    startProductCreate,
-    setProductField,
-  } = useEntityEdit();
-
-  const isCreating = editing && mode === 'create' && editTarget?.type === 'product';
-
-  useEffect(() => {
-    if (!isCreating) startProductCreate(PRODUCT_CREATE_REQUIRED);
-  }, [isCreating, startProductCreate]);
-
-  if (!isCreating || !productDraft) return null;
-
-  const invalidKeys = invalidFields as Array<keyof Product>;
+  const { draft, invalidFields, change } = useProductEditor();
+  if (!draft) throw new Error('Product create route requires an active create session.');
 
   return (
     <EntityDetailLayout
@@ -43,11 +24,11 @@ export function ProductCreateView() {
       <FieldSectionCard
         icon="inventory_2"
         title="Dati Prodotto"
-        data={productDraft}
+        data={draft}
         fields={productCreateFields}
         editing
-        onChange={setProductField}
-        invalidKeys={invalidKeys}
+        onChange={change}
+        invalidKeys={invalidFields}
       />
     </EntityDetailLayout>
   );

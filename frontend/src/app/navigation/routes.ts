@@ -35,6 +35,23 @@ export function entityCreateRoute(type: EntityKind): Route {
   }
 }
 
+export function createEntityForRoute(route: Route): EntityKind | null {
+  switch (route.name) {
+    case 'client-create':
+      return 'client';
+    case 'doctor-create':
+      return 'doctor';
+    case 'health-company-create':
+      return 'healthCompany';
+    case 'product-create':
+      return 'product';
+    case 'quote-create':
+      return 'quote';
+    default:
+      return null;
+  }
+}
+
 export function entityDetailRoute(type: EntityKind, id: string): Route {
   switch (type) {
     case 'client':

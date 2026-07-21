@@ -9,11 +9,11 @@ import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { DocumentErrorAlert, documentActionState } from '../../../shared/files/DocumentActions';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
 import { useApiData } from '../../../shared/hooks/useApiData';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { useClientDoctorAutocomplete } from '../components/useClientDoctorAutocomplete';
 import { useClientMunicipalityAutocomplete } from '../components/useClientMunicipalityAutocomplete';
+import { useClientEditor } from '../useClientEditor';
 
 const clientActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Cliente' },
@@ -25,18 +25,18 @@ const clientActions = [
 export function ClientDetailView() {
   const { clientId } = useRoute('client-detail');
   const { navigate, back } = useNavigation();
-  const { clientDraft, startClientEdit, seedClient, setClientField } = useEntityEdit();
+  const { draft, startEdit, seed, change } = useClientEditor();
 
   const { data, loading, error, isEditing } = useEntityDetail({
     type: 'client',
     selectedId: clientId,
     fetcher: fetchClient,
     missingMessage: 'Nessun cliente selezionato.',
-    draft: clientDraft,
-    seed: seedClient,
+    draft,
+    seed,
   });
 
-  const municipalityFields = useClientMunicipalityAutocomplete(setClientField, isEditing);
+  const municipalityFields = useClientMunicipalityAutocomplete(change, isEditing);
   const doctorFields = useClientDoctorAutocomplete(isEditing);
   const {
     generating,
@@ -76,7 +76,7 @@ export function ClientDetailView() {
       return {
         ...action,
         active: isEditing,
-        onClick: !isEditing ? () => startClientEdit(data.idClient) : undefined,
+        onClick: !isEditing ? () => startEdit(data.idClient) : undefined,
       };
     }
     if (action.id === 'privacy') {
@@ -126,7 +126,7 @@ export function ClientDetailView() {
         <ClientDataSections
           data={data}
           editing={isEditing}
-          onChange={setClientField}
+          onChange={change}
           doctorName={doctorName}
           autocompleteFields={{ ...municipalityFields, ...doctorFields }}
         />

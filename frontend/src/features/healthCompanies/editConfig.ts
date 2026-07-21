@@ -7,14 +7,37 @@ import {
 import type { HealthCompany } from './types';
 
 const editableHealthCompanyKeys = [
-  'municipalityCode', 'municipality', 'regionCode', 'regionName', 'companyCode',
-  'companyName', 'year', 'males', 'females', 'total', 'district',
+  'municipalityCode',
+  'municipality',
+  'regionCode',
+  'regionName',
+  'companyCode',
+  'companyName',
+  'year',
+  'males',
+  'females',
+  'total',
+  'district',
+] as const satisfies readonly (keyof HealthCompany)[];
+
+export const healthCompanyCreateRequiredKeys = [
+  'companyName',
 ] as const satisfies readonly (keyof HealthCompany)[];
 
 function makeEmptyHealthCompany(): HealthCompany {
   return {
-    idHealthCompany: '', municipalityCode: '', municipality: '', regionCode: '', regionName: '',
-    companyCode: '', companyName: '', year: '', males: '', females: '', total: '', district: '',
+    idHealthCompany: '',
+    municipalityCode: '',
+    municipality: '',
+    regionCode: '',
+    regionName: '',
+    companyCode: '',
+    companyName: '',
+    year: '',
+    males: '',
+    females: '',
+    total: '',
+    district: '',
   };
 }
 
@@ -28,6 +51,7 @@ function normalizeHealthCompanyPayload(payload: Record<string, unknown>): Health
 
 export const healthCompanyEditConfig: EntityEditConfig<'healthCompany'> = {
   editableKeys: editableHealthCompanyKeys,
+  requiredKeys: healthCompanyCreateRequiredKeys,
   makeEmptyDraft: makeEmptyHealthCompany,
   create: (payload) => createHealthCompany(normalizeHealthCompanyPayload(payload)),
   update: (id, payload) => updateHealthCompany(id, payload as HealthCompanyUpdate),

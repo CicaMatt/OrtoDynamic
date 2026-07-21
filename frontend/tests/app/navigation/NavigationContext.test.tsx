@@ -6,7 +6,9 @@ import { EditActionBar } from '../../../src/app/layout/EditActionBar';
 import { EntityReference } from '../../../src/app/navigation/EntityReference';
 import { NavigationProvider, useNavigation } from '../../../src/app/navigation/NavigationContext';
 import type { Client } from '../../../src/features/clients/types';
+import { useClientEditor } from '../../../src/features/clients/useClientEditor';
 import type { Product } from '../../../src/features/products/types';
+import { useProductEditor } from '../../../src/features/products/useProductEditor';
 
 const productApi = vi.hoisted(() => ({
   createProduct: vi.fn(),
@@ -47,6 +49,8 @@ const product: Product = {
 function NavigationHarness() {
   const navigation = useNavigation();
   const edit = useEntityEdit();
+  const clientEditor = useClientEditor();
+  const productEditor = useProductEditor();
 
   return (
     <>
@@ -61,9 +65,11 @@ function NavigationHarness() {
         {navigation.route.name === 'product-detail' ? navigation.route.productId : ''}
       </output>
       <output data-testid="pending">{navigation.pendingRoute?.name ?? ''}</output>
-      <output data-testid="editing">{String(edit.editing)}</output>
+      <output data-testid="editing">{String(Boolean(edit.session))}</output>
       <output data-testid="dirty">{String(edit.isDirty)}</output>
-      <output data-testid="save-error">{edit.saveError ?? ''}</output>
+      <output data-testid="edit-type">{edit.session?.type ?? ''}</output>
+      <output data-testid="edit-mode">{edit.session?.mode ?? 'edit'}</output>
+      <output data-testid="save-error">{edit.error ?? ''}</output>
 
       <button
         onClick={() =>
@@ -91,26 +97,22 @@ function NavigationHarness() {
       <button onClick={() => navigation.discardAndContinue()}>discard pending</button>
       <button onClick={() => void navigation.keepAndContinue()}>save pending</button>
 
-      <button onClick={() => edit.startClientEdit('C-1')}>start client edit</button>
-      <button onClick={() => edit.seedClient(client)}>seed client</button>
-      <button onClick={() => edit.setClientField('note', 'changed')}>dirty client</button>
-      <button onClick={() => edit.startProductEdit('P-1')}>start product edit</button>
-      <button onClick={() => edit.seedProduct(product)}>seed product</button>
-      <button onClick={() => edit.setProductField('description', 'Tutore lungo')}>
+      <button onClick={() => clientEditor.startEdit('C-1')}>start client edit</button>
+      <button onClick={() => clientEditor.seed(client)}>seed client</button>
+      <button onClick={() => clientEditor.change('note', 'changed')}>dirty client</button>
+      <button onClick={() => productEditor.startEdit('P-1')}>start product edit</button>
+      <button onClick={() => productEditor.seed(product)}>seed product</button>
+      <button onClick={() => productEditor.change('description', 'Tutore lungo')}>
         dirty product
       </button>
-      <button
-        onClick={() => {
-          edit.startProductCreate(['code', 'description']);
-          navigation.navigate({ name: 'product-create' });
-        }}
-      >
+      <button onClick={() => navigation.navigate({ name: 'product-create' })}>
         start product create
       </button>
       <button
         onClick={() => {
-          edit.setProductField('code', 'T-77');
-          edit.setProductField('description', 'Nuovo tutore');
+          productEditor.change('code', 'T-77');
+          productEditor.change('description', 'Nuovo tutore');
+          productEditor.change('price', '25');
         }}
       >
         fill product
@@ -213,6 +215,27 @@ describe('NavigationProvider with the real edit provider', () => {
     expect(output('editing')).toBe('false');
   });
 
+  it('starts a create session only after pending navigation is accepted', () => {
+    renderProviders();
+
+    click('open product');
+    click('start product edit');
+    click('seed product');
+    click('dirty product');
+    click('start product create');
+
+    expect(output('view')).toBe('product-detail');
+    expect(output('pending')).toBe('product-create');
+    expect(output('edit-type')).toBe('product');
+    expect(output('edit-mode')).toBe('edit');
+
+    click('discard pending');
+    expect(output('view')).toBe('product-create');
+    expect(output('edit-type')).toBe('product');
+    expect(output('edit-mode')).toBe('create');
+    expect(output('dirty')).toBe('false');
+  });
+
   it('keeps the current route and draft when save-and-continue fails', async () => {
     productApi.updateProduct.mockRejectedValueOnce(new Error('Salvataggio fallito.'));
     renderProviders();
@@ -246,7 +269,7 @@ describe('NavigationProvider with the real edit provider', () => {
     expect(productApi.createProduct).toHaveBeenCalledWith({
       code: 'T-77',
       description: 'Nuovo tutore',
-      price: null,
+      price: 25,
       year: null,
     });
   });

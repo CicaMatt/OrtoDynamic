@@ -1,4 +1,5 @@
 import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
+import { doctorCreateRequiredKeys } from '../editConfig';
 import type { Doctor } from '../types';
 
 export type DoctorField = FieldConfig<Doctor>;
@@ -13,11 +14,8 @@ export const doctorFields: DoctorField[] = [
   { label: 'Email', key: 'email' },
 ];
 
-/** Fields required by the creation form (DB enforces Cognome/Nome NOT NULL). */
-export const DOCTOR_CREATE_REQUIRED = ['surname', 'name'] as const satisfies readonly (keyof Doctor)[];
-
 /** Create form: drop the DB-assigned id, mark required fields. */
 export const doctorCreateFields = markRequired(
   doctorFields.filter((field) => field.key !== 'idDoctor'),
-  DOCTOR_CREATE_REQUIRED,
+  doctorCreateRequiredKeys,
 );

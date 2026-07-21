@@ -8,7 +8,7 @@ import {
   navigationReducer,
   type NavigationDestination,
 } from './navigationState';
-import { routeMatchesEditSession } from './routes';
+import { createEntityForRoute, routeMatchesEditSession } from './routes';
 import type { Route, RouteName, RouteWithName } from './types';
 
 type NavigationValue = {
@@ -30,17 +30,32 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(navigationReducer, initialNavigationState);
 
   const belongsToCurrentEdit = (route: Route) =>
-    Boolean(edit.editTarget && routeMatchesEditSession(route, edit.editTarget, edit.mode));
+    Boolean(
+      edit.session &&
+      routeMatchesEditSession(
+        route,
+        { type: edit.session.type, id: edit.session.id },
+        edit.session.mode,
+      ),
+    );
+
+  const applyDestination = (destination: NavigationDestination) => {
+    const createType = createEntityForRoute(destination.route);
+    if (createType && !belongsToCurrentEdit(destination.route)) {
+      edit.start({ type: createType, id: '' }, 'create');
+    }
+    dispatch({ type: 'apply', destination });
+  };
 
   const guardedApply = (destination: NavigationDestination) => {
-    if (edit.editing && !belongsToCurrentEdit(destination.route)) {
+    if (edit.session && !belongsToCurrentEdit(destination.route)) {
       if (edit.isDirty) {
         dispatch({ type: 'defer', destination });
         return;
       }
       edit.cancel();
     }
-    dispatch({ type: 'apply', destination });
+    applyDestination(destination);
   };
 
   const navigate = (route: Route) => guardedApply(destinationForNavigation(state, route));
@@ -51,13 +66,13 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const keepAndContinue = async () => {
     const destination = state.pending;
     const result = await edit.save();
-    if (result.ok && destination) dispatch({ type: 'apply', destination });
+    if (result.ok && destination) applyDestination(destination);
     else dispatch({ type: 'dismiss-pending' });
   };
 
   const discardAndContinue = () => {
     edit.cancel();
-    dispatch({ type: 'apply-pending' });
+    if (state.pending) applyDestination(state.pending);
   };
 
   return (

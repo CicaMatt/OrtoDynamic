@@ -6,10 +6,10 @@ import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
 import type { FieldConfig } from '../../../shared/entity/DataCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
-import { useEntityEdit } from '../../../app/editing/EntityEditContext';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import type { ClientOrthopedic } from '../types';
+import { useClientEditor } from '../useClientEditor';
 
 type Field = FieldConfig<ClientOrthopedic>;
 
@@ -57,16 +57,10 @@ const noteFields: Field[] = [
 export function ClientOrthopedicView() {
   const { clientId } = useRoute('client-detail');
   const { navigate } = useNavigation();
-  const {
-    editing,
-    editTarget,
-    clientOrthopedicDraft,
-    dataVersion,
-    seedClientOrthopedic,
-    setClientOrthopedicField,
-  } = useEntityEdit();
+  const { orthopedicDraft, dataVersion, isEditing, seedOrthopedic, changeOrthopedic } =
+    useClientEditor();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const isEditingClient = editing && editTarget?.type === 'client' && editTarget.id === clientId;
+  const isEditingClient = isEditing(clientId);
 
   const {
     data: fetched,
@@ -81,8 +75,8 @@ export function ClientOrthopedicView() {
   );
 
   useEffect(() => {
-    if (isEditingClient && fetched) seedClientOrthopedic(fetched);
-  }, [isEditingClient, fetched, seedClientOrthopedic]);
+    if (isEditingClient && fetched) seedOrthopedic(fetched);
+  }, [isEditingClient, fetched, seedOrthopedic]);
 
   if (loading) {
     return (
@@ -106,7 +100,7 @@ export function ClientOrthopedicView() {
     );
   }
 
-  const data = isEditingClient && clientOrthopedicDraft ? clientOrthopedicDraft : fetched;
+  const data = isEditingClient && orthopedicDraft ? orthopedicDraft : fetched;
   const deleteActions = [
     {
       id: 'delete',
@@ -147,7 +141,7 @@ export function ClientOrthopedicView() {
             data={data}
             fields={footwearFields}
             editing={isEditingClient}
-            onChange={setClientOrthopedicField}
+            onChange={changeOrthopedic}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[28px]">
@@ -158,7 +152,7 @@ export function ClientOrthopedicView() {
               fields={braceFields}
               columns={2}
               editing={isEditingClient}
-              onChange={setClientOrthopedicField}
+              onChange={changeOrthopedic}
             />
             <FieldSectionCard
               icon="accessibility_new"
@@ -167,7 +161,7 @@ export function ClientOrthopedicView() {
               fields={bodyFields}
               columns={2}
               editing={isEditingClient}
-              onChange={setClientOrthopedicField}
+              onChange={changeOrthopedic}
             />
           </div>
 
@@ -178,7 +172,7 @@ export function ClientOrthopedicView() {
             fields={noteFields}
             columns={1}
             editing={isEditingClient}
-            onChange={setClientOrthopedicField}
+            onChange={changeOrthopedic}
           />
         </div>
       </EntityDetailLayout>
