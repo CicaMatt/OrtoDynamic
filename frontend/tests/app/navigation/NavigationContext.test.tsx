@@ -1,14 +1,17 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { EntityEditProvider, useEntityEdit } from '../../../src/app/editing/EntityEditContext';
+import {
+  EntityEditProvider,
+  useEntityEdit,
+  useEntityEditor,
+} from '../../../src/app/editing/EntityEditContext';
 import { EditActionBar } from '../../../src/app/layout/EditActionBar';
 import { EntityReference } from '../../../src/app/navigation/EntityReference';
 import { NavigationProvider, useNavigation } from '../../../src/app/navigation/NavigationContext';
 import type { Client } from '../../../src/features/clients/types';
 import { useClientEditor } from '../../../src/features/clients/useClientEditor';
 import type { Product } from '../../../src/features/products/types';
-import { useProductEditor } from '../../../src/features/products/useProductEditor';
 import { useQuoteEditor } from '../../../src/features/quotes/useQuoteEditor';
 
 const productApi = vi.hoisted(() => ({
@@ -51,7 +54,7 @@ function NavigationHarness() {
   const navigation = useNavigation();
   const edit = useEntityEdit();
   const clientEditor = useClientEditor();
-  const productEditor = useProductEditor();
+  const productEditor = useEntityEditor('product');
   const quoteEditor = useQuoteEditor();
 
   return (

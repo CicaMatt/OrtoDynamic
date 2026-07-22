@@ -3,7 +3,7 @@ Serializers for the Quote resource backed by `preventivi`.
 
 Field names are the camelCase keys the frontend consumes directly. The list and
 detail views expose the full column set, so a single read serializer serves
-both; `NullToEmptyMixin` renders SQL NULLs as empty strings and dates/numbers as
+both; `NullToEmptySerializer` renders SQL NULLs as empty strings and dates/numbers as
 plain strings, keeping the frontend's all-strings contract.
 """
 from django.utils import timezone
@@ -11,14 +11,11 @@ from rest_framework import serializers
 
 from apps.clients.models import Client
 from apps.common.api.serializers import (
-    CreatableSerializerMixin,
-    NullToEmptyMixin,
+    NullToEmptySerializer,
     UpdateFieldsSerializer,
-    nullable_text_fields,
+    nullable_text,
     person_display_name,
-    read_fields,
 )
-from apps.quotes.models import Quote
 from apps.quotes.services import (
     create_quote_with_items,
     create_quote_item,
@@ -27,15 +24,15 @@ from apps.quotes.services import (
 )
 
 
-class QuoteSerializer(NullToEmptyMixin):
+class QuoteSerializer(NullToEmptySerializer):
     """Full column set shown in both the Preventivi table and detail view."""
 
-    locals().update(read_fields({
-        "idQuote": "id",
-        # Links
-        "clientId": "id_cliente",
-        "doctorId": "id_medico",
-    }))
+    idQuote = serializers.CharField(source="id")
+
+    # Links
+    clientId = serializers.CharField(source="id_cliente")
+    doctorId = serializers.CharField(source="id_medico")
+
     # Display names for the linked client/doctor, resolved from the objects the
     # view attaches in bulk (empty when the reference is unset or the row is gone).
     # The frontend shows these in place of the raw ids, revealing the id on hover.
@@ -44,42 +41,40 @@ class QuoteSerializer(NullToEmptyMixin):
     doctorName = serializers.SerializerMethodField()
     workOrderId = serializers.SerializerMethodField()
 
-    locals().update(read_fields({
-        # Quote identity
-        "quoteNumber": "numero_preventivo",
-        "quoteType": "tipologia_preventivo",
-        "status": "stato",
-    }))
+    # Quote identity
+    quoteNumber = serializers.CharField(source="numero_preventivo")
+    quoteType = serializers.CharField(source="tipologia_preventivo")
+    status = serializers.CharField(source="stato")
     creationDate = serializers.DateField(source="data_creazione")
     quoteDate = serializers.DateField(source="data_preventivo")
-    locals().update(read_fields({
-        "total": "totale",
-        "entryBy": "entry_by",
-        # Clinical data
-        "diagnosis": "diagnosi_circostanziata",
-        "therapeuticProgram": "programma_terapeutico",
-        "detailedPrescription": "prescizione_dettagliata_protesi",
-        # Authorization & deadlines
-        "authorizationNumber": "numero_autorizzazione",
-    }))
+    total = serializers.CharField(source="totale")
+    entryBy = serializers.CharField(source="entry_by")
+
+    # Clinical data
+    diagnosis = serializers.CharField(source="diagnosi_circostanziata")
+    therapeuticProgram = serializers.CharField(source="programma_terapeutico")
+    detailedPrescription = serializers.CharField(source="prescizione_dettagliata_protesi")
+
+    # Authorization & deadlines
+    authorizationNumber = serializers.CharField(source="numero_autorizzazione")
     acceptanceDate = serializers.DateField(source="data_accettazione")
     authorizationReceiptDate = serializers.DateField(source="data_ricezione_autorizzazione")
-    locals().update(read_fields({
-        "expiryDays": "giorni_scadenza",
-        "maxExpiry": "massima_scadenza",
-        # Supply & invoicing
-        "measurementsOk": "misure_ok",
-        "commissionsPaid": "provvigioni_pagate",
-        "orderNumber": "numero_ordine",
-        "model": "modello",
-        "measurements": "misure",
-        "invoiceNumber": "numero_fattura",
-        # Free text
-        "quote": "preventivo",
-        "note": "note",
-        "privateNote": "note_private",
-        "finalNote": "note_finali",
-    }))
+    expiryDays = serializers.CharField(source="giorni_scadenza")
+    maxExpiry = serializers.CharField(source="massima_scadenza")
+
+    # Supply & invoicing
+    measurementsOk = serializers.CharField(source="misure_ok")
+    commissionsPaid = serializers.CharField(source="provvigioni_pagate")
+    orderNumber = serializers.CharField(source="numero_ordine")
+    model = serializers.CharField(source="modello")
+    measurements = serializers.CharField(source="misure")
+    invoiceNumber = serializers.CharField(source="numero_fattura")
+
+    # Free text
+    quote = serializers.CharField(source="preventivo")
+    note = serializers.CharField()
+    privateNote = serializers.CharField(source="note_private")
+    finalNote = serializers.CharField(source="note_finali")
 
     def get_clientName(self, quote):
         return person_display_name(getattr(quote, "client", None))
@@ -96,7 +91,7 @@ class QuoteSerializer(NullToEmptyMixin):
         return str(work_order.id) if work_order is not None else None
 
 
-class QuoteItemSerializer(NullToEmptyMixin):
+class QuoteItemSerializer(NullToEmptySerializer):
     """
     Read-only line item shown in the quote detail's items box. Exposes only the
     columns the view renders; `productId` is the raw `codice_nomenclatore`
@@ -106,18 +101,14 @@ class QuoteItemSerializer(NullToEmptyMixin):
     all-strings contract.
     """
 
-    locals().update(read_fields({
-        "id": "id",
-        "productId": "codice_nomenclatore",
-    }))
+    id = serializers.CharField()
+    productId = serializers.CharField(source="codice_nomenclatore")
     productCode = serializers.SerializerMethodField()
     productDescription = serializers.SerializerMethodField()
-    locals().update(read_fields({
-        "quantity": "quantita",
-        "price": "prezzo",
-        "amount": "importo",
-        "discount": "sconto",
-    }))
+    quantity = serializers.CharField(source="quantita")
+    price = serializers.CharField(source="prezzo")
+    amount = serializers.CharField(source="importo")
+    discount = serializers.CharField(source="sconto")
 
     def get_productCode(self, item):
         product = getattr(item, "product", None)
@@ -188,43 +179,41 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
     # Quote identity
     # `status` is intentionally not writable here: it changes only through the
     # guarded transition endpoint, which enforces the `stato_check` rules.
-    locals().update(nullable_text_fields({
-        "quoteNumber": "numero_preventivo",
-        "quoteType": "tipologia_preventivo",
-    }))
+    quoteNumber = nullable_text("numero_preventivo")
+    quoteType = nullable_text("tipologia_preventivo")
     creationDate = serializers.DateField(source="data_creazione", required=False, allow_null=True)
     quoteDate = serializers.DateField(source="data_preventivo", required=False, allow_null=True)
     # `total` (totale) is intentionally not writable: it is always derived from the
     # sum of the quote's line items' importi (see `recompute_quote_total`), kept in
     # sync whenever those items change, and never set directly by the client.
-    locals().update(nullable_text_fields({
-        "entryBy": "entry_by",
-        # Clinical data
-        "diagnosis": "diagnosi_circostanziata",
-        "therapeuticProgram": "programma_terapeutico",
-        "detailedPrescription": "prescizione_dettagliata_protesi",
-        # Authorization & deadlines
-        "authorizationNumber": "numero_autorizzazione",
-    }))
+    entryBy = nullable_text("entry_by")
+
+    # Clinical data
+    diagnosis = nullable_text("diagnosi_circostanziata")
+    therapeuticProgram = nullable_text("programma_terapeutico")
+    detailedPrescription = nullable_text("prescizione_dettagliata_protesi")
+
+    # Authorization & deadlines
+    authorizationNumber = nullable_text("numero_autorizzazione")
     acceptanceDate = serializers.DateField(source="data_accettazione", required=False, allow_null=True)
     authorizationReceiptDate = serializers.DateField(
         source="data_ricezione_autorizzazione", required=False, allow_null=True
     )
-    locals().update(nullable_text_fields({
-        "expiryDays": "giorni_scadenza",
-        # Supply & invoicing
-        "measurementsOk": "misure_ok",
-        "commissionsPaid": "provvigioni_pagate",
-        "orderNumber": "numero_ordine",
-        "model": "modello",
-        "measurements": "misure",
-        "invoiceNumber": "numero_fattura",
-        # Free text
-        "quote": "preventivo",
-        "note": None,
-        "privateNote": "note_private",
-        "finalNote": "note_finali",
-    }))
+    expiryDays = nullable_text("giorni_scadenza")
+
+    # Supply & invoicing
+    measurementsOk = nullable_text("misure_ok")
+    commissionsPaid = nullable_text("provvigioni_pagate")
+    orderNumber = nullable_text("numero_ordine")
+    model = nullable_text("modello")
+    measurements = nullable_text("misure")
+    invoiceNumber = nullable_text("numero_fattura")
+
+    # Free text
+    quote = nullable_text("preventivo")
+    note = nullable_text()
+    privateNote = nullable_text("note_private")
+    finalNote = nullable_text("note_finali")
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
@@ -239,7 +228,7 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
         return attrs
 
 
-class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
+class QuoteCreateSerializer(QuoteUpdateSerializer):
     """
     Create a quote, reusing the update serializer's writable fields, optionally
     with its initial line items in the same request.
@@ -251,9 +240,6 @@ class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
     The serializer validates/translates the request and delegates the complete
     multi-model operation to the quote service.
     """
-
-    create_model = Quote
-    read_serializer_class = QuoteSerializer
 
     # The legacy row cannot exist without its owning client. The clinical fields
     # required by the current screen remain UX policy because their columns permit
@@ -272,6 +258,9 @@ class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
         return create_quote_with_items(validated_data, items_data)
+
+    def to_representation(self, instance):
+        return QuoteSerializer(instance).data
 
 
 class QuoteStatusRequestSerializer(serializers.Serializer):

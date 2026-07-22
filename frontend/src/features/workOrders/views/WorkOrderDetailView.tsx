@@ -4,8 +4,12 @@ import { useNavigation, useRoute } from '../../../app/navigation/NavigationConte
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionList, type FieldSectionConfig } from '../../../shared/entity/FieldSectionCard';
-import { optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
+import {
+  FieldSectionList,
+  optionsFromValues,
+  type FieldConfig,
+  type FieldSectionConfig,
+} from '../../../shared/entity/EntityFields';
 import { DocumentErrorAlert, documentActionState } from '../../../shared/files/DocumentActions';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
 import { EntityReference } from '../../../app/navigation/EntityReference';

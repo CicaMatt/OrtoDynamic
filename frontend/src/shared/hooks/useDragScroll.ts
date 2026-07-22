@@ -37,7 +37,11 @@ export function useDragScroll<T extends HTMLElement>(externalRef?: RefObject<T>)
       // Leave presses that start on a text-entry control alone, so the user can
       // click into and select within inputs (e.g. the item tables' inline edit
       // fields) instead of the press being read as a pan.
-      if ((event.target as Element | null)?.closest('input, textarea, select, [contenteditable="true"]')) {
+      if (
+        (event.target as Element | null)?.closest(
+          'input, textarea, select, [contenteditable="true"]',
+        )
+      ) {
         return;
       }
       pointerId = event.pointerId;

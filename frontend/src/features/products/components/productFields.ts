@@ -1,9 +1,14 @@
-import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
+import { markRequired, type FieldConfig } from '../../../shared/entity/EntityFields';
 import { formatEuro } from '../../../shared/format/format';
-import { productCreateRequiredKeys } from '../editConfig';
 import type { Product } from '../types';
 
 export type ProductField = FieldConfig<Product>;
+
+export const productCreateRequiredKeys = [
+  'code',
+  'description',
+  'price',
+] as const satisfies readonly (keyof Product)[];
 
 /** Fields shown in the product detail/edit form. */
 export const productFields: ProductField[] = [

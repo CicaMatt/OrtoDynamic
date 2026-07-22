@@ -5,61 +5,53 @@ Serializers for the HealthCompany resource backed by `aziende_sanitarie`.
 from rest_framework import serializers
 
 from apps.common.api.serializers import (
-    CreatableSerializerMixin,
-    NullToEmptyMixin,
+    NullToEmptySerializer,
     UpdateFieldsSerializer,
-    nullable_text_fields,
-    read_fields,
+    nullable_text,
 )
 
 from apps.health_companies.models import HealthCompany
 
 
-class HealthCompanyListSerializer(NullToEmptyMixin):
+class HealthCompanyListSerializer(NullToEmptySerializer):
     """Columns shown in the Aziende Sanitarie table."""
 
-    locals().update(read_fields({
-        "idHealthCompany": "id",
-        "municipalityCode": "codice_comune",
-        "municipality": "comune",
-        "regionCode": "codice_regione",
-        "regionName": "denominazione_regione",
-        "companyCode": "codice_azienda",
-        "companyName": "denominazione_azienda",
-        "year": "anno",
-    }))
+    idHealthCompany = serializers.CharField(source="id")
+    municipalityCode = serializers.CharField(source="codice_comune")
+    municipality = serializers.CharField(source="comune")
+    regionCode = serializers.CharField(source="codice_regione")
+    regionName = serializers.CharField(source="denominazione_regione")
+    companyCode = serializers.CharField(source="codice_azienda")
+    companyName = serializers.CharField(source="denominazione_azienda")
+    year = serializers.CharField(source="anno")
 
 
 class HealthCompanyDetailSerializer(HealthCompanyListSerializer):
     """Full set of fields shown in the health-company detail view."""
 
-    locals().update(read_fields({
-        "males": "maschi",
-        "females": "femmine",
-        "total": "totale",
-        "district": "distretto",
-    }))
+    males = serializers.CharField(source="maschi")
+    females = serializers.CharField(source="femmine")
+    total = serializers.CharField(source="totale")
+    district = serializers.CharField(source="distretto")
 
 
 class HealthCompanyUpdateSerializer(UpdateFieldsSerializer):
     """Writable serializer for health-company detail edits."""
 
     year = serializers.IntegerField(source="anno", required=False, allow_null=True)
-    locals().update(nullable_text_fields({
-        "municipalityCode": "codice_comune",
-        "municipality": "comune",
-        "regionCode": "codice_regione",
-        "regionName": "denominazione_regione",
-        "companyCode": "codice_azienda",
-        "companyName": "denominazione_azienda",
-        "males": "maschi",
-        "females": "femmine",
-        "total": "totale",
-        "district": "distretto",
-    }))
+    municipalityCode = nullable_text("codice_comune")
+    municipality = nullable_text("comune")
+    regionCode = nullable_text("codice_regione")
+    regionName = nullable_text("denominazione_regione")
+    companyCode = nullable_text("codice_azienda")
+    companyName = nullable_text("denominazione_azienda")
+    males = nullable_text("maschi")
+    females = nullable_text("femmine")
+    total = nullable_text("totale")
+    district = nullable_text("distretto")
 
 
-class HealthCompanyCreateSerializer(CreatableSerializerMixin, HealthCompanyUpdateSerializer):
+class HealthCompanyCreateSerializer(HealthCompanyUpdateSerializer):
     """
     Create a health company using the permissive legacy contract.
 
@@ -67,5 +59,8 @@ class HealthCompanyCreateSerializer(CreatableSerializerMixin, HealthCompanyUpdat
     column is nullable, so that requirement remains frontend UX policy.
     """
 
-    create_model = HealthCompany
-    read_serializer_class = HealthCompanyDetailSerializer
+    def create(self, validated_data):
+        return HealthCompany.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        return HealthCompanyDetailSerializer(instance).data

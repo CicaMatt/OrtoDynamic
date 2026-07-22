@@ -20,6 +20,7 @@ from apps.quotes.documents.scheda import (
     render_scheda,
     scheda_filename,
 )
+from apps.quotes.document_rows import QuoteDocumentItem
 
 
 class Stub:
@@ -64,7 +65,7 @@ def make_item(**overrides):
         "sconto": None,
     }
     base.update(overrides)
-    return Stub(**base)
+    return QuoteDocumentItem(**base)
 
 
 def prepare(quote=None, client=None, items=()):

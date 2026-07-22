@@ -1,8 +1,11 @@
-import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
-import { healthCompanyCreateRequiredKeys } from '../editConfig';
+import { markRequired, type FieldConfig } from '../../../shared/entity/EntityFields';
 import type { HealthCompany } from '../types';
 
 export type HealthCompanyField = FieldConfig<HealthCompany>;
+
+export const healthCompanyCreateRequiredKeys = [
+  'companyName',
+] as const satisfies readonly (keyof HealthCompany)[];
 
 /** Fields shown in the health-company detail/edit form. */
 export const healthCompanyFields: HealthCompanyField[] = [

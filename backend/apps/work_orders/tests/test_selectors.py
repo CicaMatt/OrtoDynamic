@@ -39,7 +39,10 @@ def test_work_order_items_batch_quote_items_and_products():
 
 
 def test_work_orders_with_read_relations_uses_one_query_per_relation():
-    work_orders = [SimpleNamespace(id=900, id_cliente=21, id_preventivo=500)]
+    work_orders = [
+        SimpleNamespace(id=900, id_cliente=21, id_preventivo=500),
+        SimpleNamespace(id=901, id_cliente=22, id_preventivo=501),
+    ]
     client = SimpleNamespace(id=21)
     quote = SimpleNamespace(id=500)
 
@@ -53,10 +56,12 @@ def test_work_orders_with_read_relations_uses_one_query_per_relation():
     ):
         assert selectors.work_orders_with_read_relations(work_orders) == work_orders
 
-    client_query.assert_called_once_with({21})
-    quote_query.assert_called_once_with({500})
+    client_query.assert_called_once_with({21, 22})
+    quote_query.assert_called_once_with({500, 501})
     assert work_orders[0].client is client
     assert work_orders[0].quote is quote
+    assert work_orders[1].client is None
+    assert work_orders[1].quote is None
 
 
 def test_collaudi_inputs_return_the_complete_document_bundle():

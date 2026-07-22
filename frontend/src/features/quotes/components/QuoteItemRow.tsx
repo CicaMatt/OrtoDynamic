@@ -1,4 +1,4 @@
-import { EditInput } from '../../../shared/entity/DataCard';
+import { EditInput } from '../../../shared/entity/EntityFields';
 import { formatEuro } from '../../../shared/format/format';
 import { FieldValue } from '../../../shared/ui/FieldValue';
 import { Icon } from '../../../shared/ui/Icon';

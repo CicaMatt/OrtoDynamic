@@ -3,42 +3,39 @@
 from rest_framework import serializers
 
 from apps.common.api.serializers import (
-    CreatableSerializerMixin,
-    NullToEmptyMixin,
+    NullToEmptySerializer,
     UpdateFieldsSerializer,
     nullable_text,
-    optional_text_fields,
-    read_fields,
+    optional_text,
 )
 
 from apps.products.models import Product
 
 
-class ProductSerializer(NullToEmptyMixin):
-    locals().update(read_fields({
-        "idProduct": "id",
-        "code": "codice",
-        "description": "descrizione",
-        "price": "prezzo",
-        "year": "anno",
-    }))
+class ProductSerializer(NullToEmptySerializer):
+    idProduct = serializers.CharField(source="id")
+    code = serializers.CharField(source="codice")
+    description = serializers.CharField(source="descrizione")
+    price = serializers.CharField(source="prezzo")
+    year = serializers.CharField(source="anno")
 
 
 class ProductUpdateSerializer(UpdateFieldsSerializer):
-    locals().update(optional_text_fields({
-        "code": "codice",
-        "description": "descrizione",
-    }))
+    code = optional_text("codice")
+    description = optional_text("descrizione")
     price = serializers.FloatField(source="prezzo", required=False)
     year = nullable_text("anno")
 
 
-class ProductCreateSerializer(CreatableSerializerMixin, ProductUpdateSerializer):
+class ProductCreateSerializer(ProductUpdateSerializer):
     """Create a product; catalogue identity and price are required."""
 
     code = serializers.CharField(source="codice", max_length=255)
     description = serializers.CharField(source="descrizione", max_length=4000)
     price = serializers.FloatField(source="prezzo")
 
-    create_model = Product
-    read_serializer_class = ProductSerializer
+    def create(self, validated_data):
+        return Product.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        return ProductSerializer(instance).data

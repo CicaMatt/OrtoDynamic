@@ -1,4 +1,5 @@
-import { DataCard, EditInput } from './DataCard';
+import { DataCard } from './DataCard';
+import { EditInput } from './EntityFields';
 import { FieldValue } from '../ui/FieldValue';
 
 export function NoteCard({

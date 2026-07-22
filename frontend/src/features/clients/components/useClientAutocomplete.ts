@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { AutocompleteFieldConfig } from '../../../shared/entity/DataCard';
+import type { AutocompleteFieldConfig } from '../../../shared/entity/EntityFields';
 import type { AutocompleteOption } from '../../../shared/ui/Autocomplete';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { formatBirthDate } from '../../../shared/format/format';
@@ -19,10 +19,7 @@ import { fetchClients } from '../api/clients';
  * returned config to their own client-id field.
  */
 export function useClientAutocomplete(enabled: boolean): AutocompleteFieldConfig {
-  const { data } = useApiData(
-    () => (enabled ? fetchClients() : Promise.resolve([])),
-    [enabled],
-  );
+  const { data } = useApiData(() => (enabled ? fetchClients() : Promise.resolve([])), [enabled]);
 
   return useMemo<AutocompleteFieldConfig>(() => {
     const options: AutocompleteOption[] = [];

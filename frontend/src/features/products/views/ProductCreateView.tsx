@@ -1,13 +1,13 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useEntityEditor } from '../../../app/editing/EntityEditContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
+import { FieldSectionCard } from '../../../shared/entity/EntityFields';
 import { productCreateFields } from '../components/productFields';
-import { useProductEditor } from '../useProductEditor';
 
 export function ProductCreateView() {
   const { navigate } = useNavigation();
-  const { draft, invalidFields, change } = useProductEditor();
+  const { draft, invalidFields, change } = useEntityEditor('product');
   if (!draft) throw new Error('Product create route requires an active create session.');
 
   return (

@@ -1,15 +1,15 @@
 import { useState } from 'react';
+import { useEntityEditor } from '../../../app/editing/EntityEditContext';
 import { deleteDoctor, fetchDoctor } from '../api/doctors';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
+import { FieldSectionCard } from '../../../shared/entity/EntityFields';
 import { NoteCard } from '../../../shared/entity/NoteCard';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { doctorFields } from '../components/doctorFields';
-import { useDoctorEditor } from '../useDoctorEditor';
 
 const doctorActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Medico' },
@@ -19,7 +19,7 @@ const doctorActions = [
 export function DoctorDetailView() {
   const { doctorId } = useRoute('doctor-detail');
   const { navigate, back } = useNavigation();
-  const { draft, startEdit, seed, change } = useDoctorEditor();
+  const { draft, startEdit, seed, change } = useEntityEditor('doctor');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({

@@ -1,14 +1,14 @@
 import { useState } from 'react';
+import { useEntityEditor } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
+import { FieldSectionCard } from '../../../shared/entity/EntityFields';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { deleteProduct, fetchProduct } from '../api/products';
 import { productFields } from '../components/productFields';
-import { useProductEditor } from '../useProductEditor';
 
 const productActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Prodotto' },
@@ -18,7 +18,7 @@ const productActions = [
 export function ProductDetailView() {
   const { productId } = useRoute('product-detail');
   const { navigate, back } = useNavigation();
-  const { draft, startEdit, seed, change } = useProductEditor();
+  const { draft, startEdit, seed, change } = useEntityEditor('product');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({

@@ -18,6 +18,7 @@ from .delivery_form import (
     prepare_delivery_form_fields,
     render_delivery_form,
 )
+from apps.quotes.document_rows import QuoteDocumentItem
 from .scheda import (
     SchedaDocument,
     SchedaItem,
@@ -36,6 +37,7 @@ __all__ = [
     "delivery_form_filename",
     "prepare_delivery_form_fields",
     "render_delivery_form",
+    "QuoteDocumentItem",
     "SchedaDocument",
     "SchedaItem",
     "prepare_scheda",

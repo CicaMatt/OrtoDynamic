@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { getAuthToken, setAuthToken, setUnauthorizedHandler } from '../../shared/api/http';
 import type { AuthUser } from './types';
 import { fetchSession, login as loginRequest, logout as logoutRequest } from './api/auth';

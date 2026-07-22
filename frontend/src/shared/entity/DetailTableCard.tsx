@@ -1,5 +1,6 @@
 import { useRef, type ReactNode } from 'react';
-import { DataCard, EditInput, optionsFromValues } from './DataCard';
+import { DataCard } from './DataCard';
+import { EditInput, optionsFromValues } from './EntityFields';
 import { DataTable, tableColumnValue, type TableColumn } from './DataTable';
 import { TableScrollSlider } from './TableScrollSlider';
 import { FieldValue } from '../ui/FieldValue';

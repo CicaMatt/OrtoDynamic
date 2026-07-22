@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { blankDatesToNull, buildCreatePayload, diffDraft } from '../../../src/app/editing/types';
+import { diffDraft, pickDefinedFields, pickFields } from '../../../src/app/editing/types';
 
 describe('edit payload helpers', () => {
   it('returns only editable values that changed', () => {
@@ -13,29 +13,23 @@ describe('edit payload helpers', () => {
     expect(diffDraft(null, original, ['code'])).toEqual({});
   });
 
-  it('builds a create payload from only the declared keys', () => {
+  it('picks create fields without erasing their types', () => {
     const draft = { code: 'A-1', description: 'Tutore', generatedId: 'ignore' };
 
-    expect(buildCreatePayload(draft, ['code', 'description'])).toEqual({
+    expect(pickFields(draft, ['code', 'description'])).toEqual({
       code: 'A-1',
       description: 'Tutore',
     });
-    expect(buildCreatePayload(null, ['code'])).toEqual({});
   });
 
-  it('normalizes only blank declared date fields to null', () => {
-    const payload: Record<string, unknown> = {
-      deliveryDate: '',
-      cancellationDate: '2026-07-21',
-      description: '',
-    };
-
-    blankDatesToNull(payload, ['deliveryDate', 'cancellationDate']);
-
-    expect(payload).toEqual({
-      deliveryDate: null,
-      cancellationDate: '2026-07-21',
-      description: '',
+  it('picks only defined PATCH fields', () => {
+    expect(
+      pickDefinedFields({ code: undefined, description: 'Tutore', note: '' }, [
+        'code',
+        'description',
+      ]),
+    ).toEqual({
+      description: 'Tutore',
     });
   });
 });

@@ -6,24 +6,28 @@ keys. These selectors resolve those relationships in batches and attach the tran
 attributes consumed by the API serializers. They also assemble the ORM inputs for
 quote-owned documents, keeping database knowledge out of views and renderers.
 """
-from types import SimpleNamespace
 
 from apps.clients.models import Client
 from apps.common.exceptions import NotFoundError
-from apps.common.selectors import attach_many
 from apps.doctors.models import Doctor
 from apps.products.models import Product
+from apps.quotes.document_rows import QuoteDocumentItem
 from apps.quotes.models import Quote, QuoteItem
 from apps.work_orders.models import WorkOrder
 
 
 def quotes_with_people(quotes):
     """Materialize quotes with their referenced client and doctor attached."""
-    return attach_many(
-        quotes,
-        {"id_attr": "id_cliente", "attr": "client", "model": Client},
-        {"id_attr": "id_medico", "attr": "doctor", "model": Doctor},
-    )
+    quotes = list(quotes)
+    client_ids = {quote.id_cliente for quote in quotes if quote.id_cliente}
+    doctor_ids = {quote.id_medico for quote in quotes if quote.id_medico}
+    clients = Client.objects.in_bulk(client_ids)
+    doctors = Doctor.objects.in_bulk(doctor_ids)
+
+    for quote in quotes:
+        quote.client = clients.get(quote.id_cliente)
+        quote.doctor = doctors.get(quote.id_medico)
+    return quotes
 
 
 def quotes_with_read_relations(quotes):
@@ -57,14 +61,6 @@ def quote_items_with_products(quote_id):
     for item in items:
         item.product = products.get(item.codice_nomenclatore)
     return items
-
-
-def _items_with_products(quote_id):
-    """
-    A quote's line items, each paired with its catalogue product (``None`` when the
-    product no longer exists), ordered by id. The products are fetched in one query.
-    """
-    return [(item, item.product) for item in quote_items_with_products(quote_id)]
 
 
 def delivery_form_inputs(quote_id):
@@ -103,14 +99,15 @@ def ddt_item_rows(quote_id):
     — the LEFT JOIN of the original query — so it still prints with its quantity.
     """
     return [
-        SimpleNamespace(
-            codice=product.codice if product else None,
-            descrizione=product.descrizione if product else None,
+        QuoteDocumentItem(
+            codice=item.product.codice if item.product else None,
+            descrizione=item.product.descrizione if item.product else None,
             quantita=item.quantita,
             prezzo=item.prezzo,
             importo=item.importo,
+            sconto=item.sconto,
         )
-        for item, product in _items_with_products(quote_id)
+        for item in quote_items_with_products(quote_id)
     ]
 
 
@@ -121,14 +118,14 @@ def scheda_item_rows(quote_id):
     dropped — the INNER JOIN of the original query.
     """
     return [
-        SimpleNamespace(
-            codice=product.codice,
-            descrizione=product.descrizione,
+        QuoteDocumentItem(
+            codice=item.product.codice,
+            descrizione=item.product.descrizione,
             prezzo=item.prezzo,
             quantita=item.quantita,
             importo=item.importo,
             sconto=item.sconto,
         )
-        for item, product in _items_with_products(quote_id)
-        if product is not None
+        for item in quote_items_with_products(quote_id)
+        if item.product is not None
     ]

@@ -4,12 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkOrderItemsCard } from '../../../src/features/workOrders/views/WorkOrderItemsCard';
 import type { WorkOrder, WorkOrderItem } from '../../../src/features/workOrders/types';
 import { NavigationProvider, useNavigation } from '../../../src/app/navigation/NavigationContext';
-import { EntityEditProvider, useEntityEdit } from '../../../src/app/editing/EntityEditContext';
+import {
+  EntityEditProvider,
+  useEntityEdit,
+  useEntityEditor,
+} from '../../../src/app/editing/EntityEditContext';
 import { useQuoteEditor } from '../../../src/features/quotes/useQuoteEditor';
 import { useWorkOrderEditor } from '../../../src/features/workOrders/useWorkOrderEditor';
 import { useClientEditor } from '../../../src/features/clients/useClientEditor';
 import type { Client, ClientOrthopedic } from '../../../src/features/clients/types';
-import { useProductEditor } from '../../../src/features/products/useProductEditor';
 import { ApiError } from '../../../src/shared/api/http';
 
 const quoteApi = vi.hoisted(() => ({
@@ -205,6 +208,9 @@ function ClientHarness() {
       >
         edit client tabs
       </button>
+      <button onClick={() => editor.changeOrthopedic('shoeSize', '43')}>
+        edit orthopedic only
+      </button>
       <button onClick={() => void edit.save()}>save client</button>
     </>
   );
@@ -231,7 +237,7 @@ function WorkOrderHarness() {
 
 function ProductHarness() {
   const edit = useEntityEdit();
-  const editor = useProductEditor();
+  const editor = useEntityEditor('product');
   return (
     <>
       <output data-testid="save-error">{edit.error ?? ''}</output>
@@ -292,6 +298,22 @@ describe('EntityEditProvider sub-flows', () => {
       phone: '0811234567',
       shoeSize: '42',
     });
+  });
+
+  it('saves an orthopedic-only client edit instead of treating it as empty', async () => {
+    render(
+      <EntityEditProvider>
+        <ClientHarness />
+      </EntityEditProvider>,
+    );
+
+    click('start client edit');
+    click('seed client');
+    click('edit orthopedic only');
+    click('save client');
+
+    await waitFor(() => expect(output('editing')).toBe('false'));
+    expect(clientApi.updateClient).toHaveBeenCalledWith('C-1', { shoeSize: '43' });
   });
 
   it('counts pending quote items as dirty and includes them in the create payload', async () => {

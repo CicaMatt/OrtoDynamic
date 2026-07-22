@@ -1,13 +1,13 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useEntityEditor } from '../../../app/editing/EntityEditContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
+import { FieldSectionCard } from '../../../shared/entity/EntityFields';
 import { healthCompanyCreateFields } from '../components/healthCompanyFields';
-import { useHealthCompanyEditor } from '../useHealthCompanyEditor';
 
 export function HealthCompanyCreateView() {
   const { navigate } = useNavigation();
-  const { draft, invalidFields, change } = useHealthCompanyEditor();
+  const { draft, invalidFields, change } = useEntityEditor('healthCompany');
   if (!draft) throw new Error('Health-company create route requires an active create session.');
 
   return (

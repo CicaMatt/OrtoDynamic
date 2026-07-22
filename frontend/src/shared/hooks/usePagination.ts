@@ -25,7 +25,10 @@ export type PaginationState<T> = {
  * search or filter), so callers must pass a stable/memoized `items` reference
  * — an array rebuilt on every render would pin the view to page 1.
  */
-export function usePagination<T>(items: T[], pageSize: number = DEFAULT_PAGE_SIZE): PaginationState<T> {
+export function usePagination<T>(
+  items: T[],
+  pageSize: number = DEFAULT_PAGE_SIZE,
+): PaginationState<T> {
   const [page, setPage] = useState(1);
   const totalItems = items.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));

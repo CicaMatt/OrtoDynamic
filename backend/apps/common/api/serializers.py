@@ -3,7 +3,7 @@
 from rest_framework import serializers
 
 
-class NullToEmptyMixin(serializers.Serializer):
+class NullToEmptySerializer(serializers.Serializer):
     """Render NULL fields as empty strings and trim stray whitespace."""
 
     @staticmethod
@@ -32,31 +32,6 @@ def nullable_text(source=None):
     return optional_text(source, allow_null=True)
 
 
-def read_fields(mapping, *, field_class=serializers.CharField, **field_kwargs):
-    """Build simple read-only serializer fields from API name -> model attribute."""
-    fields = {}
-    for api_name, source in mapping.items():
-        kwargs = dict(field_kwargs)
-        if source and source != api_name:
-            kwargs["source"] = source
-        fields[api_name] = field_class(**kwargs)
-    return fields
-
-
-def optional_text_fields(mapping):
-    return {
-        api_name: optional_text(source)
-        for api_name, source in mapping.items()
-    }
-
-
-def nullable_text_fields(mapping):
-    return {
-        api_name: nullable_text(source)
-        for api_name, source in mapping.items()
-    }
-
-
 def person_display_name(person):
     """
     Display name "Nome Cognome" for a person-like row (client/doctor), or "" when
@@ -77,23 +52,3 @@ class UpdateFieldsSerializer(serializers.Serializer):
         if validated_data:
             instance.save(update_fields=list(validated_data.keys()))
         return instance
-
-
-class CreatableSerializerMixin:
-    """
-    Adds creation to a writable serializer (typically an `UpdateFieldsSerializer`
-    subclass), so the same field definitions drive both update and create.
-
-    Subclasses set `create_model` (the Django model to insert) and
-    `read_serializer_class` (used to render the created instance back to the
-    client). Validated field names already map to model attributes via `source`.
-    """
-
-    create_model = None
-    read_serializer_class = None
-
-    def create(self, validated_data):
-        return self.create_model.objects.create(**validated_data)
-
-    def to_representation(self, instance):
-        return self.read_serializer_class(instance).data

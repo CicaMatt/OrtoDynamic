@@ -5,6 +5,7 @@ import { formatBirthDate, formatEuro, formatInteger } from '../../../shared/form
 import { FieldValue } from '../../../shared/ui/FieldValue';
 import { EntityReference } from '../../../app/navigation/EntityReference';
 import { fetchWorkOrderItems, updateWorkOrderItem } from '../api/workOrders';
+import { toWorkOrderItemUpdatePayload } from '../editing';
 import type { WorkOrderItem } from '../types';
 import { useWorkOrderEditor } from '../useWorkOrderEditor';
 
@@ -20,11 +21,10 @@ const renderStatus = (value: string) => {
   return STATUS_CODE_LABELS[trimmed] ?? trimmed;
 };
 
-// Statuses that gate the two conditional dates, and the date keys to null-blank.
+// Statuses that gate the two conditional dates.
 const CANCELLED = 'ANNULLATO';
 const DELIVERED = 'CONSEGNATO';
-const DATE_KEYS = ['cancellationDate', 'orderDate', 'partialDeliveryDate', 'deliveryDate'];
-type ItemEdits = Record<string, Record<string, string>>;
+type ItemEdits = Record<string, Partial<WorkOrderItem>>;
 
 function itemsTotal(items: ReadonlyArray<WorkOrderItem>): string {
   if (items.length === 0) return '';
@@ -126,11 +126,7 @@ export function WorkOrderItemsCard({ workOrderId }: { workOrderId: string }) {
           }
         }
         for (const [id, change] of Object.entries(edits)) {
-          const payload: Record<string, string | null> = {};
-          for (const [key, value] of Object.entries(change)) {
-            payload[key] = DATE_KEYS.includes(key) && value === '' ? null : value;
-          }
-          await updateWorkOrderItem(workOrderId, id, payload);
+          await updateWorkOrderItem(workOrderId, id, toWorkOrderItemUpdatePayload(change));
         }
       },
     }),

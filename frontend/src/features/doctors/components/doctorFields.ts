@@ -1,8 +1,12 @@
-import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
-import { doctorCreateRequiredKeys } from '../editConfig';
+import { markRequired, type FieldConfig } from '../../../shared/entity/EntityFields';
 import type { Doctor } from '../types';
 
 export type DoctorField = FieldConfig<Doctor>;
+
+export const doctorCreateRequiredKeys = [
+  'surname',
+  'name',
+] as const satisfies readonly (keyof Doctor)[];
 
 /** Fields shown in the doctor detail/edit form. */
 export const doctorFields: DoctorField[] = [

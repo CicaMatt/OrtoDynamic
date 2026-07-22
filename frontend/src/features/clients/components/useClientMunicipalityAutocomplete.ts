@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { AutocompleteFieldConfig } from '../../../shared/entity/DataCard';
+import type { AutocompleteFieldConfig } from '../../../shared/entity/EntityFields';
 import type { AutocompleteOption } from '../../../shared/ui/Autocomplete';
 import { fetchMunicipalities } from '../../municipalities/api/municipalities';
 import type { Municipality } from '../../municipalities/types';
@@ -46,7 +46,9 @@ export function useClientMunicipalityAutocomplete(
       municipalities.map((municipality) => ({
         value: municipality.name,
         // Province disambiguates the few same-name municipalities (e.g. Brione BS/TN).
-        label: municipality.province ? `${municipality.name} (${municipality.province})` : municipality.name,
+        label: municipality.province
+          ? `${municipality.name} (${municipality.province})`
+          : municipality.name,
         meta: { province: municipality.province, cap: municipality.cap },
       })),
     [municipalities],

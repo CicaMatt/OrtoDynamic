@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from apps.common.api.serializers import NullToEmptyMixin
+from apps.common.api.serializers import NullToEmptySerializer
 
 
 class LoginSerializer(serializers.Serializer):
@@ -13,7 +13,7 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128, trim_whitespace=False)
 
 
-class UserSerializer(NullToEmptyMixin):
+class UserSerializer(NullToEmptySerializer):
     """The authenticated user's public profile, as the frontend consumes it."""
 
     id = serializers.CharField()
@@ -23,16 +23,14 @@ class UserSerializer(NullToEmptyMixin):
     lastName = serializers.CharField(source="last_name")
 
 
-class EmployeeSerializer(UserSerializer):
+class EmployeeSerializer(NullToEmptySerializer):
     """
-    Same account fields as the auth profile, but the management view exposes the
-    account id as `idEmployee` (consistent with the other entities' `id<Entity>`),
-    so the auth profile keeps its `id` while this view does not carry both.
+    Employee management profile, exposing the account id as `idEmployee` to match
+    the other entity list contracts.
     """
 
+    username = serializers.CharField()
+    email = serializers.CharField()
+    firstName = serializers.CharField(source="first_name")
+    lastName = serializers.CharField(source="last_name")
     idEmployee = serializers.CharField(source="id")
-
-    def get_fields(self):
-        fields = super().get_fields()
-        fields.pop("id", None)
-        return fields

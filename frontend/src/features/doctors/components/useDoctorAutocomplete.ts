@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { AutocompleteFieldConfig } from '../../../shared/entity/DataCard';
+import type { AutocompleteFieldConfig } from '../../../shared/entity/EntityFields';
 import type { AutocompleteOption } from '../../../shared/ui/Autocomplete';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { fetchDoctors } from '../api/doctors';
@@ -17,10 +17,7 @@ import { fetchDoctors } from '../api/doctors';
  * config to their own doctor-id field.
  */
 export function useDoctorAutocomplete(enabled: boolean): AutocompleteFieldConfig {
-  const { data } = useApiData(
-    () => (enabled ? fetchDoctors() : Promise.resolve([])),
-    [enabled],
-  );
+  const { data } = useApiData(() => (enabled ? fetchDoctors() : Promise.resolve([])), [enabled]);
 
   return useMemo<AutocompleteFieldConfig>(() => {
     const options: AutocompleteOption[] = [];

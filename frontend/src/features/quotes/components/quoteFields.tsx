@@ -1,10 +1,20 @@
-import { markRequired, optionsFromValues, type FieldConfig } from '../../../shared/entity/DataCard';
-import type { FieldSectionConfig } from '../../../shared/entity/FieldSectionCard';
+import {
+  markRequired,
+  optionsFromValues,
+  type FieldConfig,
+  type FieldSectionConfig,
+} from '../../../shared/entity/EntityFields';
 import { EntityReference } from '../../../app/navigation/EntityReference';
-import { quoteCreateRequiredKeys } from '../editConfig';
 import type { Quote } from '../types';
 
 type QuoteField = FieldConfig<Quote>;
+
+export const quoteCreateRequiredKeys = [
+  'clientId',
+  'quoteType',
+  'diagnosis',
+  'detailedPrescription',
+] as const satisfies readonly (keyof Quote)[];
 
 // Stored verbatim in `tipologia_preventivo` - values must match the database exactly.
 const detailTypeOptions = optionsFromValues(['Asl', 'Privato', 'Inail']);

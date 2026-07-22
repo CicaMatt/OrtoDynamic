@@ -56,9 +56,7 @@ export function DocumentOptionsDialog({
         <h3 id={titleId} className="font-headline-md text-headline-md font-bold text-black">
           {title}
         </h3>
-        <p className="mt-[10px] font-body-md text-body-md text-on-surface-variant">
-          {description}
-        </p>
+        <p className="mt-[10px] font-body-md text-body-md text-on-surface-variant">{description}</p>
         {children}
       </div>
     </div>

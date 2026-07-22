@@ -1,6 +1,7 @@
 """Thin endpoints for the Client resource."""
 
 from django.utils import timezone
+from rest_framework import generics
 from rest_framework.views import APIView
 
 from apps.clients.documents import (
@@ -10,7 +11,6 @@ from apps.clients.documents import (
 )
 from apps.clients.models import Client
 from apps.common.api.views import (
-    ReadDetailAPIView,
     ReadUpdateDetailAPIView,
     UnpaginatedListCreateAPIView,
     inline_pdf_response,
@@ -37,7 +37,7 @@ class ClientDetailView(ReadUpdateDetailAPIView):
     queryset = Client.objects.all()
 
 
-class ClientOrthopedicView(ReadDetailAPIView):
+class ClientOrthopedicView(generics.RetrieveAPIView):
     serializer_class = ClientOrthopedicSerializer
     queryset = Client.objects.all()
 

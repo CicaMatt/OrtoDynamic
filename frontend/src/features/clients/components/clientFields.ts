@@ -1,8 +1,18 @@
-import { markRequired, type FieldConfig } from '../../../shared/entity/DataCard';
-import { clientCreateRequiredKeys } from '../editConfig';
+import { markRequired, type FieldConfig } from '../../../shared/entity/EntityFields';
 import type { Client } from '../types';
 
 export type ClientField = FieldConfig<Client>;
+
+export const clientCreateRequiredKeys = [
+  'name',
+  'surname',
+  'birthDate',
+  'gender',
+  'address',
+  'province',
+  'city',
+  'phone',
+] as const satisfies readonly (keyof Client)[];
 
 /** Anagrafica, address, and contact field groups — shared by the detail and create forms. */
 export const personalFields: ClientField[] = [

@@ -2,17 +2,17 @@
 
 from rest_framework import serializers
 
-from apps.common.api.serializers import NullToEmptyMixin
+from apps.common.api.serializers import NullToEmptySerializer
 
 
-class StatusSerializer(NullToEmptyMixin):
+class StatusSerializer(NullToEmptySerializer):
     """A workflow state — the displayable `nome` of a `stato` row, plus its id."""
 
     id = serializers.IntegerField()
     name = serializers.CharField(source="nome")
 
 
-class StatusTransitionSerializer(NullToEmptyMixin):
+class StatusTransitionSerializer(NullToEmptySerializer):
     """A permitted state change — the from/to states of a `stato_check` row."""
 
     id = serializers.IntegerField()

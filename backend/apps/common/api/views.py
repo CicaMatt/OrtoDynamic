@@ -26,10 +26,6 @@ class UnpaginatedListCreateAPIView(generics.ListCreateAPIView):
         return self.serializer_class
 
 
-class ReadDetailAPIView(generics.RetrieveAPIView):
-    pass
-
-
 class ReadUpdateDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     write_serializer_class = None
 

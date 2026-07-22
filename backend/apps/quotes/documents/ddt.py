@@ -14,6 +14,7 @@ quote, its client and its line items into the document's display strings, and
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -34,6 +35,7 @@ from apps.common.documents.pdf_layout import (
     table_empty,
     table_row,
 )
+from apps.quotes.document_rows import QuoteDocumentItem
 
 # Optional background template; absent in the current system, so the default path
 # normally does not exist and the document renders on a blank page.
@@ -77,15 +79,21 @@ class DdtDocument:
     show_prices: bool = False
 
 
-def prepare_ddt(quote, client, items, *, today: date, show_prices: bool = False) -> DdtDocument:
+def prepare_ddt(
+    quote,
+    client,
+    items: Iterable[QuoteDocumentItem],
+    *,
+    today: date,
+    show_prices: bool = False,
+) -> DdtDocument:
     """
     Map a quote, its client and its line items onto the DDT's display strings.
 
-    `items` is any sequence of objects exposing `codice`, `descrizione`,
-    `quantita`, and optionally `prezzo`/`importo`. Descriptions are truncated and
-    quantities/prices formatted here so `render_ddt` only lays out finished
-    strings. `today` is injected to keep this pure (the view passes
-    `timezone.localdate()`).
+    `items` contains the explicitly shaped product and quote-line values selected
+    for document generation. Descriptions are truncated and quantities/prices
+    formatted here so `render_ddt` only lays out finished strings. `today` is
+    injected to keep this pure (the view passes `timezone.localdate()`).
     """
     description_limit = _DESCRIPTION_WITH_PRICES_LIMIT if show_prices else _DESCRIPTION_LIMIT
     return DdtDocument(
@@ -99,8 +107,8 @@ def prepare_ddt(quote, client, items, *, today: date, show_prices: bool = False)
                 codice=item.codice or "",
                 descrizione=_truncate(item.descrizione or "", limit=description_limit),
                 quantita=whole_or_italian_decimal(item.quantita),
-                prezzo_unitario=italian_money(getattr(item, "prezzo", None)),
-                importo=italian_money(getattr(item, "importo", None)),
+                prezzo_unitario=italian_money(item.prezzo),
+                importo=italian_money(item.importo),
             )
             for item in items
         ),

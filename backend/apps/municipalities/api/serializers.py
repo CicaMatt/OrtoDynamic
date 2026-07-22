@@ -2,10 +2,10 @@
 
 from rest_framework import serializers
 
-from apps.common.api.serializers import NullToEmptyMixin
+from apps.common.api.serializers import NullToEmptySerializer
 
 
-class MunicipalitySerializer(NullToEmptyMixin):
+class MunicipalitySerializer(NullToEmptySerializer):
     """Name plus the province/CAP used to auto-fill the client address."""
 
     name = serializers.CharField()

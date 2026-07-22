@@ -1,10 +1,36 @@
 import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '../../../shared/api/http';
 import type { Quote, QuoteItem, QuoteItemCreate, QuoteStatusTransitions } from '../types';
 
-export type QuoteUpdate = Record<string, string | number | null>;
+export type QuoteFieldsPayload = {
+  clientId: number | null;
+  doctorId: number | null;
+  quoteNumber: string;
+  quoteType: string;
+  creationDate: string | null;
+  quoteDate: string | null;
+  entryBy: string;
+  diagnosis: string;
+  therapeuticProgram: string;
+  detailedPrescription: string;
+  authorizationNumber: string;
+  acceptanceDate: string | null;
+  authorizationReceiptDate: string | null;
+  expiryDays: string;
+  measurementsOk: string;
+  commissionsPaid: string;
+  orderNumber: string;
+  model: string;
+  measurements: string;
+  invoiceNumber: string;
+  note: string;
+  privateNote: string;
+  finalNote: string;
+};
+
+export type QuoteUpdatePayload = Partial<QuoteFieldsPayload>;
 
 /** Create payload: the quote fields plus any initial line items, sent in one request. */
-export type QuoteCreatePayload = QuoteUpdate & { items?: QuoteItemCreate[] };
+export type QuoteCreatePayload = QuoteFieldsPayload & { items?: QuoteItemCreate[] };
 
 /** The editable money inputs of a line item; `null` clears the value. */
 export type QuoteItemUpdate = { quantity: number | null; discount: number | null };
@@ -50,7 +76,7 @@ export function changeQuoteStatus(id: string, status: string): Promise<Quote> {
   return apiPatch<Quote>(`/quotes/${id}/status/`, { status });
 }
 
-export function updateQuote(id: string, changes: QuoteUpdate): Promise<unknown> {
+export function updateQuote(id: string, changes: QuoteUpdatePayload): Promise<unknown> {
   return apiPatch(`/quotes/${id}/`, changes);
 }
 

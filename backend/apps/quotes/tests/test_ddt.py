@@ -22,6 +22,7 @@ from apps.quotes.documents.ddt import (
     prepare_ddt,
     render_ddt,
 )
+from apps.quotes.document_rows import QuoteDocumentItem
 
 TODAY = date(2026, 6, 19)
 
@@ -50,13 +51,20 @@ def make_client(**overrides):
     return SimpleNamespace(**base)
 
 
-def item(codice="C1", descrizione="Tutore", quantita=1.0, prezzo=107.91, importo=215.82):
-    return SimpleNamespace(
+def item(
+    codice="C1",
+    descrizione="Tutore",
+    quantita=1.0,
+    prezzo=107.91,
+    importo=215.82,
+):
+    return QuoteDocumentItem(
         codice=codice,
         descrizione=descrizione,
         quantita=quantita,
         prezzo=prezzo,
         importo=importo,
+        sconto=None,
     )
 
 

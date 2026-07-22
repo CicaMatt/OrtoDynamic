@@ -15,65 +15,66 @@ export type EntityDraftMap = {
 };
 
 export type EntityKind = keyof EntityDraftMap;
+export type EntityDraft = EntityDraftMap[EntityKind];
 export type EditTarget = { [K in EntityKind]: { type: K; id: string } }[EntityKind];
 export type EditMode = 'edit' | 'create';
 export type SaveResult = { ok: boolean; created?: EditTarget };
 
-export type EditPayloadContext = {
-  clientOrthopedicChanges: Record<string, unknown>;
-  quoteItemDrafts: QuoteItemDraft[];
+/** Domain extras carried by the three non-trivial edit sessions. */
+export type EditOperationContext = {
+  clientOrthopedicChanges: Partial<ClientOrthopedic>;
+  quoteItemDrafts: readonly QuoteItemDraft[];
 };
 
-export type EntityEditConfig<K extends EntityKind> = {
+/**
+ * The complete feature-owned edit flow used by the global session lifecycle.
+ * `create` returns the new id directly; payload conversion and API calls stay
+ * inside the feature instead of being reconstructed by the session.
+ */
+export type EntityEditOperations<K extends EntityKind> = {
   editableKeys: readonly (keyof EntityDraftMap[K])[];
   requiredKeys?: readonly (keyof EntityDraftMap[K])[];
-  makeEmptyDraft?: () => EntityDraftMap[K];
-  create?: (payload: Record<string, unknown>) => Promise<EntityDraftMap[K]>;
-  update: (id: string, payload: Record<string, unknown>) => Promise<unknown>;
-  getCreatedId?: (created: EntityDraftMap[K]) => string;
-  buildCreatePayload?: (
-    draft: EntityDraftMap[K],
-    context: EditPayloadContext,
-  ) => Record<string, unknown>;
-  buildUpdatePayload?: (
-    changes: Record<string, unknown>,
-    context: EditPayloadContext,
-  ) => Record<string, unknown>;
-  applyFieldChange?: (
-    draft: EntityDraftMap[K],
-    key: keyof EntityDraftMap[K],
-    value: string,
-  ) => EntityDraftMap[K] | null;
-  clientOrthopedicEditableKeys?: readonly (keyof ClientOrthopedic)[];
+  emptyDraft?: () => EntityDraftMap[K];
+  create?: (draft: EntityDraftMap[K], context: EditOperationContext) => Promise<string>;
+  update: (
+    id: string,
+    changes: Partial<EntityDraftMap[K]>,
+    context: EditOperationContext,
+  ) => Promise<void>;
 };
 
-export function diffDraft(
-  draft: object | null,
-  original: object | null,
-  keys: readonly PropertyKey[],
-) {
-  const changes: Record<string, unknown> = {};
+/** Pick a known set of fields while preserving their actual key/value types. */
+export function pickFields<T extends object, K extends keyof T>(
+  value: T,
+  keys: readonly K[],
+): Pick<T, K> {
+  const picked = {} as Pick<T, K>;
+  for (const key of keys) picked[key] = value[key];
+  return picked;
+}
+
+/** Pick only fields that are present in a PATCH-style partial value. */
+export function pickDefinedFields<T extends object, K extends keyof T>(
+  value: Partial<T>,
+  keys: readonly K[],
+): Partial<Pick<T, K>> {
+  const picked: Partial<Pick<T, K>> = {};
+  for (const key of keys) {
+    if (value[key] !== undefined) picked[key] = value[key];
+  }
+  return picked;
+}
+
+/** Return only declared fields whose draft value differs from the original. */
+export function diffDraft<T extends object, K extends keyof T>(
+  draft: T | null,
+  original: T | null,
+  keys: readonly K[],
+): Partial<Pick<T, K>> {
+  const changes: Partial<Pick<T, K>> = {};
   if (!draft || !original) return changes;
   for (const key of keys) {
-    if (Reflect.get(draft, key) !== Reflect.get(original, key)) {
-      changes[String(key)] = Reflect.get(draft, key);
-    }
+    if (draft[key] !== original[key]) changes[key] = draft[key];
   }
   return changes;
-}
-
-export function buildCreatePayload(
-  draft: object | null,
-  keys: readonly PropertyKey[],
-): Record<string, unknown> {
-  const payload: Record<string, unknown> = {};
-  if (!draft) return payload;
-  for (const key of keys) payload[String(key)] = Reflect.get(draft, key);
-  return payload;
-}
-
-export function blankDatesToNull(payload: Record<string, unknown>, dateKeys: readonly string[]) {
-  for (const key of dateKeys) {
-    if (payload[key] === '') payload[key] = null;
-  }
 }

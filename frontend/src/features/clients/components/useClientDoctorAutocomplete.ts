@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { AutocompleteFieldConfig } from '../../../shared/entity/DataCard';
+import type { AutocompleteFieldConfig } from '../../../shared/entity/EntityFields';
 import { useDoctorAutocomplete } from '../../doctors/components/useDoctorAutocomplete';
 import type { Client } from '../types';
 

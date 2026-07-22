@@ -8,7 +8,6 @@ while document selectors return the complete ORM bundle needed by a renderer.
 
 from apps.clients.models import Client
 from apps.common.exceptions import NotFoundError
-from apps.common.selectors import attach_many
 from apps.products.models import Product
 from apps.quotes.models import Quote, QuoteItem
 from apps.work_orders.models import PeriodicCheck, WorkOrder, WorkOrderItem
@@ -16,11 +15,18 @@ from apps.work_orders.models import PeriodicCheck, WorkOrder, WorkOrderItem
 
 def work_orders_with_read_relations(work_orders):
     """Materialize work orders with their client and source quote attached."""
-    return attach_many(
-        work_orders,
-        {"id_attr": "id_cliente", "attr": "client", "model": Client},
-        {"id_attr": "id_preventivo", "attr": "quote", "model": Quote},
-    )
+    work_orders = list(work_orders)
+    client_ids = {work_order.id_cliente for work_order in work_orders if work_order.id_cliente}
+    quote_ids = {
+        work_order.id_preventivo for work_order in work_orders if work_order.id_preventivo
+    }
+    clients = Client.objects.in_bulk(client_ids)
+    quotes = Quote.objects.in_bulk(quote_ids)
+
+    for work_order in work_orders:
+        work_order.client = clients.get(work_order.id_cliente)
+        work_order.quote = quotes.get(work_order.id_preventivo)
+    return work_orders
 
 
 def work_order_items_with_quote_items_and_products(work_order_id):

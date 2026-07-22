@@ -42,8 +42,12 @@ export function LoginView() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-[400px] max-w-full rounded-[12px] bg-white p-[36px] shadow-[0_16px_48px_rgba(0,0,0,0.16)]">
         <div className="mb-[28px] text-center">
-          <h1 className="font-headline-lg text-headline-lg font-bold text-primary-container">OrtoDynamic</h1>
-          <p className="mt-[6px] font-body-sm text-body-sm text-on-surface-variant">Accedi per continuare</p>
+          <h1 className="font-headline-lg text-headline-lg font-bold text-primary-container">
+            OrtoDynamic
+          </h1>
+          <p className="mt-[6px] font-body-sm text-body-sm text-on-surface-variant">
+            Accedi per continuare
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-[18px]">

@@ -1,9 +1,10 @@
 """
 Build the "Scheda Progetto" project sheet for a quote.
 
-A single A4 page generated entirely in code: the shared company letterhead, the
+An A4 document generated entirely in code: the shared company letterhead, the
 project/client header, the diagnosi and protesi free-text blocks, and a line-items
-table with running totals. Unlike the legacy overlay this loses nothing — the
+table with running totals. Content starts on one page and continues onto additional
+letterheaded pages when needed. Unlike the legacy overlay this loses nothing — the
 diagnosi/protesi and item descriptions are rendered in full (word-wrapped) instead
 of being truncated to fixed-length lines.
 
@@ -13,6 +14,7 @@ PDF bytes.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,6 +33,7 @@ from apps.common.documents.pdf_layout import (
     table_empty,
     table_row,
 )
+from apps.quotes.document_rows import QuoteDocumentItem
 
 # Lab/accreditation code shown in the header.
 _LAB_CODE = "ITCA01059027"
@@ -113,7 +116,9 @@ class SchedaDocument:
     totale: str
 
 
-def prepare_scheda(quote, client, items) -> SchedaDocument:
+def prepare_scheda(
+    quote, client, items: Iterable[QuoteDocumentItem]
+) -> SchedaDocument:
     """
     Map a quote, its client and its line items onto the sheet's display values.
 
@@ -121,8 +126,8 @@ def prepare_scheda(quote, client, items) -> SchedaDocument:
     telefono are kept as-is; dates render ``DD/MM/YY``. Free text and item
     descriptions are kept in full (the renderer wraps them). Quantities and unit
     prices print as-is (whole numbers without a decimal part); line and document
-    totals round to two decimals. `items` is any sequence exposing `codice`,
-    `descrizione`, `prezzo`, `quantita`, `importo`, `sconto`.
+    totals round to two decimals. `items` contains the explicitly shaped product
+    and quote-line values selected for document generation.
     """
     sub_total = 0.0
     prepared_items = []

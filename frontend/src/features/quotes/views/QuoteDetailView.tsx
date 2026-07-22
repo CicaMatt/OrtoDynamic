@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from '../../../app/navigation/NavigationConte
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionList } from '../../../shared/entity/FieldSectionCard';
+import { FieldSectionList } from '../../../shared/entity/EntityFields';
 import {
   DocumentErrorAlert,
   DocumentOptionsDialog,

@@ -1,8 +1,8 @@
 import { useNavigation } from '../../../app/navigation/NavigationContext';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityCreatePageHeader } from '../../../shared/entity/EntityPageHeader';
-import { DataCard, InfoBlock } from '../../../shared/entity/DataCard';
-import { FieldSectionList } from '../../../shared/entity/FieldSectionCard';
+import { DataCard } from '../../../shared/entity/DataCard';
+import { FieldSectionList, InfoBlock } from '../../../shared/entity/EntityFields';
 import { Autocomplete } from '../../../shared/ui/Autocomplete';
 import { quoteCreateNoteSections, quoteCreateSectionsBeforeNotes } from '../components/quoteFields';
 import { draftItemsTotal } from '../components/quoteItemMath';

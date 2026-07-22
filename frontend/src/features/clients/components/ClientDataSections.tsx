@@ -1,5 +1,7 @@
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
-import type { AutocompleteFieldConfig } from '../../../shared/entity/DataCard';
+import {
+  FieldSectionCard,
+  type AutocompleteFieldConfig,
+} from '../../../shared/entity/EntityFields';
 import { NoteCard } from '../../../shared/entity/NoteCard';
 import { EntityReference } from '../../../app/navigation/EntityReference';
 import type { Client } from '../types';

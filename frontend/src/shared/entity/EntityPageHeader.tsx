@@ -32,11 +32,16 @@ export function EntityPageHeader({
             const isLast = index === crumbs.length - 1;
             return (
               <Fragment key={crumb.label}>
-                {index > 0 && <Icon name="chevron_right" className="text-[18px] text-on-surface-variant" />}
+                {index > 0 && (
+                  <Icon name="chevron_right" className="text-[18px] text-on-surface-variant" />
+                )}
                 {isLast || !crumb.onClick ? (
                   <span className="font-semibold text-black">{crumb.label}</span>
                 ) : (
-                  <button onClick={crumb.onClick} className="text-on-surface-variant hover:text-black">
+                  <button
+                    onClick={crumb.onClick}
+                    className="text-on-surface-variant hover:text-black"
+                  >
                     {crumb.label}
                   </button>
                 )}

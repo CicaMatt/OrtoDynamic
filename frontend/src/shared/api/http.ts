@@ -117,7 +117,10 @@ export function apiGet<T>(path: string): Promise<T> {
 export async function apiGetBlob(path: string): Promise<{ blob: Blob; filename: string | null }> {
   const response = await performRequest('GET', path);
   const blob = await response.blob();
-  return { blob, filename: filenameFromContentDisposition(response.headers.get('Content-Disposition')) };
+  return {
+    blob,
+    filename: filenameFromContentDisposition(response.headers.get('Content-Disposition')),
+  };
 }
 
 /** POST a JSON body to create a resource (body optional for action endpoints). */

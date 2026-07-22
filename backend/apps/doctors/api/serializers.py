@@ -5,29 +5,24 @@ Serializers for the Doctor resource backed by the legacy `medici` table.
 from rest_framework import serializers
 
 from apps.common.api.serializers import (
-    CreatableSerializerMixin,
-    NullToEmptyMixin,
+    NullToEmptySerializer,
     UpdateFieldsSerializer,
     nullable_text,
-    nullable_text_fields,
-    optional_text_fields,
-    read_fields,
+    optional_text,
 )
 
 from apps.doctors.models import Doctor
 
 
-class DoctorListSerializer(NullToEmptyMixin):
+class DoctorListSerializer(NullToEmptySerializer):
     """Columns shown in the Medici table: every column except `note`."""
 
-    locals().update(read_fields({
-        "idDoctor": "id",
-        "surname": "cognome",
-        "name": "nome",
-        "address": "indirizzo",
-        "phone": "telefono",
-        "email": "mail",
-    }))
+    idDoctor = serializers.CharField(source="id")
+    surname = serializers.CharField(source="cognome")
+    name = serializers.CharField(source="nome")
+    address = serializers.CharField(source="indirizzo")
+    phone = serializers.CharField(source="telefono")
+    email = serializers.CharField(source="mail")
 
 
 class DoctorDetailSerializer(DoctorListSerializer):
@@ -43,23 +38,22 @@ class DoctorUpdateSerializer(UpdateFieldsSerializer):
     The doctor id is intentionally not writable.
     """
 
-    locals().update(optional_text_fields({
-        "surname": "cognome",
-        "name": "nome",
-    }))
-    locals().update(nullable_text_fields({
-        "address": "indirizzo",
-        "phone": "telefono",
-        "email": "mail",
-    }))
+    surname = optional_text("cognome")
+    name = optional_text("nome")
+    address = nullable_text("indirizzo")
+    phone = nullable_text("telefono")
+    email = nullable_text("mail")
     note = nullable_text()
 
 
-class DoctorCreateSerializer(CreatableSerializerMixin, DoctorUpdateSerializer):
+class DoctorCreateSerializer(DoctorUpdateSerializer):
     """Create a doctor; identity fields are true persistence requirements."""
 
     surname = serializers.CharField(source="cognome", max_length=255)
     name = serializers.CharField(source="nome", max_length=255)
 
-    create_model = Doctor
-    read_serializer_class = DoctorDetailSerializer
+    def create(self, validated_data):
+        return Doctor.objects.create(**validated_data)
+
+    def to_representation(self, instance):
+        return DoctorDetailSerializer(instance).data

@@ -1,7 +1,15 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../../../shared/api/http';
 import type { Product } from '../types';
 
-export type ProductUpdate = Record<string, string | number | null>;
+export type ProductFieldsPayload = {
+  code: string;
+  description: string;
+  price: number | null;
+  year: string | null;
+};
+
+export type ProductCreatePayload = ProductFieldsPayload;
+export type ProductUpdatePayload = Partial<ProductFieldsPayload>;
 
 export function fetchProducts(): Promise<Product[]> {
   return apiGet<Product[]>('/products/');
@@ -16,7 +24,7 @@ export function fetchProduct(id: string): Promise<Product> {
   return apiGet<Product>(`/products/${id}/`);
 }
 
-export function updateProduct(id: string, changes: ProductUpdate): Promise<unknown> {
+export function updateProduct(id: string, changes: ProductUpdatePayload): Promise<unknown> {
   return apiPatch(`/products/${id}/`, changes);
 }
 
@@ -25,6 +33,6 @@ export function deleteProduct(id: string): Promise<void> {
 }
 
 /** Create a new product; the API returns the created record (with its new id). */
-export function createProduct(values: ProductUpdate): Promise<Product> {
+export function createProduct(values: ProductCreatePayload): Promise<Product> {
   return apiPost<Product>('/products/', values);
 }

@@ -132,7 +132,9 @@ export function Autocomplete({
                   }}
                   onMouseEnter={() => setActiveIndex(index)}
                   className={`block w-full px-[11px] py-[7px] text-left font-body-md text-body-md ${
-                    index === activeIndex ? 'bg-secondary/10 text-secondary' : 'text-on-surface hover:bg-surface-container-low'
+                    index === activeIndex
+                      ? 'bg-secondary/10 text-secondary'
+                      : 'text-on-surface hover:bg-surface-container-low'
                   }`}
                 >
                   {option.label}

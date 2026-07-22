@@ -1,14 +1,14 @@
 import { useState } from 'react';
+import { useEntityEditor } from '../../../app/editing/EntityEditContext';
 import { useEntityDetail } from '../../../app/editing/useEntityDetail';
 import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { DeleteConfirmationDialog } from '../../../shared/entity/DeleteConfirmationDialog';
 import { EntityDetailLayout } from '../../../shared/entity/EntityDetailLayout';
 import { EntityPageHeader } from '../../../shared/entity/EntityPageHeader';
-import { FieldSectionCard } from '../../../shared/entity/FieldSectionCard';
+import { FieldSectionCard } from '../../../shared/entity/EntityFields';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import { deleteHealthCompany, fetchHealthCompany } from '../api/healthCompanies';
 import { healthCompanyFields } from '../components/healthCompanyFields';
-import { useHealthCompanyEditor } from '../useHealthCompanyEditor';
 
 const healthCompanyActions = [
   { id: 'edit', icon: 'edit', label: 'Modifica Dati Azienda' },
@@ -18,7 +18,7 @@ const healthCompanyActions = [
 export function HealthCompanyDetailView() {
   const { healthCompanyId } = useRoute('health-company-detail');
   const { navigate, back } = useNavigation();
-  const { draft, startEdit, seed, change } = useHealthCompanyEditor();
+  const { draft, startEdit, seed, change } = useEntityEditor('healthCompany');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { data, loading, error, isEditing } = useEntityDetail({

@@ -4,12 +4,14 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from apps.quotes import selectors
+from apps.quotes.document_rows import QuoteDocumentItem
 
 
 def test_quotes_with_read_relations_batches_people_and_first_work_order():
     quotes = [
         SimpleNamespace(id=500, id_cliente=21, id_medico=31),
         SimpleNamespace(id=501, id_cliente=22, id_medico=None),
+        SimpleNamespace(id=502, id_cliente=23, id_medico=32),
     ]
     clients = {21: SimpleNamespace(id=21), 22: SimpleNamespace(id=22)}
     doctors = {31: SimpleNamespace(id=31)}
@@ -27,14 +29,19 @@ def test_quotes_with_read_relations_batches_people_and_first_work_order():
     ):
         assert selectors.quotes_with_read_relations(quotes) == quotes
 
-    client_query.assert_called_once_with({21, 22})
-    doctor_query.assert_called_once_with({31})
-    work_order_filter.assert_called_once_with(id_preventivo__in=[500, 501])
+    client_query.assert_called_once_with({21, 22, 23})
+    doctor_query.assert_called_once_with({31, 32})
+    work_order_filter.assert_called_once_with(id_preventivo__in=[500, 501, 502])
     work_order_query.order_by.assert_called_once_with("id")
     assert quotes[0].client is clients[21]
     assert quotes[0].doctor is doctors[31]
     assert quotes[0].work_order is first
+    assert quotes[1].client is clients[22]
+    assert quotes[1].doctor is None
     assert quotes[1].work_order is None
+    assert quotes[2].client is None
+    assert quotes[2].doctor is None
+    assert quotes[2].work_order is None
 
 
 def test_quote_items_with_products_uses_two_queries_and_keeps_missing_products():
@@ -61,10 +68,61 @@ def test_quote_items_with_products_uses_two_queries_and_keeps_missing_products()
     assert items[1].product is None
 
 
+def test_ddt_rows_have_an_explicit_shape_and_keep_missing_products():
+    items = [
+        SimpleNamespace(
+            product=SimpleNamespace(codice="T-7", descrizione="Tutore"),
+            quantita=2.0,
+            prezzo=40.0,
+            importo=80.0,
+            sconto=None,
+        ),
+        SimpleNamespace(
+            product=None,
+            quantita=1.0,
+            prezzo=15.0,
+            importo=15.0,
+            sconto=10.0,
+        ),
+    ]
+
+    with patch.object(selectors, "quote_items_with_products", return_value=items):
+        rows = selectors.ddt_item_rows(500)
+
+    assert rows == [
+        QuoteDocumentItem("T-7", "Tutore", 2.0, 40.0, 80.0, None),
+        QuoteDocumentItem(None, None, 1.0, 15.0, 15.0, 10.0),
+    ]
+
+
+def test_scheda_rows_have_an_explicit_shape_and_drop_missing_products():
+    items = [
+        SimpleNamespace(
+            product=SimpleNamespace(codice="T-7", descrizione="Tutore"),
+            quantita=2.0,
+            prezzo=40.0,
+            importo=72.0,
+            sconto=10.0,
+        ),
+        SimpleNamespace(
+            product=None,
+            quantita=1.0,
+            prezzo=15.0,
+            importo=15.0,
+            sconto=None,
+        ),
+    ]
+
+    with patch.object(selectors, "quote_items_with_products", return_value=items):
+        rows = selectors.scheda_item_rows(500)
+
+    assert rows == [QuoteDocumentItem("T-7", "Tutore", 2.0, 40.0, 72.0, 10.0)]
+
+
 def test_ddt_inputs_bundle_the_required_client_and_prepared_rows():
     quote = SimpleNamespace(id=500, id_cliente=21)
     client = SimpleNamespace(id=21)
-    rows = [SimpleNamespace(codice="T-7")]
+    rows = [QuoteDocumentItem("T-7", "Tutore", 2.0, 40.0, 80.0, None)]
     quote_query = MagicMock()
     quote_query.first.return_value = quote
     client_query = MagicMock()

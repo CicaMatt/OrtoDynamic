@@ -78,7 +78,8 @@ export function StatusChangeDialog({
       >
         <h3 className="font-headline-md text-headline-md font-bold text-black">{title}</h3>
         <p className="mt-[10px] font-body-md text-body-md text-on-surface-variant">
-          Stato attuale: <span className="font-semibold text-on-surface">{currentStatus || '—'}</span>
+          Stato attuale:{' '}
+          <span className="font-semibold text-on-surface">{currentStatus || '—'}</span>
         </p>
 
         {pending ? (
@@ -113,7 +114,9 @@ export function StatusChangeDialog({
           <>
             <div className="mt-[20px]">
               {loading ? (
-                <p className="font-body-md text-body-md text-on-surface-variant">Caricamento stati…</p>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  Caricamento stati…
+                </p>
               ) : error ? (
                 <p className="font-body-md text-body-md text-error">{error}</p>
               ) : options.length === 0 ? (
