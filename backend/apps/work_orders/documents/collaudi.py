@@ -7,10 +7,6 @@ is used at full original size (no inset, no scaling — unlike the other forms) 
 values are stamped at absolute millimetre positions, reproducing the legacy
 FPDF + FPDI script (`generacollaudi.php`).
 
-This document is keyed on a **work order** (lavorazione), but it lives here with the
-other PDF generators and their shared template assets; the work-order-scoped HTTP
-endpoint lives in `apps.work_orders`.
-
 `prepare_collaudi` turns the work order, its client/quote and its line/check rows
 into the document's display values (pure, DB/HTTP-free); `render_collaudi` stamps
 them over the two template pages and returns the PDF bytes (path injectable).
@@ -21,9 +17,9 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from .fpdf_canvas import FpdfCanvas
-from .formatting import date_long_dash, upper_or_empty
-from .pdf_background import overlay_full_size
+from apps.common.documents.formatting import date_long_dash, upper_or_empty
+from apps.common.documents.fpdf_canvas import FpdfCanvas
+from apps.common.documents.pdf_background import overlay_full_size
 
 TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "schedacollaudi.pdf"
 

@@ -18,16 +18,16 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from .fpdf_canvas import FpdfCanvas
-from .formatting import (
+from apps.common.documents.fpdf_canvas import FpdfCanvas
+from apps.common.documents.formatting import (
     client_address_line,
     date_long_slash,
     italian_money,
     person_name,
     whole_or_italian_decimal,
 )
-from .pdf_background import compose_on_template
-from .pdf_layout import (
+from apps.common.documents.pdf_background import compose_on_template
+from apps.common.documents.pdf_layout import (
     new_titled_document,
     section,
     signature_footer,

@@ -3,6 +3,11 @@
 from django.utils import timezone
 from rest_framework.views import APIView
 
+from apps.clients.documents import (
+    prepare_privacy_form_fields,
+    privacy_form_filename,
+    render_privacy_form,
+)
 from apps.clients.models import Client
 from apps.common.api.views import (
     ReadDetailAPIView,
@@ -11,11 +16,6 @@ from apps.common.api.views import (
     inline_pdf_response,
 )
 from apps.common.exceptions import NotFoundError, TemplateAssetMissing
-from apps.quotes.documents import (
-    prepare_privacy_form_fields,
-    privacy_form_filename,
-    render_privacy_form,
-)
 from .serializers import (
     ClientCreateSerializer,
     ClientDetailSerializer,
@@ -47,9 +47,10 @@ class ClientPrivacyFormView(APIView):
     Stream a client's "Modulo di privacy" consent form as an inline PDF.
 
     The first name, surname and today's date are stamped onto a pre-printed
-    template (see `apps.quotes.documents.privacy_form`). The body is a raw PDF rather than
-    the JSON envelope, so the view returns a Django `HttpResponse` directly; a
-    missing template asset is reported through the standard error envelope.
+    template (see `apps.clients.documents.privacy_form`). The body is a raw PDF
+    rather than the JSON envelope, so the view returns a Django `HttpResponse`
+    directly; a missing template asset is reported through the standard error
+    envelope.
     """
 
     def get(self, request, pk):

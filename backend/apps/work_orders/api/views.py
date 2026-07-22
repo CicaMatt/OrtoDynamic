@@ -11,8 +11,12 @@ from apps.common.api.views import (
     inline_pdf_response,
 )
 from apps.common.exceptions import TemplateAssetMissing
-from apps.quotes.documents import collaudi_filename, prepare_collaudi, render_collaudi
 from apps.quotes.services import delete_quote_graph
+from apps.work_orders.documents import (
+    collaudi_filename,
+    prepare_collaudi,
+    render_collaudi,
+)
 from apps.work_orders.models import WorkOrder, WorkOrderItem
 from apps.work_orders.selectors import (
     collaudi_document_inputs,
@@ -97,8 +101,9 @@ class WorkOrderCollaudiView(APIView):
 
     The header comes from the work order and its client/quote, the tables from its
     line items (`item_lavorazioni`) and periodic checks (`controlli_periodici`).
-    See `apps.quotes.documents.collaudi`. The body is a raw PDF, so the view returns a Django
-    `HttpResponse`; a missing template asset uses the standard error envelope.
+    See `apps.work_orders.documents.collaudi`. The body is a raw PDF, so the view
+    returns a Django `HttpResponse`; a missing template asset uses the standard
+    error envelope.
     """
 
     def get(self, request, pk):

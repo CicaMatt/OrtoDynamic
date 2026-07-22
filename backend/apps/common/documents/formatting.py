@@ -1,4 +1,4 @@
-"""Pure formatting helpers shared by generated quote/client/work-order documents."""
+"""Pure formatting helpers shared by generated domain documents."""
 
 from __future__ import annotations
 

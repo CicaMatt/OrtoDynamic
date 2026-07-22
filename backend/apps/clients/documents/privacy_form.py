@@ -1,12 +1,8 @@
 """
 Build the "Modulo di privacy" consent form for a client.
 
-A coordinate overlay (like the consegna form) that stamps three values onto the
-pre-printed ``assets/privacy.pdf`` background, reproducing the legacy FPDF + FPDI
-script. Unlike the other generators this document is keyed on a **client**, not a
-quote, but it lives here alongside the rest of the PDF document generators and
-their shared template assets (the original `generaPdf.php` was a single hub for
-all document types). The client-scoped HTTP endpoint lives in `apps.clients`.
+A coordinate overlay that stamps three values onto the pre-printed
+``assets/privacy.pdf`` background, reproducing the legacy FPDF + FPDI script.
 
 `prepare_privacy_form_fields` turns a client into the three display strings (pure,
 DB/HTTP-free); `render_privacy_form` stamps them over the template and returns the
@@ -18,9 +14,9 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from .fpdf_canvas import FpdfCanvas
-from .formatting import date_short_dash, upper_or_empty
-from .pdf_background import compose_on_template
+from apps.common.documents.formatting import date_short_dash, upper_or_empty
+from apps.common.documents.fpdf_canvas import FpdfCanvas
+from apps.common.documents.pdf_background import compose_on_template
 
 TEMPLATE_PATH = Path(__file__).resolve().parent / "assets" / "privacy.pdf"
 

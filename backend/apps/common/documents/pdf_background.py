@@ -1,10 +1,9 @@
 """
-Compose a generated PDF overlay onto a pre-printed 1-page template.
+Compose generated PDF overlays onto pre-printed templates.
 
-Both quote documents (the consegna form and the DDT) can render over a scanned A4
-template, placed the way the legacy FPDI script placed it: top-left corner at
-(5 mm, 5 mm), scaled to 200 mm wide with the aspect ratio preserved. This module
-is the single home for that placement.
+Single-page forms use the legacy FPDI placement: top-left corner at (5 mm, 5 mm),
+scaled to 200 mm wide with the aspect ratio preserved. Multi-page forms can instead
+overlay each template page at its original size.
 """
 from __future__ import annotations
 

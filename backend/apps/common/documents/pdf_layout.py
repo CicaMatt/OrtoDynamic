@@ -1,5 +1,5 @@
 """
-Shared layout primitives for the code-drawn PDF documents.
+Shared layout primitives for code-drawn PDF documents.
 
 The consegna form, the DDT and the Scheda Progetto are all laid out with the same
 `FpdfCanvas` box model and reuse a handful of identical building blocks: the

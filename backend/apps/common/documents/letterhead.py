@@ -1,5 +1,5 @@
 """
-Shared company letterhead for the code-generated PDF documents.
+Shared company letterhead for code-generated PDF documents.
 
 Drawn at the top-left of each document so every generated PDF carries the same
 Ortodynamic header (logo + company lines), matching the header printed on the

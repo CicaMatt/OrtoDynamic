@@ -16,10 +16,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .fpdf_canvas import FpdfCanvas
-from .formatting import date_short_slash, plain_number, rounded_amount, upper_or_empty
-from .letterhead import CONTENT_TOP_MM, write_letterhead
-from .pdf_layout import (
+from apps.common.documents.formatting import (
+    date_short_slash,
+    plain_number,
+    rounded_amount,
+    upper_or_empty,
+)
+from apps.common.documents.fpdf_canvas import FpdfCanvas
+from apps.common.documents.letterhead import CONTENT_TOP_MM, write_letterhead
+from apps.common.documents.pdf_layout import (
     label_value,
     new_titled_document,
     section,

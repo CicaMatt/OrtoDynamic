@@ -4,9 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from .fpdf_canvas import FpdfCanvas
-from .formatting import date_long_slash, date_short_slash, upper_or_empty
-from .letterhead import CONTENT_TOP_MM, write_letterhead
+from apps.common.documents.formatting import date_long_slash, date_short_slash, upper_or_empty
+from apps.common.documents.fpdf_canvas import FpdfCanvas
+from apps.common.documents.letterhead import CONTENT_TOP_MM, write_letterhead
 
 BODY_LEFT = 20.0
 BODY_WIDTH = 170.0
