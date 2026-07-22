@@ -24,7 +24,7 @@ const yesNoOptions = optionsFromValues(['Si', 'No']);
 // `Stato` is read-only here: it changes only via the guarded status action.
 const detailIdentityFields: QuoteField[] = [
   { label: 'ID', key: 'idQuote', readonly: true },
-  { label: 'Data Creazione', key: 'creationDate', type: 'date' },
+  { label: 'Data Prescrizione', key: 'creationDate', type: 'date' },
   { label: 'Tipologia', key: 'quoteType', type: 'select', options: detailTypeOptions },
   { label: 'Stato', key: 'status', readonly: true },
   { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
@@ -33,7 +33,7 @@ const detailIdentityFields: QuoteField[] = [
 const createIdentityFields: QuoteField[] = markRequired(
   [
     { label: 'Tipologia', key: 'quoteType', type: 'select', options: createTypeOptions },
-    { label: 'Data Creazione', key: 'creationDate', type: 'date' },
+    { label: 'Data Prescrizione', key: 'creationDate', type: 'date' },
     { label: 'Data Preventivo', key: 'quoteDate', type: 'date' },
   ],
   quoteCreateRequiredKeys,

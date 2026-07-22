@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Icon } from '../ui/Icon';
 
 /** Section heading with a blue icon. */
-export function SectionTitle({ icon, title }: { icon: string; title: string }) {
+function SectionTitle({ icon, title }: { icon: string; title: string }) {
   return (
     <div className="flex items-center gap-[13px]">
       <Icon name={icon} className="text-[28px] text-secondary" />

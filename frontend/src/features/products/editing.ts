@@ -9,14 +9,12 @@ import {
 import { productCreateRequiredKeys } from './components/productFields';
 import type { Product } from './types';
 
+const productTextKeys = ['code', 'description'] as const;
 const productEditableKeys = [
-  'code',
-  'description',
+  ...productTextKeys,
   'price',
   'year',
 ] as const satisfies readonly (keyof Product)[];
-
-const productTextKeys = ['code', 'description'] as const;
 
 function emptyProduct(): Product {
   return { idProduct: '', code: '', description: '', price: '', year: '' };
@@ -40,7 +38,7 @@ export function toProductUpdatePayload(changes: Partial<Product>): ProductUpdate
   return payload;
 }
 
-export const productEditOperations: EntityEditOperations<'product'> = {
+export const productEditOperations = {
   editableKeys: productEditableKeys,
   requiredKeys: productCreateRequiredKeys,
   emptyDraft: emptyProduct,
@@ -51,4 +49,4 @@ export const productEditOperations: EntityEditOperations<'product'> = {
   update: async (id, changes) => {
     await updateProduct(id, toProductUpdatePayload(changes));
   },
-};
+} satisfies EntityEditOperations<'product'>;

@@ -7,36 +7,6 @@ import {
 } from './api/workOrders';
 import type { WorkOrder, WorkOrderItem } from './types';
 
-// `status` changes only through the guarded status endpoint.
-const workOrderEditableKeys = [
-  'quoteId',
-  'clientId',
-  'creationDate',
-  'completionDate',
-  'deliveryDate',
-  'cancellationDate',
-  'maxExpiry',
-  'clientTrial',
-  'clientTrialOutcome',
-  'clientTrialDate',
-  'clientCheck',
-  'clientCheckOutcome',
-  'clientCheckDate',
-  'doctorSignature',
-  'technicalService',
-  'serviceStatus',
-  'complaintReason',
-  'device',
-  'warranty',
-  'serviceDeliveryDate',
-  'testOutcome',
-  'testOutcomeDate',
-  'serviceDoctorSignature',
-  'technicianSignature',
-  'interventionDescription',
-  'technicalNotes',
-] as const satisfies readonly (keyof WorkOrder)[];
-
 const workOrderTextKeys = [
   'maxExpiry',
   'clientTrial',
@@ -66,6 +36,14 @@ const workOrderDateKeys = [
   'serviceDeliveryDate',
   'testOutcomeDate',
 ] as const;
+
+// `status` changes only through the guarded status endpoint.
+const workOrderEditableKeys = [
+  'quoteId',
+  'clientId',
+  ...workOrderTextKeys,
+  ...workOrderDateKeys,
+] as const satisfies readonly (keyof WorkOrder)[];
 
 const itemTextKeys = ['status', 'production'] as const;
 const itemDateKeys = [
@@ -100,9 +78,9 @@ export function toWorkOrderItemUpdatePayload(
   return payload;
 }
 
-export const workOrderEditOperations: EntityEditOperations<'workOrder'> = {
+export const workOrderEditOperations = {
   editableKeys: workOrderEditableKeys,
   update: async (id, changes) => {
     await updateWorkOrder(id, toWorkOrderUpdatePayload(changes));
   },
-};
+} satisfies EntityEditOperations<'workOrder'>;

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { EditOperationContext } from '../../../src/app/editing/types';
 import {
   productEditOperations,
   toProductCreatePayload,
@@ -14,7 +13,6 @@ const productApi = vi.hoisted(() => ({
 }));
 vi.mock('../../../src/features/products/api/products', () => productApi);
 
-const context: EditOperationContext = { clientOrthopedicChanges: {}, quoteItemDrafts: [] };
 const product: Product = {
   idProduct: '',
   code: 'T-7',
@@ -41,8 +39,8 @@ describe('product editing operations', () => {
     productApi.createProduct.mockResolvedValue({ ...product, idProduct: 'P-9' });
     productApi.updateProduct.mockResolvedValue({});
 
-    await expect(productEditOperations.create!(product, context)).resolves.toBe('P-9');
-    await productEditOperations.update('P-9', { price: '25' }, context);
+    await expect(productEditOperations.create(product)).resolves.toBe('P-9');
+    await productEditOperations.update('P-9', { price: '25' });
 
     expect(productApi.createProduct).toHaveBeenCalledWith({
       code: 'T-7',

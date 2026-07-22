@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { EditOperationContext } from '../../../src/app/editing/types';
 import { healthCompanyEditOperations } from '../../../src/features/healthCompanies/editing';
 import type { HealthCompany } from '../../../src/features/healthCompanies/types';
 
@@ -10,7 +9,6 @@ const healthCompanyApi = vi.hoisted(() => ({
 }));
 vi.mock('../../../src/features/healthCompanies/api/healthCompanies', () => healthCompanyApi);
 
-const context: EditOperationContext = { clientOrthopedicChanges: {}, quoteItemDrafts: [] };
 const company: HealthCompany = {
   idHealthCompany: '',
   municipalityCode: '001',
@@ -34,8 +32,8 @@ describe('health-company editing operations', () => {
     });
     healthCompanyApi.updateHealthCompany.mockResolvedValue({});
 
-    await expect(healthCompanyEditOperations.create!(company, context)).resolves.toBe('H-9');
-    await healthCompanyEditOperations.update('H-9', { year: '2026' }, context);
+    await expect(healthCompanyEditOperations.create(company)).resolves.toBe('H-9');
+    await healthCompanyEditOperations.update('H-9', { year: '2026' });
 
     expect(healthCompanyApi.createHealthCompany).toHaveBeenCalledWith(
       expect.objectContaining({ companyName: 'ASL Salerno', year: null }),

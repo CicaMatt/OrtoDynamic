@@ -11,35 +11,6 @@ import { quoteCreateRequiredKeys } from './components/quoteFields';
 import { toNullableNumber } from './components/quoteItemMath';
 import type { Quote, QuoteItemDraft } from './types';
 
-// `status`, `total`, `maxExpiry`, and `quote` are intentionally excluded:
-// status changes through its guarded endpoint, totals/expiry are server-derived,
-// and `quote` has no form field.
-export const quoteEditableKeys = [
-  'clientId',
-  'doctorId',
-  'quoteNumber',
-  'quoteType',
-  'creationDate',
-  'quoteDate',
-  'entryBy',
-  'diagnosis',
-  'therapeuticProgram',
-  'detailedPrescription',
-  'authorizationNumber',
-  'acceptanceDate',
-  'authorizationReceiptDate',
-  'expiryDays',
-  'measurementsOk',
-  'commissionsPaid',
-  'orderNumber',
-  'model',
-  'measurements',
-  'invoiceNumber',
-  'note',
-  'privateNote',
-  'finalNote',
-] as const satisfies readonly (keyof Quote)[];
-
 const quoteTextKeys = [
   'quoteNumber',
   'quoteType',
@@ -59,6 +30,23 @@ const quoteTextKeys = [
   'privateNote',
   'finalNote',
 ] as const;
+
+const quoteReferenceKeys = ['clientId', 'doctorId'] as const;
+const quoteDateKeys = [
+  'creationDate',
+  'quoteDate',
+  'acceptanceDate',
+  'authorizationReceiptDate',
+] as const;
+
+// `status`, `total`, `maxExpiry`, and `quote` are intentionally excluded:
+// status changes through its guarded endpoint, totals/expiry are server-derived,
+// and `quote` has no form field.
+export const quoteEditableKeys = [
+  ...quoteReferenceKeys,
+  ...quoteTextKeys,
+  ...quoteDateKeys,
+] as const satisfies readonly (keyof Quote)[];
 
 function emptyQuote(): Quote {
   return {
@@ -102,17 +90,13 @@ const nullableDate = (value: string) => (value === '' ? null : value);
 
 export function toQuoteUpdatePayload(changes: Partial<Quote>): QuoteUpdatePayload {
   const payload: QuoteUpdatePayload = pickDefinedFields(changes, quoteTextKeys);
-  if (changes.clientId !== undefined) payload.clientId = nullableId(changes.clientId);
-  if (changes.doctorId !== undefined) payload.doctorId = nullableId(changes.doctorId);
-  if (changes.creationDate !== undefined) {
-    payload.creationDate = nullableDate(changes.creationDate);
+  for (const key of quoteReferenceKeys) {
+    const value = changes[key];
+    if (value !== undefined) payload[key] = nullableId(value);
   }
-  if (changes.quoteDate !== undefined) payload.quoteDate = nullableDate(changes.quoteDate);
-  if (changes.acceptanceDate !== undefined) {
-    payload.acceptanceDate = nullableDate(changes.acceptanceDate);
-  }
-  if (changes.authorizationReceiptDate !== undefined) {
-    payload.authorizationReceiptDate = nullableDate(changes.authorizationReceiptDate);
+  for (const key of quoteDateKeys) {
+    const value = changes[key];
+    if (value !== undefined) payload[key] = nullableDate(value);
   }
   return payload;
 }
@@ -156,15 +140,15 @@ export function changeQuoteDraft(draft: Quote, key: keyof Quote, value: string):
   return next;
 }
 
-export const quoteEditOperations: EntityEditOperations<'quote'> = {
+export const quoteEditOperations = {
   editableKeys: quoteEditableKeys,
   requiredKeys: quoteCreateRequiredKeys,
   emptyDraft: emptyQuote,
-  create: async (draft, context) => {
-    const created = await createQuote(toQuoteCreatePayload(draft, context.quoteItemDrafts));
+  create: async (draft: Quote, itemDrafts: readonly QuoteItemDraft[] = []) => {
+    const created = await createQuote(toQuoteCreatePayload(draft, itemDrafts));
     return created.idQuote;
   },
   update: async (id, changes) => {
     await updateQuote(id, toQuoteUpdatePayload(changes));
   },
-};
+} satisfies EntityEditOperations<'quote'>;

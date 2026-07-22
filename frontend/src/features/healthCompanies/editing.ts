@@ -9,20 +9,6 @@ import {
 import { healthCompanyCreateRequiredKeys } from './components/healthCompanyFields';
 import type { HealthCompany } from './types';
 
-const healthCompanyEditableKeys = [
-  'municipalityCode',
-  'municipality',
-  'regionCode',
-  'regionName',
-  'companyCode',
-  'companyName',
-  'year',
-  'males',
-  'females',
-  'total',
-  'district',
-] as const satisfies readonly (keyof HealthCompany)[];
-
 const healthCompanyTextKeys = [
   'municipalityCode',
   'municipality',
@@ -35,6 +21,11 @@ const healthCompanyTextKeys = [
   'total',
   'district',
 ] as const;
+
+const healthCompanyEditableKeys = [
+  ...healthCompanyTextKeys,
+  'year',
+] as const satisfies readonly (keyof HealthCompany)[];
 
 function emptyHealthCompany(): HealthCompany {
   return {
@@ -68,7 +59,7 @@ export function toHealthCompanyUpdatePayload(
   return payload;
 }
 
-export const healthCompanyEditOperations: EntityEditOperations<'healthCompany'> = {
+export const healthCompanyEditOperations = {
   editableKeys: healthCompanyEditableKeys,
   requiredKeys: healthCompanyCreateRequiredKeys,
   emptyDraft: emptyHealthCompany,
@@ -79,4 +70,4 @@ export const healthCompanyEditOperations: EntityEditOperations<'healthCompany'> 
   update: async (id, changes) => {
     await updateHealthCompany(id, toHealthCompanyUpdatePayload(changes));
   },
-};
+} satisfies EntityEditOperations<'healthCompany'>;

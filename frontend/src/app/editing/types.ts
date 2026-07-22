@@ -1,8 +1,8 @@
-import type { Client, ClientOrthopedic } from '../../features/clients/types';
+import type { Client } from '../../features/clients/types';
 import type { Doctor } from '../../features/doctors/types';
 import type { HealthCompany } from '../../features/healthCompanies/types';
 import type { Product } from '../../features/products/types';
-import type { Quote, QuoteItemDraft } from '../../features/quotes/types';
+import type { Quote } from '../../features/quotes/types';
 import type { WorkOrder } from '../../features/workOrders/types';
 
 export type EntityDraftMap = {
@@ -15,16 +15,9 @@ export type EntityDraftMap = {
 };
 
 export type EntityKind = keyof EntityDraftMap;
-export type EntityDraft = EntityDraftMap[EntityKind];
 export type EditTarget = { [K in EntityKind]: { type: K; id: string } }[EntityKind];
 export type EditMode = 'edit' | 'create';
 export type SaveResult = { ok: boolean; created?: EditTarget };
-
-/** Domain extras carried by the three non-trivial edit sessions. */
-export type EditOperationContext = {
-  clientOrthopedicChanges: Partial<ClientOrthopedic>;
-  quoteItemDrafts: readonly QuoteItemDraft[];
-};
 
 /**
  * The complete feature-owned edit flow used by the global session lifecycle.
@@ -35,12 +28,8 @@ export type EntityEditOperations<K extends EntityKind> = {
   editableKeys: readonly (keyof EntityDraftMap[K])[];
   requiredKeys?: readonly (keyof EntityDraftMap[K])[];
   emptyDraft?: () => EntityDraftMap[K];
-  create?: (draft: EntityDraftMap[K], context: EditOperationContext) => Promise<string>;
-  update: (
-    id: string,
-    changes: Partial<EntityDraftMap[K]>,
-    context: EditOperationContext,
-  ) => Promise<void>;
+  create?: (draft: EntityDraftMap[K]) => Promise<string>;
+  update: (id: string, changes: Partial<EntityDraftMap[K]>) => Promise<void>;
 };
 
 /** Pick a known set of fields while preserving their actual key/value types. */

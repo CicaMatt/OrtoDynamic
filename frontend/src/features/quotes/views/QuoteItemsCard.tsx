@@ -13,6 +13,7 @@ import type { QuoteItemDraft } from '../types';
 
 /** State of the one line being edited inline: its id plus the working draft. */
 type EditState = { id: string; draft: QuoteItemDraft };
+type ItemsMessage = { content: string; tone?: 'error' };
 
 /**
  * Persistence controller for an existing quote's items. Mutations are immediate,
@@ -112,13 +113,12 @@ export function QuoteItemsCard({
     }
   };
 
-  const message = loading
-    ? { content: 'Caricamento articoli...' }
-    : error
-      ? { content: error, tone: 'error' as const }
-      : items.length === 0 && add.draft === null
-        ? { content: 'Nessun articolo per questo preventivo.' }
-        : undefined;
+  let message: ItemsMessage | undefined;
+  if (loading) message = { content: 'Caricamento articoli...' };
+  else if (error) message = { content: error, tone: 'error' };
+  else if (items.length === 0 && add.draft === null) {
+    message = { content: 'Nessun articolo per questo preventivo.' };
+  }
 
   return (
     <QuoteItemsTable

@@ -13,7 +13,7 @@ import {
 } from './quoteItemMath';
 
 /** Read-only, derived cell (prezzo/importo) shown muted to mark it non-editable. */
-export function DerivedValue({ value }: { value: string }) {
+function DerivedValue({ value }: { value: string }) {
   return (
     <span className="font-body-md text-body-md text-outline">
       <FieldValue value={value} />
@@ -73,50 +73,6 @@ export function NewItemButton({ disabled, onClick }: { disabled: boolean; onClic
   );
 }
 
-/** The trailing confirm/cancel actions shared by the add and edit rows. */
-function ConfirmCancelActions({
-  submitting,
-  canConfirm,
-  onConfirm,
-  onCancel,
-}: {
-  submitting: boolean;
-  canConfirm: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-end gap-[4px]">
-      <IconButton
-        icon="close"
-        title="Annulla"
-        tone="danger"
-        onClick={onCancel}
-        disabled={submitting}
-      />
-      <IconButton
-        icon="check"
-        title="Conferma"
-        tone="confirm"
-        onClick={onConfirm}
-        disabled={!canConfirm}
-        busy={submitting}
-      />
-    </div>
-  );
-}
-
-const NUMERIC_INPUTS = {
-  /** Quantity must stay blank while editing or at least 1. */
-  quantity: (value: string, set: (v: string) => void) => {
-    if (isAcceptableQuantityInput(value)) set(value);
-  },
-  /** Discount is a 1–100 percent; reject keystrokes outside that range. */
-  discount: (value: string, set: (v: string) => void) => {
-    if (isAcceptableDiscountInput(value)) set(value);
-  },
-} as const;
-
 function QuantityCell({
   draft,
   onField,
@@ -130,7 +86,9 @@ function QuantityCell({
         type="number"
         min={1}
         value={draft.quantity}
-        onChange={(value) => NUMERIC_INPUTS.quantity(value, (v) => onField('quantity', v))}
+        onChange={(value) => {
+          if (isAcceptableQuantityInput(value)) onField('quantity', value);
+        }}
       />
     </td>
   );
@@ -164,7 +122,9 @@ function DiscountCell({
         type="number"
         min={1}
         value={draft.discount}
-        onChange={(value) => NUMERIC_INPUTS.discount(value, (v) => onField('discount', v))}
+        onChange={(value) => {
+          if (isAcceptableDiscountInput(value)) onField('discount', value);
+        }}
       />
     </td>
   );
@@ -183,12 +143,23 @@ function RowActionsCell({
 }) {
   return (
     <td className="py-3 px-4 align-top text-right">
-      <ConfirmCancelActions
-        submitting={submitting}
-        canConfirm={canConfirm}
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />
+      <div className="flex items-center justify-end gap-[4px]">
+        <IconButton
+          icon="close"
+          title="Annulla"
+          tone="danger"
+          onClick={onCancel}
+          disabled={submitting}
+        />
+        <IconButton
+          icon="check"
+          title="Conferma"
+          tone="confirm"
+          onClick={onConfirm}
+          disabled={!canConfirm}
+          busy={submitting}
+        />
+      </div>
     </td>
   );
 }

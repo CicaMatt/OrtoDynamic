@@ -11,6 +11,7 @@ import {
   documentActionState,
 } from '../../../shared/files/DocumentActions';
 import { useInlineDocument } from '../../../shared/files/useInlineDocument';
+import { todayIso } from '../../../shared/format/format';
 import { Icon } from '../../../shared/ui/Icon';
 import { StatusMessage } from '../../../shared/ui/StatusMessage';
 import {
@@ -239,14 +240,6 @@ export function QuoteDetailView() {
   );
 }
 
-function todayInputValue() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function DeliveryFormOptionsDialog({
   generating,
   onClose,
@@ -256,7 +249,7 @@ function DeliveryFormOptionsDialog({
   onClose: () => void;
   onGenerate: (deliveryDate: string) => void;
 }) {
-  const [deliveryDate, setDeliveryDate] = useState(todayInputValue);
+  const [deliveryDate, setDeliveryDate] = useState(todayIso);
 
   return (
     <DocumentOptionsDialog

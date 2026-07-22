@@ -171,7 +171,7 @@ export type FieldConfig<T> = {
   renderValue?: (raw: string, item: T) => ReactNode;
 };
 
-export function formatFieldValue<T>(field: FieldConfig<T>, raw: string): string {
+function formatFieldValue<T>(field: FieldConfig<T>, raw: string): string {
   if (field.type === 'date') return formatBirthDate(raw);
   if (field.type === 'gender') return formatGender(raw);
   return raw;
@@ -187,7 +187,7 @@ export function markRequired<T>(
 }
 
 /** Render feature-owned field declarations as a responsive grid. */
-export function FieldGrid<T extends object>({
+function FieldGrid<T extends object>({
   data,
   fields,
   columns = 3,

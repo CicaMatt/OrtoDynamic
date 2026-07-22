@@ -10,26 +10,6 @@ import {
 import { clientCreateRequiredKeys } from './components/clientFields';
 import type { Client, ClientOrthopedic } from './types';
 
-const clientEditableKeys = [
-  'name',
-  'surname',
-  'fiscalCode',
-  'gender',
-  'birthMunicipality',
-  'birthDate',
-  'address',
-  'city',
-  'province',
-  'postalCode',
-  'country',
-  'phone',
-  'mobile',
-  'email',
-  'district',
-  'doctorId',
-  'note',
-] as const satisfies readonly (keyof Client)[];
-
 const clientTextKeys = [
   'name',
   'surname',
@@ -47,6 +27,12 @@ const clientTextKeys = [
   'district',
   'note',
 ] as const;
+
+const clientEditableKeys = [
+  ...clientTextKeys,
+  'birthDate',
+  'doctorId',
+] as const satisfies readonly (keyof Client)[];
 
 const clientOrthopedicEditableKeys = [
   'shoeSize',
@@ -135,7 +121,7 @@ export function diffClientOrthopedic(
   return diffDraft(draft, original, clientOrthopedicEditableKeys);
 }
 
-export const clientEditOperations: EntityEditOperations<'client'> = {
+export const clientEditOperations = {
   editableKeys: clientEditableKeys,
   requiredKeys: clientCreateRequiredKeys,
   emptyDraft: emptyClient,
@@ -143,11 +129,15 @@ export const clientEditOperations: EntityEditOperations<'client'> = {
     const created = await createClient(toClientCreatePayload(draft));
     return created.idClient;
   },
-  update: async (id, changes, context) => {
+  update: async (
+    id: string,
+    changes: Partial<Client>,
+    orthopedicChanges: Partial<ClientOrthopedic> = {},
+  ) => {
     const payload: ClientUpdatePayload = {
       ...toClientGeneralUpdatePayload(changes),
-      ...toClientOrthopedicUpdatePayload(context.clientOrthopedicChanges),
+      ...toClientOrthopedicUpdatePayload(orthopedicChanges),
     };
     await updateClient(id, payload);
   },
-};
+} satisfies EntityEditOperations<'client'>;

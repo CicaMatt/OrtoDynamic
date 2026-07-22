@@ -30,8 +30,6 @@ export function ViewToolbar({
   onFilterChange,
   onClearFilters,
 }: ViewToolbarProps) {
-  const activeFilterCount = Object.values(activeFilters).filter(Boolean).length;
-
   return (
     <div className="flex items-center gap-4">
       {onCreate && (
@@ -47,7 +45,6 @@ export function ViewToolbar({
       <FilterMenu
         filters={filters}
         activeFilters={activeFilters}
-        activeFilterCount={activeFilterCount}
         onFilterChange={onFilterChange}
         onClearFilters={onClearFilters}
       />
@@ -59,18 +56,17 @@ export function ViewToolbar({
 function FilterMenu({
   filters,
   activeFilters,
-  activeFilterCount,
   onFilterChange,
   onClearFilters,
 }: {
   filters: ToolbarFilter[];
   activeFilters: ToolbarFilters;
-  activeFilterCount: number;
   onFilterChange?: (key: string, value: string) => void;
   onClearFilters?: () => void;
 }) {
   const { open, setOpen, containerRef } = useClickOutsideDropdown<HTMLDivElement>();
   const disabled = filters.length === 0 || !onFilterChange;
+  const activeFilterCount = Object.values(activeFilters).filter(Boolean).length;
 
   return (
     <div className="relative" ref={containerRef}>
@@ -213,8 +209,10 @@ function FilterCombobox({
     const term = draft.trim().toLowerCase();
     if (!term) return [];
     return options
-      .map((option) => ({ option, lower: option.toLowerCase() }))
-      .map((entry) => ({ ...entry, rank: matchRank(entry.lower, term) }))
+      .map((option) => {
+        const lower = option.toLowerCase();
+        return { option, lower, rank: matchRank(lower, term) };
+      })
       .filter(
         (entry): entry is { option: string; lower: string; rank: number } =>
           entry.rank !== null && entry.lower !== term,

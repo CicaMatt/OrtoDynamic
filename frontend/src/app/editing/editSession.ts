@@ -6,7 +6,6 @@ import { editOperationsFor, editRegistry } from './editRegistry';
 import {
   diffDraft,
   type EditMode,
-  type EditOperationContext,
   type EditTarget,
   type EntityDraftMap,
   type EntityEditOperations,
@@ -52,10 +51,6 @@ export type SavePreparation =
   | { kind: 'empty' }
   | { kind: 'persist'; execute: () => Promise<SaveResult> };
 
-const emptyContext: EditOperationContext = {
-  clientOrthopedicChanges: {},
-  quoteItemDrafts: [],
-};
 const clone = <T extends object>(value: T): T => ({ ...value });
 
 function sessionExtras(type: EntityKind) {
@@ -164,19 +159,22 @@ export function applySupplement(
   }
 }
 
+function primaryChanges<K extends EntityKind>(
+  session: BaseSession<K>,
+  operations: EntityEditOperations<K>,
+) {
+  return diffDraft<EntityDraftMap[K], keyof EntityDraftMap[K]>(
+    session.draft,
+    session.original,
+    operations.editableKeys,
+  );
+}
+
 function hasPrimaryChanges<K extends EntityKind>(
   session: BaseSession<K>,
   operations: EntityEditOperations<K>,
 ) {
-  return (
-    Object.keys(
-      diffDraft<EntityDraftMap[K], keyof EntityDraftMap[K]>(
-        session.draft,
-        session.original,
-        operations.editableKeys,
-      ),
-    ).length > 0
-  );
+  return Object.keys(primaryChanges(session, operations)).length > 0;
 }
 
 function orthopedicChanges(session: EditSessionMap['client']) {
@@ -184,6 +182,13 @@ function orthopedicChanges(session: EditSessionMap['client']) {
     session.orthopedic?.draft ?? null,
     session.orthopedic?.original ?? null,
   );
+}
+
+function requiredFieldError<T extends object>(draft: T | null, requiredKeys: readonly (keyof T)[]) {
+  const fields = requiredKeys.filter((key) => !String(draft?.[key] ?? '').trim()).map(String);
+  return fields.length
+    ? ({ kind: 'invalid', fields, error: 'Compila i campi obbligatori evidenziati.' } as const)
+    : null;
 }
 
 export function isSessionDirty(session: EditSession | null): boolean {
@@ -210,21 +215,12 @@ export function isSessionDirty(session: EditSession | null): boolean {
 function prepareEntitySave<K extends EntityKind>(
   session: BaseSession<K>,
   operations: EntityEditOperations<K>,
-  context: EditOperationContext,
 ): SavePreparation {
   const draft: EntityDraftMap[K] | null = session.draft;
 
   if (session.mode === 'create') {
-    const missing = (operations.requiredKeys ?? []).filter(
-      (key) => !String(draft?.[key] ?? '').trim(),
-    );
-    if (missing.length) {
-      return {
-        kind: 'invalid',
-        fields: missing.map(String),
-        error: 'Compila i campi obbligatori evidenziati.',
-      };
-    }
+    const invalid = requiredFieldError(draft, operations.requiredKeys ?? []);
+    if (invalid) return invalid;
     const create = operations.create;
     if (!create || !draft) {
       return { kind: 'invalid', fields: [], error: 'Creazione non supportata per questa entità.' };
@@ -233,66 +229,78 @@ function prepareEntitySave<K extends EntityKind>(
       kind: 'persist',
       execute: async () => ({
         ok: true,
-        created: { type: session.type, id: await create(draft, context) } as EditTarget,
+        created: { type: session.type, id: await create(draft) } as EditTarget,
       }),
     };
   }
 
-  const changes = diffDraft<EntityDraftMap[K], keyof EntityDraftMap[K]>(
-    session.draft,
-    session.original,
-    operations.editableKeys,
-  );
+  const changes = primaryChanges(session, operations);
   if (Object.keys(changes).length === 0) return { kind: 'empty' };
   return {
     kind: 'persist',
     execute: async () => {
-      await operations.update(session.id, changes, context);
+      await operations.update(session.id, changes);
       return { ok: true };
     },
   };
 }
 
 function prepareClientSave(session: EditSessionMap['client']): SavePreparation {
-  const context: EditOperationContext = {
-    ...emptyContext,
-    clientOrthopedicChanges: orthopedicChanges(session),
-  };
   if (session.mode === 'create') {
-    return prepareEntitySave(session, editRegistry.client, context);
+    return prepareEntitySave(session, editRegistry.client);
   }
 
-  const generalChanges = diffDraft(
-    session.draft,
-    session.original,
-    editRegistry.client.editableKeys,
-  );
+  const generalChanges = primaryChanges(session, editRegistry.client);
+  const orthopedic = orthopedicChanges(session);
   const hasGeneralChanges = Object.keys(generalChanges).length > 0;
-  const hasOrthopedicChanges = Object.keys(context.clientOrthopedicChanges).length > 0;
+  const hasOrthopedicChanges = Object.keys(orthopedic).length > 0;
   if (!hasGeneralChanges && !hasOrthopedicChanges) return { kind: 'empty' };
 
   return {
     kind: 'persist',
     execute: async () => {
-      await editRegistry.client.update(session.id, generalChanges, context);
+      await editRegistry.client.update(session.id, generalChanges, orthopedic);
       return { ok: true };
     },
   };
 }
 
-function prepareWorkOrderSave(session: EditSessionMap['workOrder']): SavePreparation {
-  if (session.mode === 'create') {
-    return prepareEntitySave(session, editRegistry.workOrder, emptyContext);
+function prepareQuoteSave(session: EditSessionMap['quote']): SavePreparation {
+  if (session.mode !== 'create') {
+    return prepareEntitySave(session, editRegistry.quote);
   }
 
-  const changes = diffDraft(session.draft, session.original, editRegistry.workOrder.editableKeys);
+  const draft = session.draft;
+  const invalid = requiredFieldError(draft, editRegistry.quote.requiredKeys);
+  if (invalid) return invalid;
+  if (!draft) {
+    return { kind: 'invalid', fields: [], error: 'Creazione non supportata per questa entità.' };
+  }
+  return {
+    kind: 'persist',
+    execute: async () => ({
+      ok: true,
+      created: {
+        type: 'quote',
+        id: await editRegistry.quote.create(draft, session.items),
+      },
+    }),
+  };
+}
+
+function prepareWorkOrderSave(session: EditSessionMap['workOrder']): SavePreparation {
+  if (session.mode === 'create') {
+    return prepareEntitySave(session, editRegistry.workOrder);
+  }
+
+  const changes = primaryChanges(session, editRegistry.workOrder);
   const hasFields = Object.keys(changes).length > 0;
   const participant = session.items;
   if (!hasFields && !participant?.dirty) return { kind: 'empty' };
   return {
     kind: 'persist',
     execute: async () => {
-      if (hasFields) await editRegistry.workOrder.update(session.id, changes, emptyContext);
+      if (hasFields) await editRegistry.workOrder.update(session.id, changes);
       if (participant?.dirty) await participant.save();
       return { ok: true };
     },
@@ -304,16 +312,13 @@ export function prepareSessionSave(session: EditSession): SavePreparation {
     case 'client':
       return prepareClientSave(session);
     case 'doctor':
-      return prepareEntitySave(session, editRegistry.doctor, emptyContext);
+      return prepareEntitySave(session, editRegistry.doctor);
     case 'healthCompany':
-      return prepareEntitySave(session, editRegistry.healthCompany, emptyContext);
+      return prepareEntitySave(session, editRegistry.healthCompany);
     case 'product':
-      return prepareEntitySave(session, editRegistry.product, emptyContext);
+      return prepareEntitySave(session, editRegistry.product);
     case 'quote':
-      return prepareEntitySave(session, editRegistry.quote, {
-        ...emptyContext,
-        quoteItemDrafts: session.items,
-      });
+      return prepareQuoteSave(session);
     case 'workOrder':
       return prepareWorkOrderSave(session);
   }

@@ -1,13 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { EditOperationContext } from '../../../src/app/editing/types';
 import { doctorEditOperations } from '../../../src/features/doctors/editing';
 import type { Doctor } from '../../../src/features/doctors/types';
 
 const doctorApi = vi.hoisted(() => ({ createDoctor: vi.fn(), updateDoctor: vi.fn() }));
 vi.mock('../../../src/features/doctors/api/doctors', () => doctorApi);
 
-const context: EditOperationContext = { clientOrthopedicChanges: {}, quoteItemDrafts: [] };
 const doctor: Doctor = {
   idDoctor: '',
   surname: 'Rossi',
@@ -23,8 +21,8 @@ describe('doctor editing operations', () => {
     doctorApi.createDoctor.mockResolvedValue({ ...doctor, idDoctor: 'D-9' });
     doctorApi.updateDoctor.mockResolvedValue({});
 
-    await expect(doctorEditOperations.create!(doctor, context)).resolves.toBe('D-9');
-    await doctorEditOperations.update('D-9', { phone: '0897654321' }, context);
+    await expect(doctorEditOperations.create(doctor)).resolves.toBe('D-9');
+    await doctorEditOperations.update('D-9', { phone: '0897654321' });
 
     expect(doctorApi.createDoctor).toHaveBeenCalledWith({
       surname: 'Rossi',

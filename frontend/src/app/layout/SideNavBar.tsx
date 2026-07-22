@@ -3,37 +3,33 @@ import { useAuth } from '../../features/auth/AuthContext';
 import type { AuthUser } from '../../features/auth/types';
 import { useNavigation } from '../navigation/NavigationContext';
 import { sectionForRoute } from '../navigation/routes';
-import type { NavigationSection, Route } from '../navigation/types';
+import type { Route } from '../navigation/types';
 
 type NavEntry = {
   route: Route;
-  section: NavigationSection;
   icon: string;
   label: string;
 };
 
 const mainNav: NavEntry[] = [
-  { route: { name: 'dashboard' }, section: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
-  { route: { name: 'clients' }, section: 'clients', icon: 'group', label: 'Clienti' },
-  { route: { name: 'quotes' }, section: 'quotes', icon: 'request_quote', label: 'Preventivi' },
+  { route: { name: 'dashboard' }, icon: 'dashboard', label: 'Dashboard' },
+  { route: { name: 'clients' }, icon: 'group', label: 'Clienti' },
+  { route: { name: 'quotes' }, icon: 'request_quote', label: 'Preventivi' },
   {
     route: { name: 'work-orders' },
-    section: 'work-orders',
     icon: 'engineering',
     label: 'Lavorazioni',
   },
-  { route: { name: 'settings' }, section: 'settings', icon: 'settings', label: 'Configurazioni' },
-  { route: { name: 'products' }, section: 'products', icon: 'inventory_2', label: 'Prodotti' },
-  { route: { name: 'doctors' }, section: 'doctors', icon: 'medical_services', label: 'Medici' },
+  { route: { name: 'settings' }, icon: 'settings', label: 'Configurazioni' },
+  { route: { name: 'products' }, icon: 'inventory_2', label: 'Prodotti' },
+  { route: { name: 'doctors' }, icon: 'medical_services', label: 'Medici' },
   {
     route: { name: 'health-companies' },
-    section: 'health-companies',
     icon: 'local_hospital',
     label: 'Aziende Sanitarie',
   },
   {
     route: { name: 'employees' },
-    section: 'employees',
     icon: 'badge',
     label: 'Gestione Dipendenti',
   },
@@ -76,15 +72,18 @@ export function SideNavBar({ open, onClose }: { open: boolean; onClose: () => vo
         <BrandHeader />
         <UserBanner user={user} />
         <ul className="flex flex-col gap-2 flex-grow">
-          {mainNav.map((item) => (
-            <NavItem
-              key={item.section}
-              icon={item.icon}
-              label={item.label}
-              active={activeSection === item.section}
-              onClick={() => handleNavigate(item.route)}
-            />
-          ))}
+          {mainNav.map((item) => {
+            const section = sectionForRoute(item.route);
+            return (
+              <NavItem
+                key={section}
+                icon={item.icon}
+                label={item.label}
+                active={activeSection === section}
+                onClick={() => handleNavigate(item.route)}
+              />
+            );
+          })}
         </ul>
         <SideNavFooter onLogout={handleLogout} />
       </nav>

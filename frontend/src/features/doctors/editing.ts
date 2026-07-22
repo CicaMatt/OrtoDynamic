@@ -30,7 +30,7 @@ export function toDoctorUpdatePayload(changes: Partial<Doctor>): DoctorUpdatePay
   return pickDefinedFields(changes, doctorEditableKeys);
 }
 
-export const doctorEditOperations: EntityEditOperations<'doctor'> = {
+export const doctorEditOperations = {
   editableKeys: doctorEditableKeys,
   requiredKeys: doctorCreateRequiredKeys,
   emptyDraft: emptyDoctor,
@@ -41,4 +41,4 @@ export const doctorEditOperations: EntityEditOperations<'doctor'> = {
   update: async (id, changes) => {
     await updateDoctor(id, toDoctorUpdatePayload(changes));
   },
-};
+} satisfies EntityEditOperations<'doctor'>;
