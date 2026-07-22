@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.api.views import (
+    DatabaseLockedUpdateMixin,
     ReadUpdateDetailAPIView,
     UnpaginatedListAPIView,
     inline_pdf_response,
@@ -71,7 +72,7 @@ class WorkOrderItemListView(UnpaginatedListAPIView):
         return work_order_items_with_quote_items_and_products(self.kwargs["pk"])
 
 
-class WorkOrderStatusUpdateView(generics.UpdateAPIView):
+class WorkOrderStatusUpdateView(DatabaseLockedUpdateMixin, generics.UpdateAPIView):
     """Set a work order's status — a free choice among the fixed states."""
 
     queryset = WorkOrder.objects.all()
@@ -84,7 +85,7 @@ class WorkOrderStatusUpdateView(generics.UpdateAPIView):
         work_orders_with_read_relations([work_order])
 
 
-class WorkOrderItemUpdateView(generics.UpdateAPIView):
+class WorkOrderItemUpdateView(DatabaseLockedUpdateMixin, generics.UpdateAPIView):
     """Edit a single work order line (its status / production)."""
 
     serializer_class = WorkOrderItemUpdateSerializer

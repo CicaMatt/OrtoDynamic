@@ -240,8 +240,10 @@ function ProductHarness() {
   const editor = useEntityEditor('product');
   return (
     <>
+      <output data-testid="saving">{String(edit.saving)}</output>
       <output data-testid="save-error">{edit.error ?? ''}</output>
       <output data-testid="invalid-fields">{editor.invalidFields.join(',')}</output>
+      <output data-testid="product-description">{editor.draft?.description ?? ''}</output>
       <button onClick={() => edit.start({ type: 'product', id: '' }, 'create')}>
         start product create
       </button>
@@ -255,6 +257,17 @@ function ProductHarness() {
         fill product
       </button>
       <button onClick={() => void edit.save()}>save product</button>
+      <button
+        onClick={() => {
+          void edit.save();
+          void edit.save();
+        }}
+      >
+        save product twice
+      </button>
+      <button onClick={() => editor.change('description', 'Changed during save')}>
+        change product during save
+      </button>
     </>
   );
 }
@@ -411,5 +424,32 @@ describe('EntityEditProvider sub-flows', () => {
 
     await waitFor(() => expect(output('save-error')).toBe('Controlla i campi evidenziati.'));
     expect(output('invalid-fields')).toBe('price');
+  });
+
+  it('coalesces concurrent saves and freezes the draft until completion', async () => {
+    let finishCreate!: (product: { idProduct: string }) => void;
+    productApi.createProduct.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishCreate = resolve;
+      }),
+    );
+    render(
+      <EntityEditProvider>
+        <ProductHarness />
+      </EntityEditProvider>,
+    );
+
+    click('start product create');
+    click('fill product');
+    click('save product twice');
+
+    expect(output('saving')).toBe('true');
+    expect(productApi.createProduct).toHaveBeenCalledOnce();
+
+    click('change product during save');
+    expect(output('product-description')).toBe('Tutore');
+
+    finishCreate({ idProduct: 'P-1' });
+    await waitFor(() => expect(output('saving')).toBe('false'));
   });
 });

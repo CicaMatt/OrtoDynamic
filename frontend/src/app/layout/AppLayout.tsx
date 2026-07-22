@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useEntityEdit } from '../editing/EntityEditContext';
 import { useNavigation } from '../navigation/NavigationContext';
 import { Icon } from '../../shared/ui/Icon';
 import { SideNavBar } from './SideNavBar';
@@ -53,6 +54,7 @@ const viewComponents = {
 
 export function AppLayout() {
   const { route } = useNavigation();
+  const { saving } = useEntityEdit();
   const ActiveView =
     route.name === 'client-detail' && route.tab === 'orthopedic'
       ? ClientOrthopedicView
@@ -60,7 +62,10 @@ export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="bg-background text-on-background min-h-screen">
+    <div
+      className={`bg-background text-on-background min-h-screen ${saving ? 'cursor-wait' : ''}`}
+      aria-busy={saving}
+    >
       <SideNavBar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <div className="lg:ml-sidebar-width">
         <MobileTopBar onOpenNav={() => setMobileNavOpen(true)} />
@@ -70,6 +75,7 @@ export function AppLayout() {
       </div>
       <EditActionBar />
       <UnsavedChangesDialog />
+      {saving && <div className="fixed inset-0 z-40" aria-hidden="true" />}
     </div>
   );
 }

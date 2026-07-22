@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { ApiError } from '../../shared/api/http';
 import {
   applySupplement,
@@ -47,10 +47,17 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
-  const cancel = () => {
+  const saveInFlight = useRef<Promise<SaveResult> | null>(null);
+
+  const closeSession = () => {
     resetSessionParticipant(session);
     setSessionState(null);
     setError(null);
+  };
+
+  const cancel = () => {
+    if (saveInFlight.current) return;
+    closeSession();
   };
 
   const start = <K extends EntityKind>(
@@ -58,23 +65,30 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     mode: EditMode,
     initialValues?: Partial<EntityDraftMap[K]>,
   ) => {
+    if (saveInFlight.current) return;
     resetSessionParticipant(session);
     setSessionState(startSession(target, mode, initialValues));
     setError(null);
   };
 
-  const seed = <K extends EntityKind>(type: K, draft: EntityDraftMap[K]) =>
+  const seed = <K extends EntityKind>(type: K, draft: EntityDraftMap[K]) => {
+    if (saveInFlight.current) return;
     setSessionState((current) => seedSession(current, type, draft));
+  };
 
-  const change = <K extends EntityKind>(type: K, key: keyof EntityDraftMap[K], value: string) =>
+  const change = <K extends EntityKind>(type: K, key: keyof EntityDraftMap[K], value: string) => {
+    if (saveInFlight.current) return;
     setSessionState((current) => changeSession(current, type, key, value));
+  };
 
   const supplement = useCallback((action: SupplementalEditAction) => {
+    if (saveInFlight.current) return;
     setSessionState((current) => applySupplement(current, action));
   }, []);
 
-  const save = async (): Promise<SaveResult> => {
-    if (!session) return { ok: true };
+  const save = (): Promise<SaveResult> => {
+    if (saveInFlight.current) return saveInFlight.current;
+    if (!session) return Promise.resolve({ ok: true });
 
     const preparation = prepareSessionSave(session);
     if (preparation.kind === 'invalid') {
@@ -82,34 +96,39 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
         current ? withInvalidFields(current, preparation.fields) : current,
       );
       setError(preparation.error);
-      return { ok: false };
+      return Promise.resolve({ ok: false });
     }
     if (preparation.kind === 'empty') {
       cancel();
-      return { ok: true };
+      return Promise.resolve({ ok: true });
     }
 
     setSaving(true);
     setError(null);
-    try {
-      const result = await preparation.execute();
-      cancel();
-      setDataVersion((version) => version + 1);
-      return result;
-    } catch (cause) {
-      if (cause instanceof ApiError) {
-        setSessionState((current) => {
-          const matchingFields = Object.keys(cause.fields).filter(
-            (field) => current?.draft && field in current.draft,
-          );
-          return current ? withInvalidFields(current, matchingFields) : current;
-        });
+    const operation = (async () => {
+      try {
+        const result = await preparation.execute();
+        closeSession();
+        setDataVersion((version) => version + 1);
+        return result;
+      } catch (cause) {
+        if (cause instanceof ApiError) {
+          setSessionState((current) => {
+            const matchingFields = Object.keys(cause.fields).filter(
+              (field) => current?.draft && field in current.draft,
+            );
+            return current ? withInvalidFields(current, matchingFields) : current;
+          });
+        }
+        setError(errorMessage(cause));
+        return { ok: false };
+      } finally {
+        saveInFlight.current = null;
+        setSaving(false);
       }
-      setError(errorMessage(cause));
-      return { ok: false };
-    } finally {
-      setSaving(false);
-    }
+    })();
+    saveInFlight.current = operation;
+    return operation;
   };
 
   const value: EntityEditValue = {

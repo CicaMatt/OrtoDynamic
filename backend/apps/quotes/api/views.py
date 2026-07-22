@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.api.views import (
+    DatabaseLockedUpdateMixin,
     ReadUpdateDetailAPIView,
     UnpaginatedListCreateAPIView,
     inline_pdf_response,
@@ -91,7 +92,9 @@ class QuoteItemListView(UnpaginatedListCreateAPIView):
         serializer.save(quote_id=self.kwargs["pk"])
 
 
-class QuoteItemDetailView(generics.UpdateAPIView, generics.DestroyAPIView):
+class QuoteItemDetailView(
+    DatabaseLockedUpdateMixin, generics.UpdateAPIView, generics.DestroyAPIView
+):
     """
     Edit or delete a single line, scoped to its quote so a foreign id can't be
     touched. PATCH updates the line's quantity/discount (recomputing its amount);
@@ -127,28 +130,29 @@ class QuoteStatusTransitionsView(generics.RetrieveAPIView):
         )
 
 
-class QuoteStatusUpdateView(generics.GenericAPIView):
+class QuoteStatusUpdateView(DatabaseLockedUpdateMixin, generics.GenericAPIView):
     """Apply a guarded status transition and return the updated quote."""
 
     queryset = Quote.objects.all()
     serializer_class = QuoteStatusRequestSerializer
 
     def patch(self, request, *args, **kwargs):
-        quote = self.get_object()
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        change_quote_status(
-            quote,
-            serializer.validated_data["status"],
-            note=serializer.validated_data.get("note"),
-        )
-        quotes_with_people([quote])
-        data = QuoteSerializer(quote).data
-        # When the transition spawned (or matched an existing) work order, surface its
-        # id so the caller can jump straight to the new Lavorazione.
-        if getattr(quote, "work_order", None) is not None:
-            data["workOrderId"] = str(quote.work_order.id)
-        return Response(data)
+        with self.locked_update():
+            quote = self.get_object()
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            change_quote_status(
+                quote,
+                serializer.validated_data["status"],
+                note=serializer.validated_data.get("note"),
+            )
+            quotes_with_people([quote])
+            data = QuoteSerializer(quote).data
+            # When the transition spawned (or matched an existing) work order, surface its
+            # id so the caller can jump straight to the new Lavorazione.
+            if getattr(quote, "work_order", None) is not None:
+                data["workOrderId"] = str(quote.work_order.id)
+            return Response(data)
 
 
 class QuoteDeliveryFormView(APIView):
