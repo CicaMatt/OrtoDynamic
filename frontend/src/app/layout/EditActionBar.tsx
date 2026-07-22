@@ -11,11 +11,9 @@ export function EditActionBar() {
   const creating = session.mode === 'create';
 
   const handleSave = async () => {
-    const result = await save();
-    // On a successful create, land on the new record's detail view.
-    if (result.ok && result.created) {
-      replace(entityDetailRoute(result.created.type, result.created.id));
-    }
+    // Apply a successful create's destination before the edit session closes,
+    // so the create view never renders for one frame without its required draft.
+    await save((created) => replace(entityDetailRoute(created.type, created.id)));
   };
 
   const handleCancel = () => {

@@ -9,6 +9,7 @@
     "lint": "eslint . --max-warnings 0",
     "format:check": "prettier --check eslint.config.js vite.config.ts package.json tsconfig.json tsconfig.node.json tests src",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "preview": "vite preview"
   },
@@ -23,6 +24,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^2.1.9",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^7.1.1",

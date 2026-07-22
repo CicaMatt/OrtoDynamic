@@ -33,7 +33,7 @@ type EntityEditValue = {
   change: <K extends EntityKind>(type: K, key: keyof EntityDraftMap[K], value: string) => void;
   supplement: (action: SupplementalEditAction) => void;
   cancel: () => void;
-  save: () => Promise<SaveResult>;
+  save: (onCreated?: (target: EditTarget) => void) => Promise<SaveResult>;
 };
 
 const EntityEditContext = createContext<EntityEditValue | null>(null);
@@ -86,7 +86,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     setSessionState((current) => applySupplement(current, action));
   }, []);
 
-  const save = (): Promise<SaveResult> => {
+  const save = (onCreated?: (target: EditTarget) => void): Promise<SaveResult> => {
     if (saveInFlight.current) return saveInFlight.current;
     if (!session) return Promise.resolve({ ok: true });
 
@@ -108,6 +108,7 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
     const operation = (async () => {
       try {
         const result = await preparation.execute();
+        if (result.created) onCreated?.(result.created);
         closeSession();
         setDataVersion((version) => version + 1);
         return result;

@@ -25,7 +25,7 @@ const clientActions = [
 export function ClientDetailView() {
   const { clientId } = useRoute('client-detail');
   const { navigate, back } = useNavigation();
-  const { draft, startEdit, seed, change } = useClientEditor();
+  const { draft, invalidFields, startEdit, seed, change } = useClientEditor();
 
   const { data, loading, error, isEditing } = useEntityDetail({
     type: 'client',
@@ -136,6 +136,7 @@ export function ClientDetailView() {
           data={data}
           editing={isEditing}
           onChange={change}
+          invalidKeys={invalidFields}
           doctorName={doctorName}
           autocompleteFields={{ ...municipalityFields, ...doctorFields }}
         />

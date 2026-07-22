@@ -3,6 +3,9 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from apps.common.exceptions import NotFoundError
 from apps.quotes import selectors
 from apps.quotes.document_rows import QuoteDocumentItem
 
@@ -130,7 +133,9 @@ def test_ddt_inputs_bundle_the_required_client_and_prepared_rows():
 
     with (
         patch.object(selectors.Quote.objects, "filter", return_value=quote_query) as quote_filter,
-        patch.object(selectors.Client.objects, "filter", return_value=client_query) as client_filter,
+        patch.object(
+            selectors.Client.objects, "filter", return_value=client_query
+        ) as client_filter,
         patch.object(selectors, "ddt_item_rows", return_value=rows) as item_rows,
     ):
         assert selectors.ddt_document_inputs(500) == (quote, client, rows)
@@ -138,3 +143,39 @@ def test_ddt_inputs_bundle_the_required_client_and_prepared_rows():
     quote_filter.assert_called_once_with(pk=500)
     client_filter.assert_called_once_with(pk=21)
     item_rows.assert_called_once_with(500)
+
+
+def test_delivery_form_inputs_reject_a_missing_quote():
+    quote_query = MagicMock()
+    quote_query.first.return_value = None
+
+    with (
+        patch.object(selectors.Quote.objects, "filter", return_value=quote_query),
+        patch.object(selectors.Client.objects, "filter") as client_filter,
+        pytest.raises(NotFoundError, match="Preventivo inesistente"),
+    ):
+        selectors.delivery_form_inputs(404)
+
+    client_filter.assert_not_called()
+
+
+@pytest.mark.parametrize("quote", [None, SimpleNamespace(id=500, id_cliente=21)])
+def test_required_document_inputs_reject_missing_quote_or_client(quote):
+    quote_query = MagicMock()
+    quote_query.first.return_value = quote
+    client_query = MagicMock()
+    client_query.first.return_value = None
+
+    with (
+        patch.object(selectors.Quote.objects, "filter", return_value=quote_query),
+        patch.object(
+            selectors.Client.objects, "filter", return_value=client_query
+        ) as client_filter,
+        pytest.raises(NotFoundError, match="Preventivo non trovato"),
+    ):
+        selectors._quote_and_required_client(500)
+
+    if quote is None:
+        client_filter.assert_not_called()
+    else:
+        client_filter.assert_called_once_with(pk=21)

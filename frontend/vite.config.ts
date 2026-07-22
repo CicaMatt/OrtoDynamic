@@ -13,5 +13,11 @@ export default defineConfig({
     setupFiles: './tests/setup.ts',
     clearMocks: true,
     restoreMocks: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      reporter: ['text', 'html', 'lcov'],
+      reportsDirectory: 'coverage',
+    },
   },
 });
