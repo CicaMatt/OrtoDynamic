@@ -8,8 +8,38 @@ import pytest
 
 from apps.common.exceptions import ConflictError
 from apps.quotes.api.serializers import QuoteCreateSerializer
+from apps.quotes.api.views import QuoteStatusTransitionsView
 from apps.quotes.models import Quote
 from apps.quotes import services
+
+
+def test_quote_create_requires_only_its_persistence_owner_at_the_api_boundary():
+    missing_client = QuoteCreateSerializer(data={})
+    incomplete_draft = QuoteCreateSerializer(data={"clientId": 21})
+    client_query = MagicMock()
+    client_query.exists.return_value = True
+
+    assert not missing_client.is_valid()
+    assert set(missing_client.errors) == {"clientId"}
+    # Quote type and clinical fields remain create-screen UX policy for now.
+    with patch(
+        "apps.quotes.api.serializers.Client.objects.filter", return_value=client_query
+    ) as client_filter:
+        assert incomplete_draft.is_valid(), incomplete_draft.errors
+    client_filter.assert_called_once_with(pk=21)
+
+
+def test_quote_create_rejects_a_missing_legacy_client_reference():
+    serializer = QuoteCreateSerializer(data={"clientId": 404})
+    client_query = MagicMock()
+    client_query.exists.return_value = False
+
+    with patch(
+        "apps.quotes.api.serializers.Client.objects.filter", return_value=client_query
+    ):
+        assert not serializer.is_valid()
+
+    assert set(serializer.errors) == {"clientId"}
 
 
 @pytest.mark.parametrize(
@@ -36,14 +66,19 @@ from apps.quotes import services
 )
 def test_quote_creation_with_initial_items(items, expected_item_calls, initializes_empty_total):
     serializer = QuoteCreateSerializer(data={"clientId": 21, "quoteNumber": "PR-500", "items": items})
-    assert serializer.is_valid(), serializer.errors
+    client_query = MagicMock()
+    client_query.exists.return_value = True
+    with patch(
+        "apps.quotes.api.serializers.Client.objects.filter", return_value=client_query
+    ):
+        assert serializer.is_valid(), serializer.errors
     quote = Quote(id=500, id_cliente=21, numero_preventivo="PR-500", stato="INSERITO")
 
     with (
-        patch("apps.quotes.api.serializers.transaction.atomic", return_value=nullcontext()),
+        patch.object(services.transaction, "atomic", return_value=nullcontext()),
         patch.object(Quote.objects, "create", return_value=quote) as create,
-        patch("apps.quotes.api.serializers.create_quote_item") as create_item,
-        patch("apps.quotes.api.serializers.recompute_quote_total") as recompute,
+        patch.object(services, "create_quote_item") as create_item,
+        patch.object(services, "recompute_quote_total") as recompute,
     ):
         assert serializer.save() is quote
 
@@ -57,6 +92,33 @@ def test_quote_creation_with_initial_items(items, expected_item_calls, initializ
         recompute.assert_called_once_with(500)
     else:
         recompute.assert_not_called()
+
+
+def test_quote_creation_compensates_when_an_item_fails():
+    quote = Quote(id=500, id_cliente=21, stato="INSERITO")
+    quote_items = MagicMock()
+    quote_row = MagicMock()
+    failure = RuntimeError("item insert failed")
+
+    with (
+        patch.object(services.transaction, "atomic", return_value=nullcontext()),
+        patch.object(services.Quote.objects, "create", return_value=quote),
+        patch.object(services, "create_quote_item", side_effect=failure),
+        patch.object(
+            services.QuoteItem.objects, "filter", return_value=quote_items
+        ) as items_filter,
+        patch.object(services.Quote.objects, "filter", return_value=quote_row) as quote_filter,
+        pytest.raises(RuntimeError, match="item insert failed"),
+    ):
+        services.create_quote_with_items(
+            {"id_cliente": 21},
+            [{"product_id": 7, "quantity": 1, "discount": None}],
+        )
+
+    items_filter.assert_called_once_with(id_preventivo=500)
+    quote_filter.assert_called_once_with(pk=500)
+    quote_items.delete.assert_called_once_with()
+    quote_row.delete.assert_called_once_with()
 
 
 def test_create_quote_item_derives_money_and_recomputes_total():
@@ -134,7 +196,10 @@ def test_allowed_status_transition_saves_note_and_attaches_work_order():
 
     with (
         patch.object(services, "allowed_target_states", return_value=["IN LAVORAZIONE"]),
-        patch.object(services, "create_work_order_from_quote", return_value=work_order) as create,
+        patch(
+            "apps.work_orders.services.create_work_order_from_quote",
+            return_value=work_order,
+        ) as create,
     ):
         assert services.change_quote_status(
             quote, "IN LAVORAZIONE", note="Autorizzazione ricevuta"
@@ -157,7 +222,7 @@ def test_rejected_status_transition_has_no_side_effects():
 
     with (
         patch.object(services, "allowed_target_states", return_value=["SOSPESO"]),
-        patch.object(services, "create_work_order_from_quote") as create,
+        patch("apps.work_orders.services.create_work_order_from_quote") as create,
         pytest.raises(ConflictError, match="Transizione di stato non consentita"),
     ):
         services.change_quote_status(quote, "IN LAVORAZIONE")
@@ -167,13 +232,48 @@ def test_rejected_status_transition_has_no_side_effects():
     assert quote.stato == "INSERITO"
 
 
+def test_status_transition_metadata_marks_work_order_side_effects():
+    quote = SimpleNamespace(STATUS_TABLE="PREVENTIVI", stato="ACCETTATO")
+
+    with patch.object(
+        services,
+        "allowed_target_states",
+        return_value=["IN LAVORAZIONE", "SOSPESO"],
+    ):
+        assert services.quote_status_transition_options(quote) == [
+            {"status": "IN LAVORAZIONE", "createsWorkOrder": True},
+            {"status": "SOSPESO", "createsWorkOrder": False},
+        ]
+
+
+def test_status_transition_response_retains_strings_alongside_metadata():
+    quote = SimpleNamespace(stato="ACCETTATO")
+    options = [
+        {"status": "IN LAVORAZIONE", "createsWorkOrder": True},
+        {"status": "SOSPESO", "createsWorkOrder": False},
+    ]
+    view = QuoteStatusTransitionsView()
+
+    with (
+        patch.object(view, "get_object", return_value=quote),
+        patch("apps.quotes.api.views.quote_status_transition_options", return_value=options),
+    ):
+        response = view.retrieve(MagicMock())
+
+    assert response.data == {
+        "current": "ACCETTATO",
+        "available": ["IN LAVORAZIONE", "SOSPESO"],
+        "options": options,
+    }
+
+
 def test_delete_quote_removes_only_its_work_orders_and_lines():
-    quote = SimpleNamespace(id=500, delete=MagicMock())
     work_order_lookup = MagicMock()
     work_order_lookup.values_list.return_value = [900, 901]
     work_order_delete = MagicMock()
     work_order_item_delete = MagicMock()
     quote_item_delete = MagicMock()
+    quote_delete = MagicMock()
 
     with (
         patch("apps.quotes.services.transaction.atomic", return_value=nullcontext()),
@@ -188,8 +288,11 @@ def test_delete_quote_removes_only_its_work_orders_and_lines():
         patch.object(
             services.QuoteItem.objects, "filter", return_value=quote_item_delete
         ) as quote_item_filter,
+        patch.object(
+            services.Quote.objects, "filter", return_value=quote_delete
+        ) as quote_filter,
     ):
-        services.delete_quote_with_related(quote)
+        services.delete_quote_graph(500)
 
     assert work_order_filter.call_args_list == [
         call(id_preventivo=500),
@@ -197,7 +300,8 @@ def test_delete_quote_removes_only_its_work_orders_and_lines():
     ]
     work_order_item_filter.assert_called_once_with(id_lavorazione__in=[900, 901])
     quote_item_filter.assert_called_once_with(id_preventivo=500)
+    quote_filter.assert_called_once_with(pk=500)
     work_order_item_delete.delete.assert_called_once_with()
     work_order_delete.delete.assert_called_once_with()
     quote_item_delete.delete.assert_called_once_with()
-    quote.delete.assert_called_once_with()
+    quote_delete.delete.assert_called_once_with()

@@ -1,31 +1,35 @@
 import { useState } from 'react';
 import { Icon } from '../ui/Icon';
 
+export type StatusChangeOption = {
+  value: string;
+  label?: string;
+  confirmationMessage?: string;
+};
+
 /**
  * Modal for changing an entity's status. Presentational: the caller supplies the
  * selectable states (static or fetched) and the `onApply` action, so the same
  * dialog serves both rule-driven (quotes) and free-choice (work orders) flows.
  * Picking a state applies it, then reports back so the detail view can refresh.
  *
- * A caller may pass `confirmTarget` to require confirmation for certain targets
- * (e.g. a transition that also creates entities): picking such a state shows an
- * in-dialog confirm step first, and cancelling returns to the list with no change.
+ * An option may carry a confirmation message when its transition has a meaningful
+ * side effect. Picking it shows an in-dialog confirmation step first.
  */
 export function StatusChangeDialog({
   title,
   currentStatus,
-  available,
+  options,
   loading = false,
   error = null,
   emptyLabel,
   onApply,
   onClose,
   onChanged,
-  confirmTarget,
 }: {
   title: string;
   currentStatus: string;
-  available: ReadonlyArray<string>;
+  options: ReadonlyArray<StatusChangeOption>;
   /** Whether the selectable states are still being loaded. */
   loading?: boolean;
   /** Error from loading the selectable states, if any. */
@@ -35,11 +39,6 @@ export function StatusChangeDialog({
   onApply: (target: string) => Promise<unknown>;
   onClose: () => void;
   onChanged: () => void;
-  /**
-   * Optional guard: return a confirmation message for a target that needs one
-   * (e.g. it also creates entities), or `null` to apply the target directly.
-   */
-  confirmTarget?: (target: string) => string | null;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -59,13 +58,12 @@ export function StatusChangeDialog({
     }
   };
 
-  const select = (target: string) => {
-    const message = confirmTarget?.(target);
-    if (message) {
+  const select = (option: StatusChangeOption) => {
+    if (option.confirmationMessage) {
       setSubmitError(null);
-      setPending({ target, message });
+      setPending({ target: option.value, message: option.confirmationMessage });
     } else {
-      void apply(target);
+      void apply(option.value);
     }
   };
 
@@ -118,19 +116,19 @@ export function StatusChangeDialog({
                 <p className="font-body-md text-body-md text-on-surface-variant">Caricamento stati…</p>
               ) : error ? (
                 <p className="font-body-md text-body-md text-error">{error}</p>
-              ) : available.length === 0 ? (
+              ) : options.length === 0 ? (
                 <p className="font-body-md text-body-md text-on-surface-variant">{emptyLabel}</p>
               ) : (
                 <div className="space-y-[8px]">
-                  {available.map((target) => (
+                  {options.map((option) => (
                     <button
-                      key={target}
+                      key={option.value}
                       type="button"
                       disabled={submitting}
-                      onClick={() => select(target)}
+                      onClick={() => select(option)}
                       className="flex w-full items-center justify-between rounded-[6px] border border-outline-variant px-[16px] py-[12px] text-left font-body-md text-body-md text-on-surface hover:bg-surface-container-low disabled:opacity-50"
                     >
-                      {target}
+                      {option.label ?? option.value}
                       <Icon name="arrow_forward" className="text-[18px] text-secondary" />
                     </button>
                   ))}
@@ -148,7 +146,7 @@ export function StatusChangeDialog({
                 disabled={submitting}
                 className="h-[40px] rounded-[6px] border border-outline-variant px-[18px] font-body-md text-body-md font-semibold text-on-surface hover:bg-surface-container-high disabled:opacity-50"
               >
-                Chiudi
+                Annulla
               </button>
             </div>
           </>

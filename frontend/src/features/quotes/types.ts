@@ -59,7 +59,14 @@ export type Quote = {
  */
 export type QuoteStatusTransitions = {
   current: string;
+  /** Compatibility list retained while consumers migrate to `options`. */
   available: string[];
+  options: QuoteStatusTransitionOption[];
+};
+
+export type QuoteStatusTransitionOption = {
+  status: string;
+  createsWorkOrder: boolean;
 };
 
 /**

@@ -1,18 +1,62 @@
 """
 Read-side queries for the quotes app.
 
-These selectors load a quote's line items together with their catalogue product in a
-fixed number of queries (no per-row lookups) and shape them into the plain rows the
-PDF document generators consume. Keeping the data access here lets the views stay
-thin and the `apps.quotes.documents` generators stay pure — they accept any object
-exposing the documented fields, with no knowledge of the ORM.
+The legacy schema stores relationships as integer columns rather than Django foreign
+keys. These selectors resolve those relationships in batches and attach the transient
+attributes consumed by the API serializers. They also assemble the ORM inputs for
+quote-owned documents, keeping database knowledge out of views and renderers.
 """
-from __future__ import annotations
-
 from types import SimpleNamespace
 
+from apps.clients.models import Client
+from apps.common.exceptions import NotFoundError
+from apps.common.selectors import attach_many
+from apps.doctors.models import Doctor
 from apps.products.models import Product
-from apps.quotes.models import QuoteItem
+from apps.quotes.models import Quote, QuoteItem
+from apps.work_orders.models import WorkOrder
+
+
+def quotes_with_people(quotes):
+    """Materialize quotes with their referenced client and doctor attached."""
+    return attach_many(
+        quotes,
+        {"id_attr": "id_cliente", "attr": "client", "model": Client},
+        {"id_attr": "id_medico", "attr": "doctor", "model": Doctor},
+    )
+
+
+def quotes_with_read_relations(quotes):
+    """
+    Materialize quotes with their client, doctor, and first work order attached.
+
+    Client and doctor references are loaded in one query each. Work orders are
+    ordered by id so duplicate legacy rows preserve the API's existing "first row"
+    behavior.
+    """
+    quotes = quotes_with_people(quotes)
+    quote_ids = [quote.id for quote in quotes]
+    work_orders = WorkOrder.objects.filter(id_preventivo__in=quote_ids).order_by("id")
+    first_work_order_by_quote = {}
+    for work_order in work_orders:
+        first_work_order_by_quote.setdefault(work_order.id_preventivo, work_order)
+    for quote in quotes:
+        quote.work_order = first_work_order_by_quote.get(quote.id)
+    return quotes
+
+
+def quote_items_with_products(quote_id):
+    """
+    A quote's line items with each catalogue product attached as ``item.product``.
+
+    Missing products remain ``None`` and all products are loaded in one query.
+    """
+    items = list(QuoteItem.objects.filter(id_preventivo=quote_id).order_by("id"))
+    product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
+    products = Product.objects.in_bulk(product_ids)
+    for item in items:
+        item.product = products.get(item.codice_nomenclatore)
+    return items
 
 
 def _items_with_products(quote_id):
@@ -20,10 +64,36 @@ def _items_with_products(quote_id):
     A quote's line items, each paired with its catalogue product (``None`` when the
     product no longer exists), ordered by id. The products are fetched in one query.
     """
-    items = list(QuoteItem.objects.filter(id_preventivo=quote_id).order_by("id"))
-    product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
-    products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
-    return [(item, products.get(item.codice_nomenclatore)) for item in items]
+    return [(item, item.product) for item in quote_items_with_products(quote_id)]
+
+
+def delivery_form_inputs(quote_id):
+    """The quote and optional client required by the delivery-form generator."""
+    quote = Quote.objects.filter(pk=quote_id).first()
+    if quote is None:
+        raise NotFoundError("Preventivo inesistente.")
+    client = Client.objects.filter(pk=quote.id_cliente).first()
+    return quote, client
+
+
+def ddt_document_inputs(quote_id):
+    """The quote, required client, and product-enriched rows required by the DDT."""
+    quote, client = _quote_and_required_client(quote_id)
+    return quote, client, ddt_item_rows(quote.id)
+
+
+def scheda_document_inputs(quote_id):
+    """The quote, required client, and product-enriched rows for Scheda Progetto."""
+    quote, client = _quote_and_required_client(quote_id)
+    return quote, client, scheda_item_rows(quote.id)
+
+
+def _quote_and_required_client(quote_id):
+    quote = Quote.objects.filter(pk=quote_id).first()
+    client = Client.objects.filter(pk=quote.id_cliente).first() if quote else None
+    if quote is None or client is None:
+        raise NotFoundError("Preventivo non trovato.")
+    return quote, client
 
 
 def ddt_item_rows(quote_id):

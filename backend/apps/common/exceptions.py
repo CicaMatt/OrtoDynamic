@@ -58,5 +58,45 @@ def api_exception_handler(exc, context):
 
     response = drf_exception_handler(exc, context)
     if response is not None:
-        response.data = {"error": response.data}
+        fields = _field_messages(response.data)
+        error = {"message": _primary_message(response.data, fields)}
+        if fields:
+            error["fields"] = fields
+        response.data = {"error": error}
     return response
+
+
+def _field_messages(detail):
+    if not isinstance(detail, dict):
+        return {}
+    fields = {}
+    for field, value in detail.items():
+        if field in {"detail", "non_field_errors"}:
+            continue
+        messages = _messages(value)
+        if messages:
+            fields[str(field)] = messages
+    return fields
+
+
+def _primary_message(detail, fields):
+    if isinstance(detail, dict):
+        for key in ("detail", "non_field_errors"):
+            messages = _messages(detail.get(key))
+            if messages:
+                return messages[0]
+    elif messages := _messages(detail):
+        return messages[0]
+    if fields:
+        return "Controlla i campi evidenziati."
+    return "Richiesta non valida."
+
+
+def _messages(value):
+    if value is None:
+        return []
+    if isinstance(value, dict):
+        return [message for nested in value.values() for message in _messages(nested)]
+    if isinstance(value, (list, tuple)):
+        return [message for nested in value for message in _messages(nested)]
+    return [str(value)]

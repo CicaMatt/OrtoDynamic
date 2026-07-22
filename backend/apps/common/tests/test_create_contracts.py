@@ -120,3 +120,35 @@ def test_simple_create_response_contracts(
     else:
         assert actual_create == expected_create
     assert serializer.data == expected_response
+
+
+@pytest.mark.parametrize(
+    ("serializer_class", "payload", "required_fields"),
+    [
+        (DoctorCreateSerializer, {}, {"name", "surname"}),
+        (DoctorCreateSerializer, {"name": " ", "surname": " "}, {"name", "surname"}),
+        (ProductCreateSerializer, {}, {"code", "description", "price"}),
+        (
+            ProductCreateSerializer,
+            {"code": " ", "description": " ", "price": None},
+            {"code", "description", "price"},
+        ),
+    ],
+)
+def test_create_only_persistence_invariants_are_rejected_before_database_write(
+    serializer_class, payload, required_fields
+):
+    serializer = serializer_class(data=payload)
+
+    assert not serializer.is_valid()
+    assert set(serializer.errors) == required_fields
+
+
+@pytest.mark.parametrize(
+    "serializer_class",
+    [ClientCreateSerializer, HealthCompanyCreateSerializer],
+)
+def test_permissive_legacy_create_fields_remain_ux_policy(serializer_class):
+    serializer = serializer_class(data={})
+
+    assert serializer.is_valid(), serializer.errors

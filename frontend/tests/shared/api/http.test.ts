@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  ApiError,
   apiDelete,
   apiGet,
   apiPost,
@@ -49,6 +50,28 @@ describe('HTTP client', () => {
 
     await expect(apiGet('/clients/')).rejects.toThrow('Sessione scaduta.');
     expect(unauthorized).toHaveBeenCalledOnce();
+  });
+
+  it('preserves field-validation details on API errors', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: {
+            message: 'Controlla i campi evidenziati.',
+            fields: { price: ['Inserisci un numero valido.'] },
+          },
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    const failure = await apiPost('/products/', {}).catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(ApiError);
+    expect(failure).toMatchObject({
+      message: 'Controlla i campi evidenziati.',
+      fields: { price: ['Inserisci un numero valido.'] },
+    });
   });
 
   it('falls back to a status message for malformed error bodies', async () => {

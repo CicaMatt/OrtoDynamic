@@ -35,7 +35,6 @@ export const quoteEditableKeys = [
   'acceptanceDate',
   'authorizationReceiptDate',
   'expiryDays',
-  'maxExpiry',
   'measurementsOk',
   'commissionsPaid',
   'orderNumber',
@@ -88,10 +87,10 @@ function makeEmptyQuote(): Quote {
  * Quote's "Data Massima Scadenza" derived from "Giorni Massima Scadenza": today
  * plus that many days, as an ISO date. Blank when the days are missing or invalid.
  */
-function maxExpiryFromDays(days: string): string {
+export function previewMaxExpiryFromDays(days: string, today = todayIso()): string {
   const count = Number(days);
   if (days.trim() === '' || !Number.isInteger(count) || count < 0) return '';
-  return addDaysIso(todayIso(), count);
+  return addDaysIso(today, count);
 }
 
 function buildQuotePayload(changes: Record<string, unknown>): QuoteUpdate {
@@ -133,7 +132,7 @@ export const quoteEditConfig: EntityEditConfig<'quote'> = {
   applyFieldChange: (draft, key, value) => {
     if (key === 'expiryDays' && !/^\d*$/.test(value)) return null;
     const next = { ...draft, [key]: value };
-    if (key === 'expiryDays') next.maxExpiry = maxExpiryFromDays(value);
+    if (key === 'expiryDays') next.maxExpiry = previewMaxExpiryFromDays(value);
     return next;
   },
 };

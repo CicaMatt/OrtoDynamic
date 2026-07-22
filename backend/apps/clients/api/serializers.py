@@ -179,8 +179,9 @@ class ClientUpdateSerializer(UpdateFieldsSerializer):
 class ClientCreateSerializer(CreatableSerializerMixin, ClientUpdateSerializer):
     """
     Create a client. Reuses every writable field from the update serializer; the
-    database assigns the id (AUTO_INCREMENT). Required-field enforcement lives in
-    the frontend form, so all fields stay optional here.
+    database assigns the id (AUTO_INCREMENT). The create screen asks for a complete
+    demographic record as UX policy, while the permissive legacy table supports
+    incomplete records, so the backend deliberately keeps these fields optional.
     """
 
     create_model = Client

@@ -1,9 +1,8 @@
 """Work-order orchestration, validation, and relation response contracts."""
 
-from contextlib import nullcontext
 from datetime import date
 from types import SimpleNamespace
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -18,6 +17,7 @@ from apps.work_orders.api.serializers import (
 )
 from apps.work_orders.models import WorkOrder, WorkOrderItem
 from apps.work_orders import services
+from apps.work_orders.api.views import WorkOrderDetailView
 
 
 def test_work_order_creation_is_idempotent_for_a_quote():
@@ -33,45 +33,13 @@ def test_work_order_creation_is_idempotent_for_a_quote():
     create.assert_not_called()
 
 
-def test_delete_work_order_removes_its_quote_and_all_same_quote_siblings():
+def test_work_order_deletion_delegates_the_full_quote_graph_by_quote_id():
     work_order = SimpleNamespace(id=900, id_preventivo=500)
-    lookup = MagicMock()
-    lookup.values_list.return_value = [901]
-    work_order_delete = MagicMock()
-    item_delete = MagicMock()
-    quote_item_delete = MagicMock()
-    quote_delete = MagicMock()
 
-    with (
-        patch.object(services.transaction, "atomic", return_value=nullcontext()),
-        patch.object(
-            services.WorkOrder.objects,
-            "filter",
-            side_effect=[lookup, work_order_delete],
-        ) as work_order_filter,
-        patch.object(
-            services.WorkOrderItem.objects, "filter", return_value=item_delete
-        ) as item_filter,
-        patch.object(
-            services.QuoteItem.objects, "filter", return_value=quote_item_delete
-        ) as quote_item_filter,
-        patch.object(
-            services.Quote.objects, "filter", return_value=quote_delete
-        ) as quote_filter,
-    ):
-        services.delete_work_order_with_related(work_order)
+    with patch("apps.work_orders.api.views.delete_quote_graph") as delete_graph:
+        WorkOrderDetailView().perform_destroy(work_order)
 
-    assert work_order_filter.call_args_list == [
-        call(id_preventivo=500),
-        call(id__in=[901, 900]),
-    ]
-    item_filter.assert_called_once_with(id_lavorazione__in=[901, 900])
-    quote_item_filter.assert_called_once_with(id_preventivo=500)
-    quote_filter.assert_called_once_with(pk=500)
-    item_delete.delete.assert_called_once_with()
-    work_order_delete.delete.assert_called_once_with()
-    quote_item_delete.delete.assert_called_once_with()
-    quote_delete.delete.assert_called_once_with()
+    delete_graph.assert_called_once_with(500)
 
 
 @pytest.mark.parametrize(

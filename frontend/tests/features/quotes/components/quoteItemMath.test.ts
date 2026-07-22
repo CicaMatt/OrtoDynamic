@@ -12,6 +12,16 @@ import {
 } from '../../../../src/features/quotes/components/quoteItemMath';
 
 describe('quote item math', () => {
+  const parityCases = [
+    ['10', '3', '', '30'],
+    ['50', '2', '25', '75'],
+    ['40', '2', '100', '0'],
+    ['9.99', '3', '10', '26.97'],
+    ['1.005', '1', '', '1.01'],
+    ['', '5', '20', ''],
+    ['10', '', '20', ''],
+  ] as const;
+
   it('parses optional numbers without leaking NaN', () => {
     expect(toNullableNumber('')).toBeNull();
     expect(toNullableNumber(' 12.5 ')).toBe(12.5);
@@ -19,9 +29,9 @@ describe('quote item math', () => {
   });
 
   it('previews line amounts and discounts with currency precision', () => {
-    expect(previewAmount('12.50', '3', '')).toBe('37.5');
-    expect(previewAmount('12.50', '3', '20')).toBe('30');
-    expect(previewAmount('', '3', '20')).toBe('');
+    for (const [price, quantity, discount, expected] of parityCases) {
+      expect(previewAmount(price, quantity, discount)).toBe(expected);
+    }
     expect(previewAmount('invalid', '3', '')).toBe('');
   });
 

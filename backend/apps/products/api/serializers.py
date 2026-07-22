@@ -34,7 +34,11 @@ class ProductUpdateSerializer(UpdateFieldsSerializer):
 
 
 class ProductCreateSerializer(CreatableSerializerMixin, ProductUpdateSerializer):
-    """Create a product, reusing the update serializer's writable fields."""
+    """Create a product; catalogue identity and price are required."""
+
+    code = serializers.CharField(source="codice", max_length=255)
+    description = serializers.CharField(source="descrizione", max_length=4000)
+    price = serializers.FloatField(source="prezzo")
 
     create_model = Product
     read_serializer_class = ProductSerializer

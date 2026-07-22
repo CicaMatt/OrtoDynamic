@@ -56,7 +56,10 @@ class DoctorUpdateSerializer(UpdateFieldsSerializer):
 
 
 class DoctorCreateSerializer(CreatableSerializerMixin, DoctorUpdateSerializer):
-    """Create a doctor, reusing the update serializer's writable fields."""
+    """Create a doctor; identity fields are true persistence requirements."""
+
+    surname = serializers.CharField(source="cognome", max_length=255)
+    name = serializers.CharField(source="nome", max_length=255)
 
     create_model = Doctor
     read_serializer_class = DoctorDetailSerializer

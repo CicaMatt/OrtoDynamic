@@ -1,9 +1,8 @@
 """Work order business operations that go beyond plain field updates."""
-from django.db import transaction
 from django.utils import timezone
 
 from apps.products.models import Product
-from apps.quotes.models import Quote, QuoteItem
+from apps.quotes.models import QuoteItem
 from apps.work_orders.models import WorkOrder, WorkOrderItem
 
 # Quote target states that spawn a work order. Both variants create the work order
@@ -69,30 +68,6 @@ def create_work_order_from_quote(quote):
         raise
 
     return work_order
-
-
-def delete_work_order_with_related(work_order):
-    """
-    Delete a work order and the quote it was created from.
-
-    These legacy tables have no database-level cascading rules. Removing a
-    work order therefore also removes its `item_lavorazioni` rows, the associated
-    quote, that quote's `item_preventivi` rows, and any sibling work orders that
-    point at the same quote.
-    """
-    quote_id = work_order.id_preventivo
-
-    with transaction.atomic():
-        work_order_ids = list(
-            WorkOrder.objects.filter(id_preventivo=quote_id).values_list("id", flat=True)
-        )
-        if work_order.id not in work_order_ids:
-            work_order_ids.append(work_order.id)
-
-        WorkOrderItem.objects.filter(id_lavorazione__in=work_order_ids).delete()
-        WorkOrder.objects.filter(id__in=work_order_ids).delete()
-        QuoteItem.objects.filter(id_preventivo=quote_id).delete()
-        Quote.objects.filter(pk=quote_id).delete()
 
 
 def _code_to_int(code):

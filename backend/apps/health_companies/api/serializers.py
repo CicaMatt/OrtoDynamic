@@ -60,7 +60,12 @@ class HealthCompanyUpdateSerializer(UpdateFieldsSerializer):
 
 
 class HealthCompanyCreateSerializer(CreatableSerializerMixin, HealthCompanyUpdateSerializer):
-    """Create a health company, reusing the update serializer's writable fields."""
+    """
+    Create a health company using the permissive legacy contract.
+
+    The screen requests a company name for usability, but every mapped legacy
+    column is nullable, so that requirement remains frontend UX policy.
+    """
 
     create_model = HealthCompany
     read_serializer_class = HealthCompanyDetailSerializer

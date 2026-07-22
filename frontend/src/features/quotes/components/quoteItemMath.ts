@@ -18,6 +18,10 @@ export function toNullableNumber(raw: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+function roundCurrency(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
 /**
  * Live preview of importo: `prezzo × quantità`, reduced by the discount percent
  * when one is set (mirroring the backend's `line_amount`). Blank until both price
@@ -39,7 +43,7 @@ export function previewAmount(price: string, quantity: string, discount: string)
   if (discount.trim() !== '' && Number.isFinite(percent)) {
     amount *= 1 - percent / 100;
   }
-  return String(Math.round(amount * 100) / 100);
+  return String(roundCurrency(amount));
 }
 
 /**
@@ -54,7 +58,7 @@ export function draftItemsTotal(drafts: ReadonlyArray<QuoteItemDraft>): string {
     const amount = Number(previewAmount(item.price, item.quantity, item.discount));
     return Number.isFinite(amount) ? sum + amount : sum;
   }, 0);
-  return String(Math.round(total * 100) / 100);
+  return String(roundCurrency(total));
 }
 
 /**

@@ -18,6 +18,7 @@ const WORK_ORDER_STATUSES = [
   'IN REVISIONE DOPO CONSEGNA',
   'INVIATE A LACO PER MODIFICA',
 ] as const;
+const WORK_ORDER_STATUS_OPTIONS = WORK_ORDER_STATUSES.map((value) => ({ value }));
 
 /** Status dialog for a work order: any of the fixed states may be chosen. */
 export function WorkOrderStatusDialog({
@@ -35,7 +36,7 @@ export function WorkOrderStatusDialog({
     <StatusChangeDialog
       title="Cambia Stato Lavorazione"
       currentStatus={currentStatus}
-      available={WORK_ORDER_STATUSES}
+      options={WORK_ORDER_STATUS_OPTIONS}
       emptyLabel="Nessuno stato disponibile."
       onApply={(target) => changeWorkOrderStatus(workOrderId, target)}
       onClose={onClose}

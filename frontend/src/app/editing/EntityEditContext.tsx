@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { ApiError } from '../../shared/api/http';
 import {
   applySupplement,
   changeSession,
@@ -96,6 +97,14 @@ export function EntityEditProvider({ children }: { children: ReactNode }) {
       setDataVersion((version) => version + 1);
       return result;
     } catch (cause) {
+      if (cause instanceof ApiError) {
+        setSessionState((current) => {
+          const matchingFields = Object.keys(cause.fields).filter(
+            (field) => current?.draft && field in current.draft,
+          );
+          return current ? withInvalidFields(current, matchingFields) : current;
+        });
+      }
       setError(errorMessage(cause));
       return { ok: false };
     } finally {

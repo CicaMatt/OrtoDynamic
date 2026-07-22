@@ -6,16 +6,12 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.clients.models import Client
 from apps.common.api.views import (
     ReadUpdateDetailAPIView,
     UnpaginatedListCreateAPIView,
-    attach_many,
     inline_pdf_response,
 )
-from apps.common.exceptions import ServiceError, NotFoundError
-from apps.doctors.models import Doctor
-from apps.products.models import Product
+from apps.common.exceptions import ServiceError
 from apps.quotes.documents import (
     ddt_filename,
     delivery_form_filename,
@@ -28,10 +24,20 @@ from apps.quotes.documents import (
     scheda_filename,
 )
 from apps.quotes.models import Quote, QuoteItem
-from apps.quotes.selectors import ddt_item_rows, scheda_item_rows
-from apps.quotes.services import change_quote_status, delete_quote_item, delete_quote_with_related
-from apps.statuses.services import allowed_target_states
-from apps.work_orders.models import WorkOrder
+from apps.quotes.selectors import (
+    ddt_document_inputs,
+    delivery_form_inputs,
+    quote_items_with_products,
+    quotes_with_people,
+    quotes_with_read_relations,
+    scheda_document_inputs,
+)
+from apps.quotes.services import (
+    change_quote_status,
+    delete_quote_graph,
+    delete_quote_item,
+    quote_status_transition_options,
+)
 from .serializers import (
     QuoteCreateSerializer,
     QuoteItemCreateSerializer,
@@ -43,59 +49,13 @@ from .serializers import (
 )
 
 
-def attach_people(quotes):
-    """
-    Attach each quote's referenced client and doctor as `quote.client` /
-    `quote.doctor`, so `QuoteSerializer` can render their names without a per-row
-    lookup. Two batched queries, one per relation.
-    """
-    quotes = list(quotes)
-    return attach_many(
-        quotes,
-        {"id_attr": "id_cliente", "attr": "client", "model": Client},
-        {"id_attr": "id_medico", "attr": "doctor", "model": Doctor},
-    )
-
-
-def attach_work_orders(quotes):
-    """
-    Attach the work order created from each quote as `quote.work_order`, if any.
-    The relationship is stored as a plain integer column on `lavorazioni`, so it
-    is resolved explicitly instead of through a Django FK.
-    """
-    quotes = list(quotes)
-    quote_ids = [quote.id for quote in quotes]
-    work_orders = WorkOrder.objects.filter(id_preventivo__in=quote_ids).order_by("id")
-    by_quote = {}
-    for work_order in work_orders:
-        by_quote.setdefault(work_order.id_preventivo, work_order)
-    for quote in quotes:
-        quote.work_order = by_quote.get(quote.id)
-    return quotes
-
-
-def get_quote_or_404(pk):
-    quote = Quote.objects.filter(pk=pk).first()
-    if quote is None:
-        raise NotFoundError("Preventivo inesistente.")
-    return quote
-
-
-def get_quote_and_client_or_404(pk):
-    quote = Quote.objects.filter(pk=pk).first()
-    client = Client.objects.filter(pk=quote.id_cliente).first() if quote else None
-    if quote is None or client is None:
-        raise NotFoundError("Preventivo non trovato.")
-    return quote, client
-
-
 class QuoteListView(UnpaginatedListCreateAPIView):
     serializer_class = QuoteSerializer
     create_serializer_class = QuoteCreateSerializer
     queryset = Quote.objects.order_by("-id")
 
     def get_queryset(self):
-        return attach_work_orders(attach_people(super().get_queryset()))
+        return quotes_with_read_relations(super().get_queryset())
 
 
 class QuoteDetailView(ReadUpdateDetailAPIView):
@@ -105,13 +65,12 @@ class QuoteDetailView(ReadUpdateDetailAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         quote = self.get_object()
-        attach_people([quote])
-        attach_work_orders([quote])
+        quotes_with_read_relations([quote])
         serializer = self.get_serializer(quote)
         return Response(serializer.data)
 
     def perform_destroy(self, instance):
-        delete_quote_with_related(instance)
+        delete_quote_graph(instance.id)
 
 
 class QuoteItemListView(UnpaginatedListCreateAPIView):
@@ -126,16 +85,7 @@ class QuoteItemListView(UnpaginatedListCreateAPIView):
     create_serializer_class = QuoteItemCreateSerializer
 
     def get_queryset(self):
-        items = list(
-            QuoteItem.objects.filter(id_preventivo=self.kwargs["pk"]).order_by("id")
-        )
-        # Attach each line's product in one query so the serializer can render the
-        # description without a per-row lookup (a missing product stays None).
-        product_ids = {item.codice_nomenclatore for item in items if item.codice_nomenclatore}
-        products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
-        for item in items:
-            item.product = products.get(item.codice_nomenclatore)
-        return items
+        return quote_items_with_products(self.kwargs["pk"])
 
     def perform_create(self, serializer):
         serializer.save(quote_id=self.kwargs["pk"])
@@ -166,10 +116,13 @@ class QuoteStatusTransitionsView(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         quote = self.get_object()
+        options = quote_status_transition_options(quote)
         return Response(
             {
                 "current": quote.stato or "",
-                "available": allowed_target_states(quote.STATUS_TABLE, quote.stato),
+                # Retained for API compatibility while clients migrate to metadata.
+                "available": [option["status"] for option in options],
+                "options": options,
             }
         )
 
@@ -189,7 +142,7 @@ class QuoteStatusUpdateView(generics.GenericAPIView):
             serializer.validated_data["status"],
             note=serializer.validated_data.get("note"),
         )
-        attach_people([quote])
+        quotes_with_people([quote])
         data = QuoteSerializer(quote).data
         # When the transition spawned (or matched an existing) work order, surface its
         # id so the caller can jump straight to the new Lavorazione.
@@ -209,8 +162,7 @@ class QuoteDeliveryFormView(APIView):
     """
 
     def get(self, request, pk):
-        quote = get_quote_or_404(pk)
-        client = Client.objects.filter(pk=quote.id_cliente).first()
+        quote, client = delivery_form_inputs(pk)
         today = timezone.localdate()
         delivery_date = _delivery_form_date(request.query_params.get("delivery_date"), today)
         fields = prepare_delivery_form_fields(quote, client, today=delivery_date)
@@ -239,13 +191,13 @@ class QuoteDdtView(APIView):
     """
 
     def get(self, request, pk):
-        quote, client = get_quote_and_client_or_404(pk)
+        quote, client, items = ddt_document_inputs(pk)
         today = timezone.localdate()
         show_prices = request.query_params.get("include_prices") == "true"
         document = prepare_ddt(
             quote,
             client,
-            ddt_item_rows(quote.id),
+            items,
             today=today,
             show_prices=show_prices,
         )
@@ -264,8 +216,8 @@ class QuoteSchedaView(APIView):
     """
 
     def get(self, request, pk):
-        quote, client = get_quote_and_client_or_404(pk)
-        document = prepare_scheda(quote, client, scheda_item_rows(quote.id))
+        quote, client, items = scheda_document_inputs(pk)
+        document = prepare_scheda(quote, client, items)
         pdf = render_scheda(document)
 
         return inline_pdf_response(pdf, scheda_filename(quote))

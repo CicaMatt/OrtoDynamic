@@ -9,6 +9,8 @@ import { useQuoteEditor } from '../../../src/features/quotes/useQuoteEditor';
 import { useWorkOrderEditor } from '../../../src/features/workOrders/useWorkOrderEditor';
 import { useClientEditor } from '../../../src/features/clients/useClientEditor';
 import type { Client, ClientOrthopedic } from '../../../src/features/clients/types';
+import { useProductEditor } from '../../../src/features/products/useProductEditor';
+import { ApiError } from '../../../src/shared/api/http';
 
 const quoteApi = vi.hoisted(() => ({
   createQuote: vi.fn(),
@@ -22,10 +24,15 @@ const workOrderApi = vi.hoisted(() => ({
   updateWorkOrderItem: vi.fn(),
   updateWorkOrder: vi.fn(),
 }));
+const productApi = vi.hoisted(() => ({
+  createProduct: vi.fn(),
+  updateProduct: vi.fn(),
+}));
 
 vi.mock('../../../src/features/quotes/api/quotes', () => quoteApi);
 vi.mock('../../../src/features/clients/api/clients', () => clientApi);
 vi.mock('../../../src/features/workOrders/api/workOrders', () => workOrderApi);
+vi.mock('../../../src/features/products/api/products', () => productApi);
 
 const workOrder: WorkOrder = {
   idWorkOrder: 'W-1',
@@ -222,6 +229,30 @@ function WorkOrderHarness() {
   );
 }
 
+function ProductHarness() {
+  const edit = useEntityEdit();
+  const editor = useProductEditor();
+  return (
+    <>
+      <output data-testid="save-error">{edit.error ?? ''}</output>
+      <output data-testid="invalid-fields">{editor.invalidFields.join(',')}</output>
+      <button onClick={() => edit.start({ type: 'product', id: '' }, 'create')}>
+        start product create
+      </button>
+      <button
+        onClick={() => {
+          editor.change('code', 'T-7');
+          editor.change('description', 'Tutore');
+          editor.change('price', 'invalid');
+        }}
+      >
+        fill product
+      </button>
+      <button onClick={() => void edit.save()}>save product</button>
+    </>
+  );
+}
+
 function click(name: string) {
   fireEvent.click(screen.getByRole('button', { name }));
 }
@@ -238,6 +269,8 @@ describe('EntityEditProvider sub-flows', () => {
     workOrderApi.updateWorkOrderItem.mockResolvedValue({});
     workOrderApi.updateWorkOrder.mockResolvedValue({});
     clientApi.updateClient.mockResolvedValue({});
+    productApi.createProduct.mockResolvedValue({ idProduct: 'P-1' });
+    productApi.updateProduct.mockResolvedValue({});
   });
 
   it('saves client general and orthopedic changes as one session', async () => {
@@ -289,6 +322,7 @@ describe('EntityEditProvider sub-flows', () => {
     });
     expect(payload).not.toHaveProperty('status');
     expect(payload).not.toHaveProperty('total');
+    expect(payload).not.toHaveProperty('maxExpiry');
   });
 
   it('defers work-order item writes to global save and surfaces conditional-date validation', async () => {
@@ -334,5 +368,26 @@ describe('EntityEditProvider sub-flows', () => {
     expect(workOrderApi.updateWorkOrder.mock.invocationCallOrder[0]).toBeLessThan(
       workOrderApi.updateWorkOrderItem.mock.invocationCallOrder[0],
     );
+  });
+
+  it('maps backend field errors onto matching fields in the active session', async () => {
+    productApi.createProduct.mockRejectedValue(
+      new ApiError('Controlla i campi evidenziati.', {
+        price: ['Inserisci un numero valido.'],
+        serverOnly: ['Errore non associato al form.'],
+      }),
+    );
+    render(
+      <EntityEditProvider>
+        <ProductHarness />
+      </EntityEditProvider>,
+    );
+
+    click('start product create');
+    click('fill product');
+    click('save product');
+
+    await waitFor(() => expect(output('save-error')).toBe('Controlla i campi evidenziati.'));
+    expect(output('invalid-fields')).toBe('price');
   });
 });

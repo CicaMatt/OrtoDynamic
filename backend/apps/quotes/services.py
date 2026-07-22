@@ -1,15 +1,23 @@
 """Quote business operations that go beyond plain field updates."""
-from django.db.models import Sum
+from datetime import timedelta
+from decimal import Decimal, ROUND_HALF_UP
+import re
+
 from django.db import transaction
+from django.db.models import Sum
 
 from apps.common.exceptions import ConflictError, ServiceError
 from apps.products.models import Product
 from apps.quotes.models import Quote, QuoteItem
 from apps.statuses.services import allowed_target_states
-from apps.work_orders.services import (
-    WORK_ORDER_TRIGGER_STATES,
-    create_work_order_from_quote,
-)
+
+
+INITIAL_QUOTE_STATUS = "INSERITO"
+_CENT = Decimal("0.01")
+
+
+def _round_money(value):
+    return float(Decimal(str(value)).quantize(_CENT, rounding=ROUND_HALF_UP))
 
 
 def line_amount(price, quantity, discount):
@@ -24,10 +32,10 @@ def line_amount(price, quantity, discount):
     """
     if price is None or quantity is None:
         return None
-    amount = price * quantity
+    amount = Decimal(str(price)) * Decimal(str(quantity))
     if discount is not None:
-        amount *= 1 - discount / 100
-    return round(amount, 2)
+        amount *= Decimal("1") - Decimal(str(discount)) / Decimal("100")
+    return _round_money(amount)
 
 
 def recompute_quote_total(quote_id):
@@ -41,9 +49,58 @@ def recompute_quote_total(quote_id):
     total = (
         QuoteItem.objects.filter(id_preventivo=quote_id).aggregate(total=Sum("importo"))["total"]
     )
-    total = round(total, 2) if total is not None else 0.0
+    total = _round_money(total) if total is not None else 0.0
     Quote.objects.filter(pk=quote_id).update(totale=total)
     return total
+
+
+def max_expiry_from_days(expiry_days, *, today):
+    """
+    Derive the stored quote expiry date from a non-negative whole-day count.
+
+    Blank/NULL clears the derived value. Invalid, fractional, negative, or
+    out-of-range values raise ``ValueError`` so the API boundary can return a
+    deterministic field validation error.
+    """
+    if expiry_days is None or str(expiry_days).strip() == "":
+        return ""
+
+    raw = str(expiry_days).strip()
+    if re.fullmatch(r"[0-9]+", raw) is None:
+        raise ValueError("Inserisci un numero intero di giorni uguale o maggiore di zero.")
+    try:
+        return (today + timedelta(days=int(raw))).isoformat()
+    except OverflowError as exc:
+        raise ValueError("Il numero di giorni indicato è troppo elevato.") from exc
+
+
+def create_quote_with_items(validated_quote_fields, validated_items):
+    """
+    Create a quote and its initial line items as one business operation.
+
+    New quotes always start in ``INSERITO`` and their total is derived from their
+    items. ``transaction.atomic`` protects transactional databases; the explicit
+    cleanup also compensates for the production legacy tables when they use MyISAM
+    and cannot roll back a partially completed operation.
+    """
+    quote_fields = dict(validated_quote_fields)
+    quote_fields["stato"] = INITIAL_QUOTE_STATUS
+    items = list(validated_items)
+    quote = None
+
+    try:
+        with transaction.atomic():
+            quote = Quote.objects.create(**quote_fields)
+            for item_fields in items:
+                create_quote_item(quote_id=quote.id, **item_fields)
+            if not items:
+                recompute_quote_total(quote.id)
+        return quote
+    except Exception:
+        if quote is not None:
+            QuoteItem.objects.filter(id_preventivo=quote.id).delete()
+            Quote.objects.filter(pk=quote.id).delete()
+        raise
 
 
 def create_quote_item(*, quote_id, product_id, quantity, discount):
@@ -102,9 +159,9 @@ def delete_quote_item(quote_item):
     recompute_quote_total(quote_id)
 
 
-def delete_quote_with_related(quote):
+def delete_quote_graph(quote_id):
     """
-    Delete a quote and the legacy rows that belong to it.
+    Delete a quote and the complete legacy graph derived from it, by quote id.
 
     The database does not declare foreign keys for these unmanaged tables, so the
     dependent rows must be removed explicitly: quote items plus any work order
@@ -114,13 +171,26 @@ def delete_quote_with_related(quote):
 
     with transaction.atomic():
         work_order_ids = list(
-            WorkOrder.objects.filter(id_preventivo=quote.id).values_list("id", flat=True)
+            WorkOrder.objects.filter(id_preventivo=quote_id).values_list("id", flat=True)
         )
         if work_order_ids:
             WorkOrderItem.objects.filter(id_lavorazione__in=work_order_ids).delete()
             WorkOrder.objects.filter(id__in=work_order_ids).delete()
-        QuoteItem.objects.filter(id_preventivo=quote.id).delete()
-        quote.delete()
+        QuoteItem.objects.filter(id_preventivo=quote_id).delete()
+        Quote.objects.filter(pk=quote_id).delete()
+
+
+def quote_status_transition_options(quote):
+    """Allowed quote targets annotated with their authoritative side effects."""
+    from apps.work_orders.services import WORK_ORDER_TRIGGER_STATES
+
+    return [
+        {
+            "status": status,
+            "createsWorkOrder": status in WORK_ORDER_TRIGGER_STATES,
+        }
+        for status in allowed_target_states(quote.STATUS_TABLE, quote.stato)
+    ]
 
 
 def change_quote_status(quote, target_status, *, note=None):
@@ -138,6 +208,11 @@ def change_quote_status(quote, target_status, *, note=None):
     the quote untouched. The created (or already-existing) work order is attached as
     `quote.work_order`.
     """
+    from apps.work_orders.services import (
+        WORK_ORDER_TRIGGER_STATES,
+        create_work_order_from_quote,
+    )
+
     if target_status not in allowed_target_states(quote.STATUS_TABLE, quote.stato):
         raise ConflictError(
             f"Transizione di stato non consentita da «{quote.stato or '—'}» a «{target_status}»."

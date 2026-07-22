@@ -5,19 +5,20 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.clients.models import Client
 from apps.common.api.views import (
     ReadUpdateDetailAPIView,
     UnpaginatedListAPIView,
-    attach_many,
     inline_pdf_response,
 )
-from apps.common.exceptions import NotFoundError, TemplateAssetMissing
-from apps.products.models import Product
+from apps.common.exceptions import TemplateAssetMissing
 from apps.quotes.documents import collaudi_filename, prepare_collaudi, render_collaudi
-from apps.quotes.models import Quote, QuoteItem
-from apps.work_orders.models import PeriodicCheck, WorkOrder, WorkOrderItem
-from apps.work_orders.services import delete_work_order_with_related
+from apps.quotes.services import delete_quote_graph
+from apps.work_orders.models import WorkOrder, WorkOrderItem
+from apps.work_orders.selectors import (
+    collaudi_document_inputs,
+    work_order_items_with_quote_items_and_products,
+    work_orders_with_read_relations,
+)
 from .serializers import (
     WorkOrderItemSerializer,
     WorkOrderItemUpdateSerializer,
@@ -27,20 +28,12 @@ from .serializers import (
 )
 
 
-def attach_work_order_read_relations(work_orders):
-    return attach_many(
-        work_orders,
-        {"id_attr": "id_cliente", "attr": "client", "model": Client},
-        {"id_attr": "id_preventivo", "attr": "quote", "model": Quote},
-    )
-
-
 class WorkOrderListView(UnpaginatedListAPIView):
     serializer_class = WorkOrderSerializer
     queryset = WorkOrder.objects.order_by("-id")
 
     def get_queryset(self):
-        return attach_work_order_read_relations(super().get_queryset())
+        return work_orders_with_read_relations(super().get_queryset())
 
 
 class WorkOrderDetailView(ReadUpdateDetailAPIView):
@@ -50,12 +43,12 @@ class WorkOrderDetailView(ReadUpdateDetailAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         work_order = self.get_object()
-        attach_work_order_read_relations([work_order])
+        work_orders_with_read_relations([work_order])
         serializer = self.get_serializer(work_order)
         return Response(serializer.data)
 
     def perform_destroy(self, instance):
-        delete_work_order_with_related(instance)
+        delete_quote_graph(instance.id_preventivo)
 
 
 class WorkOrderItemListView(UnpaginatedListAPIView):
@@ -71,24 +64,7 @@ class WorkOrderItemListView(UnpaginatedListAPIView):
     serializer_class = WorkOrderItemSerializer
 
     def get_queryset(self):
-        items = list(
-            WorkOrderItem.objects.filter(id_lavorazione=self.kwargs["pk"]).order_by("id")
-        )
-        quote_ids = {item.id_item_preventivi for item in items if item.id_item_preventivi}
-        quote_map = {quote.id: quote for quote in QuoteItem.objects.filter(id__in=quote_ids)}
-        # Attach each quote line's product so the serializer can render the
-        # nomenclatore code without a per-row lookup (a missing product stays None).
-        product_ids = {
-            quote_item.codice_nomenclatore
-            for quote_item in quote_map.values()
-            if quote_item.codice_nomenclatore
-        }
-        products = {product.id: product for product in Product.objects.filter(id__in=product_ids)}
-        for quote_item in quote_map.values():
-            quote_item.product = products.get(quote_item.codice_nomenclatore)
-        for item in items:
-            item.quote_item = quote_map.get(item.id_item_preventivi)
-        return items
+        return work_order_items_with_quote_items_and_products(self.kwargs["pk"])
 
 
 class WorkOrderStatusUpdateView(generics.UpdateAPIView):
@@ -101,7 +77,7 @@ class WorkOrderStatusUpdateView(generics.UpdateAPIView):
         # Attach the client to the saved instance so the response (rendered by
         # WorkOrderSerializer) carries related display fields like every other read.
         work_order = serializer.save()
-        attach_work_order_read_relations([work_order])
+        work_orders_with_read_relations([work_order])
 
 
 class WorkOrderItemUpdateView(generics.UpdateAPIView):
@@ -126,17 +102,10 @@ class WorkOrderCollaudiView(APIView):
     """
 
     def get(self, request, pk):
-        work_order = WorkOrder.objects.filter(pk=pk).first()
-        if work_order is None:
-            raise NotFoundError("Lavorazione inesistente.")
-
-        client = Client.objects.filter(pk=work_order.id_cliente).first()
-        quote = Quote.objects.filter(pk=work_order.id_preventivo).first()
-        items = WorkOrderItem.objects.filter(id_lavorazione=work_order.id).order_by("id")
-        checks = PeriodicCheck.objects.filter(id_lavorazione=work_order.id).order_by("id")
+        work_order, client, quote, items, checks = collaudi_document_inputs(pk)
 
         document = prepare_collaudi(
-            work_order, client, quote, list(items), list(checks), today=timezone.localdate()
+            work_order, client, quote, items, checks, today=timezone.localdate()
         )
         try:
             pdf = render_collaudi(document)

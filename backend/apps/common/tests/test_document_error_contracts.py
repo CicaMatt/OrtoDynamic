@@ -23,12 +23,10 @@ def authenticated_get(path):
 
 def test_delivery_form_invalid_date_uses_the_service_error_envelope():
     quote = SimpleNamespace(id=500, id_cliente=21)
-    client_query = MagicMock()
-    client_query.first.return_value = SimpleNamespace(id=21)
+    client = SimpleNamespace(id=21)
 
-    with (
-        patch("apps.quotes.api.views.get_quote_or_404", return_value=quote),
-        patch("apps.quotes.api.views.Client.objects.filter", return_value=client_query),
+    with patch(
+        "apps.quotes.api.views.delivery_form_inputs", return_value=(quote, client)
     ):
         response = QuoteDeliveryFormView.as_view()(
             authenticated_get("/quotes/500/delivery-form/?delivery_date=21-07-2026"),
@@ -56,7 +54,7 @@ def test_client_privacy_form_not_found_uses_the_error_envelope():
 
 def test_quote_document_not_found_uses_the_error_envelope():
     with patch(
-        "apps.quotes.api.views.get_quote_and_client_or_404",
+        "apps.quotes.api.views.ddt_document_inputs",
         side_effect=NotFoundError("Preventivo non trovato."),
     ):
         response = QuoteDdtView.as_view()(
@@ -68,10 +66,10 @@ def test_quote_document_not_found_uses_the_error_envelope():
 
 
 def test_work_order_document_not_found_uses_the_error_envelope():
-    query = MagicMock()
-    query.first.return_value = None
-
-    with patch("apps.work_orders.api.views.WorkOrder.objects.filter", return_value=query):
+    with patch(
+        "apps.work_orders.api.views.collaudi_document_inputs",
+        side_effect=NotFoundError("Lavorazione inesistente."),
+    ):
         response = WorkOrderCollaudiView.as_view()(
             authenticated_get("/work-orders/404/collaudi/"), pk=404
         )

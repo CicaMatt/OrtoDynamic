@@ -6,9 +6,10 @@ detail views expose the full column set, so a single read serializer serves
 both; `NullToEmptyMixin` renders SQL NULLs as empty strings and dates/numbers as
 plain strings, keeping the frontend's all-strings contract.
 """
-from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
+from apps.clients.models import Client
 from apps.common.api.serializers import (
     CreatableSerializerMixin,
     NullToEmptyMixin,
@@ -19,8 +20,9 @@ from apps.common.api.serializers import (
 )
 from apps.quotes.models import Quote
 from apps.quotes.services import (
+    create_quote_with_items,
     create_quote_item,
-    recompute_quote_total,
+    max_expiry_from_days,
     update_quote_item,
 )
 
@@ -210,7 +212,6 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
     )
     locals().update(nullable_text_fields({
         "expiryDays": "giorni_scadenza",
-        "maxExpiry": "massima_scadenza",
         # Supply & invoicing
         "measurementsOk": "misure_ok",
         "commissionsPaid": "provvigioni_pagate",
@@ -225,6 +226,18 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
         "finalNote": "note_finali",
     }))
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if "giorni_scadenza" not in attrs:
+            return attrs
+        try:
+            attrs["massima_scadenza"] = max_expiry_from_days(
+                attrs["giorni_scadenza"], today=timezone.localdate()
+            )
+        except ValueError as exc:
+            raise serializers.ValidationError({"expiryDays": str(exc)}) from exc
+        return attrs
+
 
 class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
     """
@@ -232,35 +245,33 @@ class QuoteCreateSerializer(CreatableSerializerMixin, QuoteUpdateSerializer):
     with its initial line items in the same request.
 
     Status is not client-controllable: `QuoteUpdateSerializer` already omits it,
-    and every new quote is forced to start as INSERITO here. The database assigns
-    the id; required-field enforcement lives in the frontend form, so the
-    remaining fields stay optional (consistent with the other create serializers).
-    The quote and its `items` are inserted in one transaction, so a failure on any
-    line rolls back the whole create rather than leaving a quote with no lines.
+    and the creation service forces every new quote to start as INSERITO. The
+    database assigns the id; required-field enforcement lives in the frontend form,
+    so the remaining fields stay optional (consistent with the other create serializers).
+    The serializer validates/translates the request and delegates the complete
+    multi-model operation to the quote service.
     """
 
     create_model = Quote
     read_serializer_class = QuoteSerializer
 
-    # New quotes always start in this state; the column is never client-set.
-    INITIAL_STATUS = "INSERITO"
+    # The legacy row cannot exist without its owning client. The clinical fields
+    # required by the current screen remain UX policy because their columns permit
+    # blanks and existing API clients may intentionally create incomplete drafts.
+    clientId = serializers.IntegerField(source="id_cliente")
 
     # Optional line items, created together with the quote. Write-only: the
     # response renders the quote alone (the detail view loads its items).
     items = QuoteItemCreateSerializer(many=True, required=False, write_only=True)
 
+    def validate_clientId(self, value):
+        if not Client.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("Cliente inesistente o non più disponibile.")
+        return value
+
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
-        validated_data["stato"] = self.INITIAL_STATUS
-        with transaction.atomic():
-            quote = super().create(validated_data)
-            for item_data in items_data:
-                create_quote_item(quote_id=quote.id, **item_data)
-            # Each create_quote_item already derived the running total; a quote with
-            # no lines still needs its total initialised to 0.
-            if not items_data:
-                recompute_quote_total(quote.id)
-        return quote
+        return create_quote_with_items(validated_data, items_data)
 
 
 class QuoteStatusRequestSerializer(serializers.Serializer):

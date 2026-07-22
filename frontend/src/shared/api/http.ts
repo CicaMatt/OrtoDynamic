@@ -50,6 +50,19 @@ export function setAuthToken(token: string | null): void {
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
+export type ApiFieldErrors = Record<string, string[]>;
+
+/** HTTP failure carrying the backend's optional field-validation details. */
+export class ApiError extends Error {
+  readonly fields: ApiFieldErrors;
+
+  constructor(message: string, fields: ApiFieldErrors = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.fields = fields;
+  }
+}
+
 /**
  * Core request: attaches the bearer token, sets the JSON content type when there
  * is a body, and normalises the backend's `{ "error": { "message" } }` envelope
@@ -77,7 +90,7 @@ async function performRequest(method: Method, path: string, body?: unknown): Pro
   }
 
   if (!response.ok) {
-    throw new Error(await extractErrorMessage(response));
+    throw await extractApiError(response);
   }
 
   return response;
@@ -129,12 +142,25 @@ function filenameFromContentDisposition(header: string | null): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-async function extractErrorMessage(response: Response): Promise<string> {
+async function extractApiError(response: Response): Promise<ApiError> {
   try {
     const body = await response.json();
-    if (body?.error?.message) return body.error.message;
+    const error = body?.error;
+    if (typeof error?.message === 'string') {
+      return new ApiError(error.message, normalizeFieldErrors(error.fields));
+    }
   } catch {
     // Response had no JSON body; fall through to a generic message.
   }
-  return `Richiesta non riuscita (${response.status}).`;
+  return new ApiError(`Richiesta non riuscita (${response.status}).`);
+}
+
+function normalizeFieldErrors(value: unknown): ApiFieldErrors {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const fields: ApiFieldErrors = {};
+  for (const [field, messages] of Object.entries(value)) {
+    if (!Array.isArray(messages)) continue;
+    fields[field] = messages.map(String);
+  }
+  return fields;
 }
