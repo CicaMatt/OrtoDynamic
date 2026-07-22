@@ -427,8 +427,6 @@ SERIALIZER_FIELDS = [
     (
         WorkOrderUpdateSerializer,
         fields(
-            ("quoteId", "id_preventivo", "IntegerField"),
-            ("clientId", "id_cliente", "IntegerField"),
             ("creationDate", "data_creazione_lavorazione", "DateField"),
             ("completionDate", "data_fine_lavorazione", "DateField"),
             ("deliveryDate", "data_consegna", "DateField"),

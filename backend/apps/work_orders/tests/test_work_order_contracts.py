@@ -14,6 +14,7 @@ from apps.work_orders.api.serializers import (
     WorkOrderItemSerializer,
     WorkOrderItemUpdateSerializer,
     WorkOrderSerializer,
+    WorkOrderUpdateSerializer,
 )
 from apps.work_orders.models import WorkOrder, WorkOrderItem
 from apps.work_orders import services
@@ -40,6 +41,22 @@ def test_work_order_deletion_delegates_the_full_quote_graph_by_quote_id():
         WorkOrderDetailView().perform_destroy(work_order)
 
     delete_graph.assert_called_once_with(500)
+
+
+def test_work_order_update_ignores_immutable_owner_references():
+    serializer = WorkOrderUpdateSerializer(
+        data={
+            "quoteId": 999,
+            "clientId": 88,
+            "technicalNotes": "Controllare",
+        },
+        partial=True,
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.validated_data == {
+        "annotazioni_tecniche_assistenza": "Controllare"
+    }
 
 
 @pytest.mark.parametrize(

@@ -75,14 +75,10 @@ class WorkOrderSerializer(NullToEmptySerializer):
 
 class WorkOrderUpdateSerializer(UpdateFieldsSerializer):
     """
-    Writable serializer for editing a work order. Every field is optional so
-    PATCH sends only what changed. `quoteId` is required-on-the-row and therefore
-    not nullable; everything else may be cleared.
+    Writable operational fields of a work order. Every field is optional so PATCH
+    sends only what changed. The owning quote and client are fixed when the work
+    order is created and are intentionally absent from this write contract.
     """
-
-    # Links
-    quoteId = serializers.IntegerField(source="id_preventivo", required=False)
-    clientId = serializers.IntegerField(source="id_cliente", required=False, allow_null=True)
 
     # Lifecycle
     # `status` is intentionally not writable here: it changes only through the

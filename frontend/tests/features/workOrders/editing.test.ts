@@ -6,7 +6,7 @@ import {
 } from '../../../src/features/workOrders/editing';
 
 describe('work-order editing payloads', () => {
-  it('normalizes ids and blank dates in the primary PATCH', () => {
+  it('excludes immutable relationships and normalizes blank dates', () => {
     expect(
       toWorkOrderUpdatePayload({
         quoteId: '500',
@@ -15,8 +15,6 @@ describe('work-order editing payloads', () => {
         technicalNotes: 'Controllare',
       }),
     ).toEqual({
-      quoteId: 500,
-      clientId: null,
       deliveryDate: null,
       technicalNotes: 'Controllare',
     });

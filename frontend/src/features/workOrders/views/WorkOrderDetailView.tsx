@@ -40,19 +40,18 @@ const lifecycleFields: WorkOrderField[] = [
   { label: 'Data Annullamento', key: 'cancellationDate', type: 'date' },
 ];
 
-// In read mode the client shows by name with its id revealed on hover; edit mode
-// keeps the numeric id input, since the reference is still set by id.
+// These ownership references are fixed when the work order is created from its quote.
 const referenceFields: WorkOrderField[] = [
   {
     label: 'ID Preventivo',
     key: 'quoteId',
-    type: 'number',
+    readonly: true,
     renderValue: (id) => <EntityReference name={id} id={id} entity="quote" />,
   },
   {
     label: 'Cliente',
     key: 'clientId',
-    type: 'number',
+    readonly: true,
     renderValue: (id, workOrder) => (
       <EntityReference name={workOrder.clientName} id={id} entity="client" />
     ),

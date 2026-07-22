@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 
 from apps.common.exceptions import ConflictError
-from apps.quotes.api.serializers import QuoteCreateSerializer
+from apps.quotes.api.serializers import QuoteCreateSerializer, QuoteUpdateSerializer
 from apps.quotes.api.views import QuoteStatusTransitionsView
 from apps.quotes.models import Quote
 from apps.quotes import services
@@ -40,6 +40,53 @@ def test_quote_create_rejects_a_missing_legacy_client_reference():
         assert not serializer.is_valid()
 
     assert set(serializer.errors) == {"clientId"}
+
+
+@pytest.mark.parametrize(
+    ("payload", "model_name", "error_field"),
+    [
+        ({"clientId": 404}, "Client", "clientId"),
+        ({"doctorId": 404}, "Doctor", "doctorId"),
+    ],
+)
+def test_quote_update_rejects_missing_person_references(payload, model_name, error_field):
+    serializer = QuoteUpdateSerializer(data=payload, partial=True)
+    person_query = MagicMock()
+    person_query.exists.return_value = False
+
+    with patch(
+        f"apps.quotes.api.serializers.{model_name}.objects.filter",
+        return_value=person_query,
+    ):
+        assert not serializer.is_valid()
+
+    assert set(serializer.errors) == {error_field}
+
+
+def test_quote_update_accepts_existing_people_and_a_cleared_doctor():
+    existing_person = MagicMock()
+    existing_person.exists.return_value = True
+    serializer = QuoteUpdateSerializer(data={"clientId": 21, "doctorId": 31}, partial=True)
+
+    with (
+        patch(
+            "apps.quotes.api.serializers.Client.objects.filter",
+            return_value=existing_person,
+        ) as client_filter,
+        patch(
+            "apps.quotes.api.serializers.Doctor.objects.filter",
+            return_value=existing_person,
+        ) as doctor_filter,
+    ):
+        assert serializer.is_valid(), serializer.errors
+
+    client_filter.assert_called_once_with(pk=21)
+    doctor_filter.assert_called_once_with(pk=31)
+
+    cleared_doctor = QuoteUpdateSerializer(data={"doctorId": None}, partial=True)
+    with patch("apps.quotes.api.serializers.Doctor.objects.filter") as doctor_filter:
+        assert cleared_doctor.is_valid(), cleared_doctor.errors
+    doctor_filter.assert_not_called()
 
 
 @pytest.mark.parametrize(

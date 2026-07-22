@@ -16,6 +16,7 @@ from apps.common.api.serializers import (
     nullable_text,
     person_display_name,
 )
+from apps.doctors.models import Doctor
 from apps.quotes.services import (
     create_quote_with_items,
     create_quote_item,
@@ -215,6 +216,16 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
     privateNote = nullable_text("note_private")
     finalNote = nullable_text("note_finali")
 
+    def validate_clientId(self, value):
+        if not Client.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("Cliente inesistente o non più disponibile.")
+        return value
+
+    def validate_doctorId(self, value):
+        if value is not None and not Doctor.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("Medico inesistente o non più disponibile.")
+        return value
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
         if "giorni_scadenza" not in attrs:
@@ -249,11 +260,6 @@ class QuoteCreateSerializer(QuoteUpdateSerializer):
     # Optional line items, created together with the quote. Write-only: the
     # response renders the quote alone (the detail view loads its items).
     items = QuoteItemCreateSerializer(many=True, required=False, write_only=True)
-
-    def validate_clientId(self, value):
-        if not Client.objects.filter(pk=value).exists():
-            raise serializers.ValidationError("Cliente inesistente o non più disponibile.")
-        return value
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])

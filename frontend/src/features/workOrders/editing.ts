@@ -39,8 +39,6 @@ const workOrderDateKeys = [
 
 // `status` changes only through the guarded status endpoint.
 const workOrderEditableKeys = [
-  'quoteId',
-  'clientId',
   ...workOrderTextKeys,
   ...workOrderDateKeys,
 ] as const satisfies readonly (keyof WorkOrder)[];
@@ -53,13 +51,10 @@ const itemDateKeys = [
   'deliveryDate',
 ] as const;
 
-const nullableId = (value: string) => (value === '' ? null : Number(value));
 const nullableDate = (value: string) => (value === '' ? null : value);
 
 export function toWorkOrderUpdatePayload(changes: Partial<WorkOrder>): WorkOrderUpdatePayload {
   const payload: WorkOrderUpdatePayload = pickDefinedFields(changes, workOrderTextKeys);
-  if (changes.quoteId !== undefined) payload.quoteId = nullableId(changes.quoteId);
-  if (changes.clientId !== undefined) payload.clientId = nullableId(changes.clientId);
   for (const key of workOrderDateKeys) {
     const value = changes[key];
     if (value !== undefined) payload[key] = nullableDate(value);

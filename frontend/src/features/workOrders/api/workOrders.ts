@@ -2,8 +2,6 @@ import { apiDelete, apiGet, apiGetBlob, apiPatch } from '../../../shared/api/htt
 import type { WorkOrder, WorkOrderItem } from '../types';
 
 export type WorkOrderFieldsPayload = {
-  quoteId: number | null;
-  clientId: number | null;
   creationDate: string | null;
   completionDate: string | null;
   deliveryDate: string | null;
