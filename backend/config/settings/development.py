@@ -17,3 +17,5 @@ CORS_ALLOWED_ORIGIN_REGEXES = env.list(
     "DJANGO_CORS_ALLOWED_ORIGIN_REGEXES",
     default=[r"^http://localhost:\d+$", r"^http://127\.0\.0\.1:\d+$"],
 )
+
+ADMIN_ENABLED = env.bool("DJANGO_ADMIN_ENABLED", default=True)

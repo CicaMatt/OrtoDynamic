@@ -13,6 +13,7 @@ env/
 *.log
 staticfiles/
 media/
+tmp/
 
 # Environment / secrets
 .env

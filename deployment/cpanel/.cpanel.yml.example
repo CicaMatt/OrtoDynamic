@@ -1,0 +1,8 @@
+---
+# Copy this file to the repository root as `.cpanel.yml`, replace every example
+# value, commit it, and then use cPanel's "Deploy HEAD Commit" action. These
+# values are public deployment coordinates; Django secrets remain in Application
+# Manager's environment-variable configuration.
+deployment:
+  tasks:
+    - CPANEL_FRONTEND_DEPLOY_PATH=/home/example/public_html/management VITE_API_BASE_URL=https://api-management.example.it/api/v1 VITE_BASE_PATH=/ /usr/bin/env bash scripts/deploy/cpanel.sh

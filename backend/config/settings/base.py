@@ -102,6 +102,21 @@ DATABASES = {
     }
 }
 
+# Managed database providers commonly require a CA and, less often, a client
+# certificate.  Local/cPanel MySQL needs none of these, so OPTIONS stays absent
+# unless at least one path is configured.
+_database_ssl_options = {
+    option: value
+    for option, value in {
+        "ca": env("DJANGO_DB_SSL_CA", default=None),
+        "cert": env("DJANGO_DB_SSL_CERT", default=None),
+        "key": env("DJANGO_DB_SSL_KEY", default=None),
+    }.items()
+    if value
+}
+if _database_ssl_options:
+    DATABASES["default"]["OPTIONS"] = {"ssl": _database_ssl_options}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Password validation ----------------------------------------------------
@@ -160,3 +175,22 @@ AUTH_TOKEN_TTL_SECONDS = env.int("DJANGO_AUTH_TOKEN_TTL_SECONDS", default=12 * 6
 # token (not cookies), so the only cross-origin requirement is that its origin be
 # allowed. Credentials/cookies are deliberately not used. Origins are env-driven.
 CORS_ALLOWED_ORIGINS = env.list("DJANGO_CORS_ALLOWED_ORIGINS", default=[])
+
+# The API does not need Django's admin in production. Keeping the route opt-in
+# also avoids exposing an unusable or unstyled admin on lightweight hosts.
+ADMIN_ENABLED = env.bool("DJANGO_ADMIN_ENABLED", default=False)
+
+# Send application and framework logs to the hosting platform's process logs.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": env("DJANGO_LOG_LEVEL", default="INFO"),
+    },
+}

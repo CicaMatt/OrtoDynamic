@@ -12,7 +12,8 @@ services:
     plan: free
     rootDir: backend
     buildCommand: "pip install -r requirements/production.txt"
-    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
+    startCommand: "gunicorn config.wsgi:application --config gunicorn.conf.py"
+    healthCheckPath: /health/live/
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
@@ -24,6 +25,10 @@ services:
         generateValue: true
       - key: DJANGO_TIME_ZONE
         value: Europe/Rome
+      # Keep the demo within the free service's memory limit. Production hosts
+      # can increase this through GUNICORN_WORKERS.
+      - key: GUNICORN_WORKERS
+        value: "1"
       # Origin of the GitHub Pages frontend (scheme + host, no path).
       - key: DJANGO_CORS_ALLOWED_ORIGINS
         value: https://cicamatt.github.io

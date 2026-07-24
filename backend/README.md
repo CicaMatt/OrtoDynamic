@@ -78,6 +78,10 @@ Run every frontend and backend check from the repository root with:
 ./scripts/check.sh
 ```
 
+Hosted cPanel/Passenger deployment, production environment variables, cutover,
+and rollback are documented in [`../DEPLOYMENT.md`](../DEPLOYMENT.md). The
+temporary Render/GitHub Pages/ngrok demo remains documented separately.
+
 The check script uses the same `BACKEND_PYTHON` override as the development
 launcher.
 

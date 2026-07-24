@@ -1,12 +1,8 @@
-// Fall back on a blank/whitespace value, not just an absent one: an empty
-// VITE_API_BASE_URL would otherwise make every request a same-origin relative
-// path (which silently hits the static host, not the API).
+// Vite injects this public deployment value at build time. Development falls
+// back to the local API, while every hosted build supplies its own URL through
+// .env.production or the deployment environment.
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
-const isLocalFrontendHost =
-  typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const API_BASE_URL = isLocalFrontendHost
-  ? 'http://127.0.0.1:8000/api/v1'
-  : configuredApiBaseUrl || 'http://127.0.0.1:8000/api/v1';
+const API_BASE_URL = (configuredApiBaseUrl || 'http://127.0.0.1:8000/api/v1').replace(/\/+$/, '');
 const TOKEN_STORAGE_KEY = 'ortodynamic.authToken';
 
 /**

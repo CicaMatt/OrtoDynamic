@@ -13,19 +13,12 @@ import type { Quote } from '../types';
  */
 const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
   { key: 'idQuote', label: 'ID Preventivo', primary: true, filterable: false },
+  { key: 'quoteType', label: 'Tipologia', searchable: false },
   {
     key: 'clientName',
     label: 'Cliente',
     muted: true,
     cell: (quote) => <ReferenceLabel name={quote.clientName} id={quote.clientId} />,
-  },
-  {
-    key: 'creationDate',
-    label: 'Data Prescrizione',
-    muted: true,
-    searchable: false,
-    filterable: false,
-    render: formatBirthDate,
   },
   { key: 'status', label: 'Stato', searchable: false },
   {
@@ -37,12 +30,12 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     render: formatBirthDate,
   },
   {
-    key: 'diagnosis',
-    label: 'Diagnosi Circostanziata',
+    key: 'creationDate',
+    label: 'Data Prescrizione',
     muted: true,
     searchable: false,
     filterable: false,
-    render: previewText,
+    render: formatBirthDate,
   },
   {
     key: 'detailedPrescription',
@@ -61,7 +54,6 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     render: formatBirthDate,
   },
   { key: 'orderNumber', label: 'N. Ordine', muted: true, filterable: false },
-  { key: 'quoteType', label: 'Tipologia', searchable: false },
   { key: 'clientCity', label: 'Città Cliente', muted: true },
   {
     key: 'maxExpiry',
@@ -70,6 +62,14 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
     searchable: false,
     filterable: false,
     render: formatBirthDate,
+  },
+  {
+    key: 'diagnosis',
+    label: 'Diagnosi Circostanziata',
+    muted: true,
+    searchable: false,
+    filterable: false,
+    render: previewText,
   },
   { key: 'note', label: 'Note', muted: true, render: previewText },
   {
