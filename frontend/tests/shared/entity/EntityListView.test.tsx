@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { EntityListView, type EntityColumn } from '../../../src/shared/entity/EntityListView';
+import * as tableCsv from '../../../src/shared/entity/TableCsv';
 
 type PersonRow = {
   id: string;
@@ -52,6 +53,10 @@ function renderList({
 }
 
 describe('EntityListView', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('moves from loading to paginated rows and supports mouse, keyboard, and create actions', async () => {
     let resolveItems: (rows: PersonRow[]) => void = () => {};
     const rows = makeRows(35);
@@ -79,6 +84,23 @@ describe('EntityListView', () => {
     expect(screen.getByText('31–35 di 35 risultati')).not.toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Nuovo/ }));
     expect(onCreate).toHaveBeenCalledOnce();
+  });
+
+  it('exports every filtered row, including rows outside the current page', async () => {
+    const rows = makeRows(35);
+    const download = vi.spyOn(tableCsv, 'downloadTableCsv').mockImplementation(() => {});
+    renderList({ fetchItems: vi.fn().mockResolvedValue(rows) });
+    await screen.findByText('Cliente 01');
+
+    fireEvent.click(screen.getByRole('button', { name: /Pagina successiva/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Scarica CSV/ }));
+    expect(download).toHaveBeenLastCalledWith('Persone', columns, rows);
+
+    fireEvent.change(screen.getByPlaceholderText('Cerca...'), {
+      target: { value: 'Cliente 04' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Scarica CSV/ }));
+    expect(download).toHaveBeenLastCalledWith('Persone', columns, [rows[3]]);
   });
 
   it('combines global search and a categorical filter, then resets to the first page', async () => {

@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { DataTable } from '../../../shared/entity/DataTable';
 import { TableScrollSlider } from '../../../shared/entity/TableScrollSlider';
+import { downloadTableCsv } from '../../../shared/entity/TableCsv';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import {
   useTableSearchFilter,
@@ -46,6 +47,10 @@ export function EmployeesView() {
         <ViewToolbar
           searchValue={searchValue}
           onSearchChange={setSearchValue}
+          onDownload={() =>
+            downloadTableCsv('Gestione Dipendenti', EMPLOYEE_COLUMNS, filteredItems)
+          }
+          downloadDisabled={loading || Boolean(error)}
           filters={filterOptions}
           activeFilters={activeFilters}
           onFilterChange={setFilter}

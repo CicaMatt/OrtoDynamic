@@ -14,6 +14,8 @@ export type ToolbarFilters = Record<string, string>;
 type ViewToolbarProps = {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  onDownload?: () => void;
+  downloadDisabled?: boolean;
   onCreate?: () => void;
   filters?: ToolbarFilter[];
   activeFilters?: ToolbarFilters;
@@ -24,6 +26,8 @@ type ViewToolbarProps = {
 export function ViewToolbar({
   searchValue = '',
   onSearchChange,
+  onDownload,
+  downloadDisabled = false,
   onCreate,
   filters = [],
   activeFilters = {},
@@ -31,9 +35,21 @@ export function ViewToolbar({
   onClearFilters,
 }: ViewToolbarProps) {
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-wrap items-center gap-4">
+      {onDownload && (
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={downloadDisabled}
+          className="border border-outline-variant text-on-surface font-label-caps text-label-caps px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-surface-container-high transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Icon name="download" className="text-sm" />
+          Scarica CSV
+        </button>
+      )}
       {onCreate && (
         <button
+          type="button"
           onClick={onCreate}
           className="bg-secondary text-on-secondary font-label-caps text-label-caps px-4 py-2 rounded-lg flex items-center gap-2 border border-transparent hover:bg-secondary-hover transition-colors"
         >
@@ -41,7 +57,7 @@ export function ViewToolbar({
           Nuovo
         </button>
       )}
-      {onCreate && <div className="h-6 w-px bg-outline-variant mx-2" />}
+      {(onDownload || onCreate) && <div className="h-6 w-px bg-outline-variant mx-2" />}
       <FilterMenu
         filters={filters}
         activeFilters={activeFilters}

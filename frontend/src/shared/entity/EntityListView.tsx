@@ -6,6 +6,7 @@ import { usePagination } from '../hooks/usePagination';
 import { useTableSearchFilter } from '../hooks/useTableSearchFilter';
 import { DataTable, type TableColumn } from './DataTable';
 import { TableScrollSlider } from './TableScrollSlider';
+import { downloadTableCsv } from './TableCsv';
 
 export type EntityColumn<T extends object> = TableColumn<T>;
 
@@ -61,6 +62,8 @@ export function EntityListView<T extends object>({
         <ViewToolbar
           searchValue={searchValue}
           onSearchChange={setSearchValue}
+          onDownload={() => downloadTableCsv(title, columns, filteredItems)}
+          downloadDisabled={loading || Boolean(error)}
           onCreate={onCreate}
           filters={filterOptions}
           activeFilters={activeFilters}

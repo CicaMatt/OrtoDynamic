@@ -6,6 +6,7 @@ import { ViewToolbar } from '../../../src/shared/ui/ViewToolbar';
 describe('ViewToolbar', () => {
   it('drives creation, search, fixed filters, ranked suggestions, and clearing', () => {
     const onCreate = vi.fn();
+    const onDownload = vi.fn();
     const onSearchChange = vi.fn();
     const onFilterChange = vi.fn();
     const onClearFilters = vi.fn();
@@ -14,6 +15,7 @@ describe('ViewToolbar', () => {
       <ViewToolbar
         searchValue="Ada"
         onSearchChange={onSearchChange}
+        onDownload={onDownload}
         onCreate={onCreate}
         filters={[
           { key: 'status', label: 'Stato', options: ['ATTIVO', 'SOSPESO'], fixedChoices: true },
@@ -29,7 +31,13 @@ describe('ViewToolbar', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Nuovo/ }));
+    const downloadButton = screen.getByRole('button', { name: /Scarica CSV/ });
+    const createButton = screen.getByRole('button', { name: /Nuovo/ });
+    expect(downloadButton.compareDocumentPosition(createButton)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    fireEvent.click(downloadButton);
+    fireEvent.click(createButton);
     fireEvent.change(screen.getByPlaceholderText('Cerca...'), { target: { value: 'Rossi' } });
     fireEvent.click(screen.getByRole('button', { name: /Filtra/ }));
     fireEvent.change(screen.getByLabelText('Stato'), { target: { value: 'SOSPESO' } });
@@ -45,11 +53,20 @@ describe('ViewToolbar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Provincia di Roma' }));
     fireEvent.click(screen.getByRole('button', { name: 'Rimuovi' }));
 
+    expect(onDownload).toHaveBeenCalledOnce();
     expect(onCreate).toHaveBeenCalledOnce();
     expect(onSearchChange).toHaveBeenCalledWith('Rossi');
     expect(onFilterChange).toHaveBeenCalledWith('status', 'SOSPESO');
     expect(onFilterChange).toHaveBeenCalledWith('city', 'Provincia di Roma');
     expect(onClearFilters).toHaveBeenCalledOnce();
+  });
+
+  it('disables CSV download while its source data is unavailable', () => {
+    render(<ViewToolbar onDownload={vi.fn()} downloadDisabled />);
+
+    expect(
+      (screen.getByRole('button', { name: /Scarica CSV/ }) as HTMLButtonElement).disabled,
+    ).toBe(true);
   });
 
   it('disables unavailable filtering/search and closes an open menu outside', () => {
