@@ -19,15 +19,19 @@ type UseTableSearchFilterOptions = {
    * derived filter menu, regardless of column order. Off by default.
    */
   categoricalFiltersFirst?: boolean;
+  /** Filters applied when the table is first opened, such as a dashboard deep-link. */
+  initialFilters?: Record<string, string>;
 };
 
 export function useTableSearchFilter<T extends object>(
   items: T[],
   columns: ReadonlyArray<SearchFilterColumn<T>>,
-  { categoricalFiltersFirst = false }: UseTableSearchFilterOptions = {},
+  { categoricalFiltersFirst = false, initialFilters = {} }: UseTableSearchFilterOptions = {},
 ) {
   const [searchValue, setSearchValue] = useState('');
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(() => ({
+    ...initialFilters,
+  }));
 
   const searchableColumns = useMemo(
     () => columns.filter((column) => column.searchable !== false),

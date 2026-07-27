@@ -6,8 +6,8 @@ import type { DoctorListItem } from '../types';
 
 const doctorColumns: ReadonlyArray<EntityColumn<DoctorListItem>> = [
   { key: 'idDoctor', label: 'ID Medico', primary: true, filterable: false },
-  { key: 'surname', label: 'Cognome' },
   { key: 'name', label: 'Nome' },
+  { key: 'surname', label: 'Cognome' },
   { key: 'address', label: 'Indirizzo', muted: true },
   { key: 'phone', label: 'Telefono', muted: true },
   { key: 'email', label: 'Email', muted: true },

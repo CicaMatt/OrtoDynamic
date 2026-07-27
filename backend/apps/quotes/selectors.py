@@ -7,6 +7,8 @@ attributes consumed by the API serializers. They also assemble the ORM inputs fo
 quote-owned documents, keeping database knowledge out of views and renderers.
 """
 
+from django.db.models import Count
+
 from apps.clients.models import Client
 from apps.common.exceptions import NotFoundError
 from apps.doctors.models import Doctor
@@ -14,6 +16,19 @@ from apps.products.models import Product
 from apps.quotes.document_rows import QuoteDocumentItem
 from apps.quotes.models import Quote, QuoteItem
 from apps.work_orders.models import WorkOrder
+
+
+def quote_status_counts(statuses):
+    """Count quotes for each requested status, preserving zero-count statuses."""
+    counts = {status: 0 for status in statuses}
+    rows = (
+        Quote.objects.filter(stato__in=statuses)
+        .values("stato")
+        .annotate(total=Count("id"))
+    )
+    for row in rows:
+        counts[row["stato"]] = row["total"]
+    return counts
 
 
 def quotes_with_people(quotes):

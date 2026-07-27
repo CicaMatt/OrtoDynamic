@@ -19,6 +19,8 @@ export const initialNavigationState: NavigationState = {
 
 export function routeKey(route: Route): string {
   switch (route.name) {
+    case 'quotes':
+      return `${route.name}:${route.status ?? ''}`;
     case 'client-detail':
       return `${route.name}:${route.clientId}:${route.tab}`;
     case 'doctor-detail':

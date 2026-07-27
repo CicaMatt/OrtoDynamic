@@ -1,5 +1,11 @@
 import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost } from '../../../shared/api/http';
-import type { Quote, QuoteItem, QuoteItemCreate, QuoteStatusTransitions } from '../types';
+import type {
+  Quote,
+  QuoteDashboardMetrics,
+  QuoteItem,
+  QuoteItemCreate,
+  QuoteStatusTransitions,
+} from '../types';
 
 export type QuoteFieldsPayload = {
   clientId: number | null;
@@ -37,6 +43,10 @@ export type QuoteItemUpdate = { quantity: number | null; discount: number | null
 
 export function fetchQuotes(): Promise<Quote[]> {
   return apiGet<Quote[]>('/quotes/');
+}
+
+export function fetchQuoteDashboardMetrics(): Promise<QuoteDashboardMetrics> {
+  return apiGet<QuoteDashboardMetrics>('/quotes/dashboard-metrics/');
 }
 
 export function fetchQuote(id: string): Promise<Quote> {

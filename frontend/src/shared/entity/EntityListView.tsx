@@ -18,6 +18,8 @@ type EntityListViewProps<T extends object> = {
   onRowClick: (item: T) => void;
   loadingLabel: string;
   emptyLabel: string;
+  /** Filters applied when the list is first opened. */
+  initialFilters?: Record<string, string>;
   /** When provided, shows the toolbar's "Crea Nuovo" button. */
   onCreate?: () => void;
   /** Surface the exact-pick (only-filterable) filters before the searchable ones. */
@@ -32,6 +34,7 @@ export function EntityListView<T extends object>({
   onRowClick,
   loadingLabel,
   emptyLabel,
+  initialFilters,
   onCreate,
   categoricalFiltersFirst = false,
 }: EntityListViewProps<T>) {
@@ -47,7 +50,7 @@ export function EntityListView<T extends object>({
     clearFilters,
     filterOptions,
     filteredItems,
-  } = useTableSearchFilter(items, columns, { categoricalFiltersFirst });
+  } = useTableSearchFilter(items, columns, { categoricalFiltersFirst, initialFilters });
 
   const { pageItems, page, totalPages, totalItems, rangeStart, rangeEnd, setPage } =
     usePagination(filteredItems);

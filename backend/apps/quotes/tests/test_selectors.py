@@ -4,10 +4,31 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.db.models import Count
 
 from apps.common.exceptions import NotFoundError
 from apps.quotes import selectors
 from apps.quotes.document_rows import QuoteDocumentItem
+
+
+def test_quote_status_counts_preserves_requested_zeroes():
+    grouped_query = MagicMock()
+    grouped_query.values.return_value.annotate.return_value = [
+        {"stato": "INSERITO", "total": 4},
+        {"stato": "IN LAVORAZIONE", "total": 2},
+    ]
+    statuses = ("INSERITO", "INVIATO", "IN LAVORAZIONE")
+
+    with patch.object(
+        selectors.Quote.objects, "filter", return_value=grouped_query
+    ) as quote_filter:
+        counts = selectors.quote_status_counts(statuses)
+
+    assert counts == {"INSERITO": 4, "INVIATO": 0, "IN LAVORAZIONE": 2}
+    quote_filter.assert_called_once_with(stato__in=statuses)
+    grouped_query.values.assert_called_once_with("stato")
+    annotation = grouped_query.values.return_value.annotate.call_args.kwargs["total"]
+    assert isinstance(annotation, Count)
 
 
 def test_quotes_with_read_relations_batches_people_and_first_work_order():

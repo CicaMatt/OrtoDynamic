@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    QuoteDashboardMetricsView,
     QuoteDdtView,
     QuoteDeliveryFormView,
     QuoteDetailView,
@@ -16,6 +17,7 @@ app_name = "quotes"
 
 urlpatterns = [
     path("", QuoteListView.as_view(), name="list"),
+    path("dashboard-metrics/", QuoteDashboardMetricsView.as_view(), name="dashboard-metrics"),
     path("<int:pk>/", QuoteDetailView.as_view(), name="detail"),
     path("<int:pk>/items/", QuoteItemListView.as_view(), name="item-list"),
     path("<int:pk>/items/<int:item_id>/", QuoteItemDetailView.as_view(), name="item-detail"),

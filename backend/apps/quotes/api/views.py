@@ -29,6 +29,7 @@ from apps.quotes.selectors import (
     ddt_document_inputs,
     delivery_form_inputs,
     quote_items_with_products,
+    quote_status_counts,
     quotes_with_people,
     quotes_with_read_relations,
     scheda_document_inputs,
@@ -49,6 +50,8 @@ from .serializers import (
     QuoteUpdateSerializer,
 )
 
+DASHBOARD_QUOTE_STATUSES = ("INSERITO", "INVIATO", "IN LAVORAZIONE")
+
 
 class QuoteListView(UnpaginatedListCreateAPIView):
     serializer_class = QuoteSerializer
@@ -57,6 +60,13 @@ class QuoteListView(UnpaginatedListCreateAPIView):
 
     def get_queryset(self):
         return quotes_with_read_relations(super().get_queryset())
+
+
+class QuoteDashboardMetricsView(APIView):
+    """Counts for the quote states surfaced as dashboard metrics."""
+
+    def get(self, request):
+        return Response(quote_status_counts(DASHBOARD_QUOTE_STATUSES))
 
 
 class QuoteDetailView(ReadUpdateDetailAPIView):

@@ -1,4 +1,4 @@
-import { useNavigation } from '../../../app/navigation/NavigationContext';
+import { useNavigation, useRoute } from '../../../app/navigation/NavigationContext';
 import { entityCreateRoute, entityDetailRoute } from '../../../app/navigation/routes';
 import { EntityListView, type EntityColumn } from '../../../shared/entity/EntityListView';
 import { formatBirthDate, formatEuro, previewText } from '../../../shared/format/format';
@@ -123,12 +123,15 @@ const quoteColumns: ReadonlyArray<EntityColumn<Quote>> = [
 
 export function QuotesView() {
   const { navigate } = useNavigation();
+  const { status } = useRoute('quotes');
 
   return (
     <EntityListView
+      key={status ?? 'all'}
       title="Preventivi"
       columns={quoteColumns}
       fetchItems={fetchQuotes}
+      initialFilters={status ? { status } : undefined}
       rowKey={(quote) => quote.idQuote}
       onRowClick={(quote) => navigate(entityDetailRoute('quote', quote.idQuote))}
       onCreate={() => navigate(entityCreateRoute('quote'))}

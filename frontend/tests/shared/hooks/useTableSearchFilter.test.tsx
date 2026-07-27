@@ -52,4 +52,16 @@ describe('useTableSearchFilter', () => {
     expect(result.current.activeFilters).toEqual({});
     expect(result.current.filteredItems).toEqual(rows);
   });
+
+  it('applies initial filters and allows them to be cleared', () => {
+    const { result } = renderHook(() =>
+      useTableSearchFilter(rows, columns, { initialFilters: { status: 'CHIUSO' } }),
+    );
+
+    expect(result.current.activeFilters).toEqual({ status: 'CHIUSO' });
+    expect(result.current.filteredItems).toEqual([rows[1]]);
+
+    act(() => result.current.clearFilters());
+    expect(result.current.filteredItems).toEqual(rows);
+  });
 });

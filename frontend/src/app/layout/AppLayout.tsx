@@ -25,12 +25,10 @@ import { WorkOrdersView } from '../../features/workOrders/views/WorkOrdersView';
 import { WorkOrderDetailView } from '../../features/workOrders/views/WorkOrderDetailView';
 import { ConfigurationsView } from '../../features/configurations/views/ConfigurationsView';
 import { EmployeesView } from '../../features/employees/views/EmployeesView';
-import { PlaceholderView } from '../../features/placeholders/PlaceholderView';
-
-const placeholder = (title: string) => () => <PlaceholderView title={title} />;
+import { DashboardView } from '../../features/dashboard/views/DashboardView';
 
 const viewComponents = {
-  dashboard: placeholder('Dashboard'),
+  dashboard: DashboardView,
   clients: ClientsView,
   doctors: DoctorsView,
   'health-companies': HealthCompaniesView,

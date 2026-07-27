@@ -11,11 +11,9 @@ import { ViewToolbar } from '../../../shared/ui/ViewToolbar';
 import { fetchEmployees } from '../api/employees';
 import type { Employee } from '../types';
 
-// Username and email are near-unique identifiers, so they are searchable but not
-// offered as exact-value filters (which would just list every row).
 const EMPLOYEE_COLUMNS: ReadonlyArray<SearchFilterColumn<Employee>> = [
-  { key: 'username', label: 'Nome Utente', filterable: false },
-  { key: 'email', label: 'Email', filterable: false },
+  { key: 'username', label: 'Nome Utente' },
+  { key: 'email', label: 'Email' },
   { key: 'firstName', label: 'Nome' },
   { key: 'lastName', label: 'Cognome' },
 ];

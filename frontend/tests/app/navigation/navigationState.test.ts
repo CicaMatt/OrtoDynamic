@@ -17,6 +17,9 @@ describe('navigation state', () => {
     expect(routeKey({ name: 'product-detail', productId: '1' })).not.toBe(
       routeKey({ name: 'product-detail', productId: '2' }),
     );
+    expect(routeKey({ name: 'quotes', status: 'INSERITO' })).not.toBe(
+      routeKey({ name: 'quotes', status: 'INVIATO' }),
+    );
   });
 
   it('pushes distinct routes and restores them through back navigation', () => {
@@ -54,5 +57,6 @@ describe('navigation state', () => {
     expect(routeMatchesEditSession(orthopedic, { type: 'client', id: 'C-2' }, 'edit')).toBe(false);
     expect(sectionForRoute(orthopedic)).toBe('clients');
     expect(sectionForRoute({ name: 'quote-create' })).toBe('quotes');
+    expect(sectionForRoute({ name: 'quotes', status: 'INSERITO' })).toBe('quotes');
   });
 });

@@ -3,6 +3,12 @@
  * the backend renders NULLs as empty strings and dates/numbers as text — so the
  * same type drives the list, the detail view, and the edit draft.
  */
+export const DASHBOARD_QUOTE_STATUSES = ['INSERITO', 'INVIATO', 'IN LAVORAZIONE'] as const;
+
+export type DashboardQuoteStatus = (typeof DASHBOARD_QUOTE_STATUSES)[number];
+
+export type QuoteDashboardMetrics = Record<DashboardQuoteStatus, number>;
+
 export type Quote = {
   idQuote: string;
 

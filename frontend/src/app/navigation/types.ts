@@ -1,3 +1,5 @@
+import type { DashboardQuoteStatus } from '../../features/quotes/types';
+
 /** Every valid in-memory destination. Detail routes always carry their required id. */
 export type Route =
   | { name: 'dashboard' }
@@ -13,7 +15,7 @@ export type Route =
   | { name: 'products' }
   | { name: 'product-create' }
   | { name: 'product-detail'; productId: string }
-  | { name: 'quotes' }
+  | { name: 'quotes'; status?: DashboardQuoteStatus }
   | { name: 'quote-create'; clientId?: string }
   | { name: 'quote-detail'; quoteId: string }
   | { name: 'work-orders' }
