@@ -18,10 +18,12 @@ const DEFAULT_SURFACE_CLASS =
 export function ScrollableTable({
   children,
   surfaceClassName = DEFAULT_SURFACE_CLASS,
+  scrollClassName = '',
   scrollRef: externalScrollRef,
 }: {
   children: ReactNode;
   surfaceClassName?: string;
+  scrollClassName?: string;
   scrollRef?: RefObject<HTMLDivElement>;
 }) {
   const scrollRef = useDragScroll<HTMLDivElement>(externalScrollRef);
@@ -57,7 +59,7 @@ export function ScrollableTable({
 
   return (
     <div className="relative">
-      <div ref={scrollRef} className={`${surfaceClassName} overflow-x-auto`}>
+      <div ref={scrollRef} className={`${surfaceClassName} overflow-x-auto ${scrollClassName}`}>
         {children}
       </div>
       <EdgeShadow side="left" visible={edges.left} />

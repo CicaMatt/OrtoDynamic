@@ -60,6 +60,7 @@ export function QuoteItemsTable({
     <DataCard icon="inventory_2" title="Articoli Preventivo" action={action}>
       <ScrollableTable
         surfaceClassName={expanded ? TABLE_SURFACE_DROPDOWN_SPACE_CLASS : TABLE_SURFACE_CLASS}
+        scrollClassName="visible-horizontal-scrollbar"
       >
         <table className="w-full bg-white text-left font-body-md text-body-md">
           <thead className="bg-secondary font-label-caps text-label-caps text-on-secondary border-b border-outline-variant/50">

@@ -69,8 +69,8 @@ python manage.py runserver
 ```
 
 From the repository root, `./scripts/dev/start.sh` starts both backend and
-frontend. It uses `python` from the active environment by default; set
-`BACKEND_PYTHON=/path/to/python` to use another interpreter.
+frontend. It automatically uses `backend/.venv/bin/python` when available; set
+`BACKEND_PYTHON=/path/to/python` to override the interpreter.
 
 Run every frontend and backend check from the repository root with:
 

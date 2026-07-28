@@ -193,6 +193,7 @@ export function ItemDraftRow({
           placeholder="Cerca codice…"
           inputValueOf={(product) => product.code}
           onSelect={onProductSelect}
+          className="min-w-[200px]"
         />
       </td>
       <td className="py-3 px-4 align-top min-w-[260px]">

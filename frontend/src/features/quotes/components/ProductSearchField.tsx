@@ -32,6 +32,7 @@ export function ProductSearchField({
   placeholder = 'Cerca…',
   inputMode = 'text',
   inputValueOf = (product) => product.idProduct,
+  className = 'min-w-[360px]',
 }: {
   /** Text currently shown in the input (the selected product's code or description). */
   value: string;
@@ -41,6 +42,7 @@ export function ProductSearchField({
   inputMode?: 'text' | 'numeric';
   /** Maps the chosen product to the text the input should display. */
   inputValueOf?: (product: Product) => string;
+  className?: string;
 }) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
@@ -132,7 +134,7 @@ export function ProductSearchField({
   const showDropdown = open && query.trim() !== '';
 
   return (
-    <div className="relative min-w-[360px]" ref={containerRef}>
+    <div className={`relative ${className}`} ref={containerRef}>
       <input
         type="text"
         role="combobox"

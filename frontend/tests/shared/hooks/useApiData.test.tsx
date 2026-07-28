@@ -18,6 +18,29 @@ describe('useApiData', () => {
     expect(result.current.reload).toBe(reload);
   });
 
+  it('keeps loaded data visible while a manual reload is pending', async () => {
+    let resolveReload: ((value: string) => void) | undefined;
+    const fetcher = vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValueOnce('first')
+      .mockImplementationOnce(
+        () =>
+          new Promise<string>((resolve) => {
+            resolveReload = resolve;
+          }),
+      );
+    const { result } = renderHook(() => useApiData(fetcher, []));
+    await waitFor(() => expect(result.current.data).toBe('first'));
+
+    act(() => result.current.reload());
+
+    expect(result.current.data).toBe('first');
+    expect(result.current.loading).toBe(false);
+
+    act(() => resolveReload?.('second'));
+    await waitFor(() => expect(result.current.data).toBe('second'));
+  });
+
   it('ignores stale requests after dependencies change', async () => {
     let resolveFirst: ((value: string) => void) | undefined;
     const fetcher = vi.fn((id: string) => {

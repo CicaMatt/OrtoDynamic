@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState, type DependencyList } from 'react';
+import { useCallback, useEffect, useRef, useState, type DependencyList } from 'react';
 
 type ApiDataState<T> = {
   data: T | null;
@@ -19,28 +19,43 @@ type ApiData<T> = ApiDataState<T> & {
  */
 export function useApiData<T>(fetcher: () => Promise<T>, deps: DependencyList): ApiData<T> {
   const [state, setState] = useState<ApiDataState<T>>({ data: null, loading: true, error: null });
-  const [requestGeneration, reload] = useReducer((generation: number) => generation + 1, 0);
+  const fetcherRef = useRef(fetcher);
+  const requestIdRef = useRef(0);
+  fetcherRef.current = fetcher;
 
-  useEffect(() => {
-    let active = true;
-    setState({ data: null, loading: true, error: null });
+  const load = useCallback((preserveData: boolean) => {
+    const requestId = ++requestIdRef.current;
+    setState((current) => ({
+      data: preserveData ? current.data : null,
+      loading: !preserveData || current.data === null,
+      error: null,
+    }));
 
-    fetcher()
+    fetcherRef
+      .current()
       .then((data) => {
-        if (active) setState({ data, loading: false, error: null });
+        if (requestId === requestIdRef.current) {
+          setState({ data, loading: false, error: null });
+        }
       })
       .catch((error: unknown) => {
-        if (active) {
+        if (requestId === requestIdRef.current) {
           const message = error instanceof Error ? error.message : 'Errore di caricamento.';
           setState({ data: null, loading: false, error: message });
         }
       });
+  }, []);
+
+  const reload = useCallback(() => load(true), [load]);
+
+  useEffect(() => {
+    load(false);
 
     return () => {
-      active = false;
+      requestIdRef.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, requestGeneration]);
+  }, [...deps, load]);
 
   return { ...state, reload };
 }
