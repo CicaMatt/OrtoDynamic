@@ -1,8 +1,10 @@
 """Quote business operations that go beyond plain field updates."""
+
 from datetime import timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import re
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Sum
 
@@ -20,15 +22,51 @@ def _round_money(value):
     return float(Decimal(str(value)).quantize(_CENT, rounding=ROUND_HALF_UP))
 
 
+def _active_product(product_id):
+    product = Product.objects.filter(
+        pk=product_id,
+        anno=settings.NOMENCLATORE_ACTIVE_YEAR,
+    ).first()
+    if product is None:
+        raise ServiceError(
+            f"Seleziona una voce del nomenclatore {settings.NOMENCLATORE_ACTIVE_YEAR}."
+        )
+    try:
+        price = Decimal(str(product.prezzo))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ServiceError("Il prezzo del nomenclatore non è valido.") from exc
+    if not price.is_finite() or price < 0:
+        raise ServiceError("Il prezzo del nomenclatore non può essere negativo.")
+    return product
+
+
+def _validated_line_values(quantity, discount):
+    """Validate service-level line invariants and default a blank discount to zero."""
+    try:
+        decimal_quantity = Decimal(str(quantity))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ServiceError("La quantità deve essere maggiore di zero.") from exc
+    if not decimal_quantity.is_finite() or decimal_quantity <= 0:
+        raise ServiceError("La quantità deve essere maggiore di zero.")
+
+    discount = 0 if discount is None else discount
+    try:
+        decimal_discount = Decimal(str(discount))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ServiceError("Lo sconto deve essere compreso tra 0 e 100.") from exc
+    if not decimal_discount.is_finite() or not Decimal("0") <= decimal_discount <= Decimal("100"):
+        raise ServiceError("Lo sconto deve essere compreso tra 0 e 100.")
+    return quantity, discount
+
+
 def line_amount(price, quantity, discount):
     """
     Importo for a quote line: `prezzo × quantità`, reduced by the discount percent
     when one is set, rounded to cents.
 
     Returns ``None`` when either the price or the quantity is unknown, so a line
-    without those carries no amount. `discount` is a 1–100 percentage (validated at
-    the serializer boundary); ``None`` means no discount and leaves the amount at
-    the full `prezzo × quantità`.
+    without those carries no amount. `discount` is a 0–100 percentage (validated at
+    the service and serializer boundaries); ``None`` is treated as no discount.
     """
     if price is None or quantity is None:
         return None
@@ -46,9 +84,9 @@ def recompute_quote_total(quote_id):
     after any change to a quote's lines (and on quote creation). A quote with no
     lines (or none carrying an amount) totals 0. Returns the stored total.
     """
-    total = (
-        QuoteItem.objects.filter(id_preventivo=quote_id).aggregate(total=Sum("importo"))["total"]
-    )
+    total = QuoteItem.objects.filter(id_preventivo=quote_id).aggregate(total=Sum("importo"))[
+        "total"
+    ]
     total = _round_money(total) if total is not None else 0.0
     Quote.objects.filter(pk=quote_id).update(totale=total)
     return total
@@ -108,14 +146,16 @@ def create_quote_item(*, quote_id, product_id, quantity, discount):
     Create a line item under a quote, deriving its money columns from the catalog.
 
     `prezzo` is the chosen product's unit price and `importo` is `prezzo × quantità`
-    reduced by `sconto` (see `line_amount`); neither is client-supplied. `sconto`
-    is stored as given for reference. Raises `ServiceError` when the referenced
-    product does not exist. The created instance is returned with its product
-    attached, so the read serializer can render the description without a refetch.
+    reduced by `sconto` (see `line_amount`); neither is client-supplied. A blank
+    `sconto` is stored as zero. Raises `ServiceError` when the referenced
+    quote does not exist or the product is not in the configured active year. The
+    created instance is returned with its product attached, so the read serializer
+    can render the description without a refetch.
     """
-    product = Product.objects.filter(pk=product_id).first()
-    if product is None:
-        raise ServiceError("Prodotto inesistente o non più disponibile.")
+    if not Quote.objects.filter(pk=quote_id).exists():
+        raise ServiceError("Preventivo inesistente o non più disponibile.")
+    quantity, discount = _validated_line_values(quantity, discount)
+    product = _active_product(product_id)
 
     price = product.prezzo
     item = QuoteItem.objects.create(
@@ -131,20 +171,35 @@ def create_quote_item(*, quote_id, product_id, quantity, discount):
     return item
 
 
-def update_quote_item(*, quote_item, quantity, discount):
+def update_quote_item(*, quote_item, product_id, quantity, discount):
     """
-    Update a line's quantity and discount, recomputing `importo` from the line's
-    own `prezzo` (see `line_amount`).
+    Update a line and recompute its amount from its saved price snapshot.
 
-    The product and its price are fixed, so they are not touched. `sconto` is a
-    1–100 discount percentage (validated at the serializer boundary) that reduces
-    the amount; clearing it restores the full `prezzo × quantità`. Only the three
-    derived/edited columns are persisted.
+    Quantity/discount-only edits never consult the catalogue price. When the
+    nomenclatore id changes, the replacement must be in the active edition and
+    its price becomes the line's new snapshot.
     """
+    quantity, discount = _validated_line_values(quantity, discount)
+    product_changed = product_id != quote_item.codice_nomenclatore
+    update_fields = ["quantita", "sconto", "importo"]
+
+    if product_changed:
+        product = _active_product(product_id)
+        quote_item.codice_nomenclatore = product.id
+        quote_item.prezzo = product.prezzo
+        update_fields = ["codice_nomenclatore", "prezzo", *update_fields]
+    else:
+        product = (
+            Product.objects.filter(pk=quote_item.codice_nomenclatore).first()
+            if quote_item.codice_nomenclatore is not None
+            else None
+        )
+
     quote_item.quantita = quantity
     quote_item.sconto = discount
     quote_item.importo = line_amount(quote_item.prezzo, quantity, discount)
-    quote_item.save(update_fields=["quantita", "sconto", "importo"])
+    quote_item.save(update_fields=update_fields)
+    quote_item.product = product
     recompute_quote_total(quote_item.id_preventivo)
     return quote_item
 

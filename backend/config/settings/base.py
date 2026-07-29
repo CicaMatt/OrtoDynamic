@@ -6,6 +6,7 @@ which import everything from this module and override only what differs.
 All secrets and environment-specific values are read from the environment
 (see `.env.example`) — never hardcoded here.
 """
+
 from pathlib import Path
 
 import environ
@@ -118,6 +119,11 @@ if _database_ssl_options:
     DATABASES["default"]["OPTIONS"] = {"ssl": _database_ssl_options}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Exact catalogue edition used when selecting a nomenclatore row for a new quote
+# line. Historical lines may retain their original edition; all new selections
+# are validated against this value in the quote service layer.
+NOMENCLATORE_ACTIVE_YEAR = "2025"
 
 # --- Password validation ----------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [

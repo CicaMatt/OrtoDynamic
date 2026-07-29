@@ -6,6 +6,9 @@ export const EMPTY_ITEM_DRAFT: QuoteItemDraft = {
   code: '',
   description: '',
   price: '',
+  productYear: '',
+  catalogPrice: '',
+  isHistorical: false,
   quantity: '1',
   discount: '',
 };
@@ -63,23 +66,23 @@ export function draftItemsTotal(drafts: ReadonlyArray<QuoteItemDraft>): string {
 
 /**
  * Validate a discount input. A discount is optional; when given it must be a
- * percentage between 1 and 100. Returns an error message, or `null` when valid —
+ * percentage between 0 and 100. Returns an error message, or `null` when valid —
  * the backend enforces the same bound as the source of truth.
  */
 export function discountError(raw: string): string | null {
   if (raw.trim() === '') return null;
   const value = Number(raw);
-  if (!Number.isFinite(value) || value < 1 || value > 100) {
-    return 'Lo sconto deve essere un valore percentuale tra 1 e 100.';
+  if (!Number.isFinite(value) || value < 0 || value > 100) {
+    return 'Lo sconto deve essere un valore percentuale tra 0 e 100.';
   }
   return null;
 }
 
-/** Validate quantity: every quote item must have a quantity of at least 1. */
+/** Validate quantity: every quote item must have a quantity greater than zero. */
 export function quantityError(raw: string): string | null {
   const value = Number(raw);
-  if (raw.trim() === '' || !Number.isFinite(value) || value < 1) {
-    return 'La quantità deve essere almeno 1.';
+  if (raw.trim() === '' || !Number.isFinite(value) || value <= 0) {
+    return 'La quantità deve essere maggiore di zero.';
   }
   return null;
 }
@@ -89,12 +92,12 @@ export function quoteItemDraftError(draft: QuoteItemDraft): string | null {
   return quantityError(draft.quantity) ?? discountError(draft.discount);
 }
 
-/** Reject quantity keystrokes that would make the value lower than 1. */
+/** Reject quantity keystrokes that would make the value zero or negative. */
 export function isAcceptableQuantityInput(value: string): boolean {
   if (value.trim() === '') return true;
   if (value.startsWith('-')) return false;
   const numeric = Number(value);
-  return Number.isFinite(numeric) && numeric >= 1;
+  return Number.isFinite(numeric) && numeric > 0;
 }
 
 /** Reject obviously out-of-range discount keystrokes (negative or above 100). */
@@ -111,6 +114,9 @@ export function draftFromItem(item: {
   productCode: string;
   productDescription: string;
   price: string;
+  productYear: string;
+  catalogPrice: string;
+  isHistorical: boolean;
   quantity: string;
   discount: string;
 }): QuoteItemDraft {
@@ -119,6 +125,9 @@ export function draftFromItem(item: {
     code: item.productCode,
     description: item.productDescription,
     price: item.price,
+    productYear: item.productYear,
+    catalogPrice: item.catalogPrice,
+    isHistorical: item.isHistorical,
     quantity: quantityError(item.quantity) ? '1' : item.quantity,
     discount: item.discount,
   };

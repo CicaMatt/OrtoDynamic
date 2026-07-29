@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { searchProducts } from '../../products/api/products';
+import { searchProducts, type QuoteItemSearchContext } from '../../products/api/products';
 import type { Product } from '../../products/types';
 
 const baseInputClass =
@@ -33,6 +33,7 @@ export function ProductSearchField({
   inputMode = 'text',
   inputValueOf = (product) => product.idProduct,
   className = 'min-w-[360px]',
+  searchContext,
 }: {
   /** Text currently shown in the input (the selected product's code or description). */
   value: string;
@@ -43,6 +44,8 @@ export function ProductSearchField({
   /** Maps the chosen product to the text the input should display. */
   inputValueOf?: (product: Product) => string;
   className?: string;
+  /** Existing-line scope; the API derives its one allowed historical id from it. */
+  searchContext?: QuoteItemSearchContext;
 }) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
@@ -69,7 +72,10 @@ export function ProductSearchField({
     setLoading(true);
     let active = true;
     const handle = window.setTimeout(() => {
-      searchProducts(needle)
+      const request = searchContext
+        ? searchProducts(needle, searchContext)
+        : searchProducts(needle);
+      request
         .then((products) => {
           if (!active) return;
           setResults(products);
@@ -87,7 +93,7 @@ export function ProductSearchField({
       active = false;
       window.clearTimeout(handle);
     };
-  }, [query, open]);
+  }, [query, open, searchContext]);
 
   useEffect(() => {
     setActiveIndex(0);

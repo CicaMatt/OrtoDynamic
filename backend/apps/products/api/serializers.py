@@ -23,7 +23,7 @@ class ProductSerializer(NullToEmptySerializer):
 class ProductUpdateSerializer(UpdateFieldsSerializer):
     code = optional_text("codice")
     description = optional_text("descrizione")
-    price = serializers.FloatField(source="prezzo", required=False)
+    price = serializers.FloatField(source="prezzo", required=False, min_value=0)
     year = nullable_text("anno")
 
 
@@ -32,7 +32,7 @@ class ProductCreateSerializer(ProductUpdateSerializer):
 
     code = serializers.CharField(source="codice", max_length=255)
     description = serializers.CharField(source="descrizione", max_length=4000)
-    price = serializers.FloatField(source="prezzo")
+    price = serializers.FloatField(source="prezzo", min_value=0)
 
     def create(self, validated_data):
         return Product.objects.create(**validated_data)

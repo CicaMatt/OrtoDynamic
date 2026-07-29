@@ -75,8 +75,9 @@ export type QuoteStatusTransitionOption = {
 
 /**
  * Quote line item mirrored from the API (`item_preventivi`), linked to its
- * parent quote on the backend by `id_preventivo`. All-strings like {@link Quote}.
- * `productId` is the raw `codice_nomenclatore` reference (a `nomenclatore.id`).
+ * parent quote on the backend by `id_preventivo`. Display values are strings like
+ * {@link Quote}; `isHistorical` is boolean. `productId` is the raw
+ * `codice_nomenclatore` reference (a `nomenclatore.id`).
  */
 export type QuoteItem = {
   id: string;
@@ -85,6 +86,10 @@ export type QuoteItem = {
   productCode: string;
   /** The product's `descrizione`, joined from `nomenclatore` for display. */
   productDescription: string;
+  /** Current catalogue metadata; `price` below remains the saved quote snapshot. */
+  productYear: string;
+  catalogPrice: string;
+  isHistorical: boolean;
   quantity: string;
   price: string;
   amount: string;
@@ -103,6 +108,10 @@ export type QuoteItemDraft = {
   code: string;
   description: string;
   price: string;
+  /** Catalogue metadata used to label historical selections without changing `price`. */
+  productYear: string;
+  catalogPrice: string;
+  isHistorical: boolean;
   quantity: string;
   discount: string;
 };

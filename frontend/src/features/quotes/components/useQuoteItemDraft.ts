@@ -20,6 +20,9 @@ export function useQuoteItemDraft() {
             code: product.code,
             description: product.description,
             price: product.price,
+            productYear: product.year,
+            catalogPrice: product.price,
+            isHistorical: false,
           }
         : current,
     );

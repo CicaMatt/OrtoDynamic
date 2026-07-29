@@ -12,7 +12,9 @@ from apps.common.api.views import (
     UnpaginatedListCreateAPIView,
     inline_pdf_response,
 )
-from apps.common.exceptions import ServiceError
+from apps.common.exceptions import NotFoundError, ServiceError
+from apps.products.api.serializers import ProductSerializer
+from apps.products.selectors import quote_product_search
 from apps.quotes.documents import (
     ddt_filename,
     delivery_form_filename,
@@ -107,19 +109,41 @@ class QuoteItemDetailView(
 ):
     """
     Edit or delete a single line, scoped to its quote so a foreign id can't be
-    touched. PATCH updates the line's quantity/discount (recomputing its amount);
-    DELETE removes its `item_preventivi` row.
+    touched. PATCH updates its selection/quantity/discount under the snapshot
+    rules (recomputing its amount); DELETE removes its `item_preventivi` row.
     """
 
     serializer_class = QuoteItemUpdateSerializer
     lookup_url_kwarg = "item_id"
 
     def get_queryset(self):
-        return QuoteItem.objects.filter(id_preventivo=self.kwargs["pk"])
+        return QuoteItem.objects.filter(
+            pk=self.kwargs["item_id"],
+            id_preventivo=self.kwargs["pk"],
+        )
 
     def perform_destroy(self, instance):
         # Remove the line and re-derive the quote's total from those that remain.
         delete_quote_item(instance)
+
+
+class QuoteItemProductSearchView(generics.ListAPIView):
+    """Active catalogue rows plus this quote line's one saved historical row."""
+
+    serializer_class = ProductSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        item = QuoteItem.objects.filter(
+            pk=self.kwargs["item_id"],
+            id_preventivo=self.kwargs["pk"],
+        ).first()
+        if item is None:
+            raise NotFoundError("Articolo inesistente per il preventivo specificato.")
+        return quote_product_search(
+            self.request.query_params.get("q", ""),
+            current_product_id=item.codice_nomenclatore,
+        )
 
 
 class QuoteStatusTransitionsView(generics.RetrieveAPIView):

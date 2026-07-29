@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Product } from '../../products/types';
 import { useApiData } from '../../../shared/hooks/useApiData';
 import { createQuoteItem, deleteQuoteItem, fetchQuoteItems, updateQuoteItem } from '../api/quotes';
 import { ItemDraftRow, ItemEditRow, NewItemButton } from '../components/QuoteItemRow';
@@ -9,10 +10,10 @@ import {
 } from '../components/QuoteItemsTable';
 import { draftFromItem, quoteItemDraftError, toNullableNumber } from '../components/quoteItemMath';
 import { useQuoteItemDraft } from '../components/useQuoteItemDraft';
-import type { QuoteItemDraft } from '../types';
+import type { QuoteItem, QuoteItemDraft } from '../types';
 
 /** State of the one line being edited inline: its id plus the working draft. */
-type EditState = { id: string; draft: QuoteItemDraft };
+type EditState = { id: string; original: QuoteItem; draft: QuoteItemDraft };
 type ItemsMessage = { content: string; tone?: 'error' };
 
 /**
@@ -63,6 +64,25 @@ export function QuoteItemsCard({
       current ? { ...current, draft: { ...current.draft, [key]: value } } : current,
     );
 
+  const selectEditProduct = (product: Product) =>
+    setEdit((current) => {
+      if (!current) return current;
+      const keepsSnapshot = product.idProduct === current.original.productId;
+      return {
+        ...current,
+        draft: {
+          ...current.draft,
+          productId: product.idProduct,
+          code: product.code,
+          description: product.description,
+          price: keepsSnapshot ? current.original.price : product.price,
+          productYear: product.year,
+          catalogPrice: product.price,
+          isHistorical: keepsSnapshot ? current.original.isHistorical : false,
+        },
+      };
+    });
+
   const confirmAdd = async () => {
     const draft = add.draft;
     if (!draft || draft.productId.trim() === '') return;
@@ -92,6 +112,7 @@ export function QuoteItemsCard({
 
     await runItemMutation(async () => {
       await updateQuoteItem(quoteId, edit.id, {
+        productId: Number(edit.draft.productId),
         quantity: toNullableNumber(edit.draft.quantity),
         discount: toNullableNumber(edit.draft.discount),
       });
@@ -138,14 +159,16 @@ export function QuoteItemsCard({
                 draft={edit.draft}
                 submitting={submitting}
                 onField={setEditField}
+                onProductSelect={selectEditProduct}
                 onConfirm={confirmEdit}
                 onCancel={() => setEdit(null)}
+                searchContext={{ quoteId, itemId: item.id }}
               />
             ) : (
               <PersistedQuoteItemRow
                 key={item.id}
                 item={item}
-                onEdit={() => setEdit({ id: item.id, draft: draftFromItem(item) })}
+                onEdit={() => setEdit({ id: item.id, original: item, draft: draftFromItem(item) })}
                 onDelete={() => removeItem(item.id)}
                 deleting={deletingId === item.id}
                 disabled={!idle}

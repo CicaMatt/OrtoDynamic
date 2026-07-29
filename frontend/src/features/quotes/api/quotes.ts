@@ -38,8 +38,12 @@ export type QuoteUpdatePayload = Partial<QuoteFieldsPayload>;
 /** Create payload: the quote fields plus any initial line items, sent in one request. */
 export type QuoteCreatePayload = QuoteFieldsPayload & { items?: QuoteItemCreate[] };
 
-/** The editable money inputs of a line item; `null` clears the value. */
-export type QuoteItemUpdate = { quantity: number | null; discount: number | null };
+/** Editable line inputs; price and amount remain server-derived. */
+export type QuoteItemUpdate = {
+  productId: number;
+  quantity: number | null;
+  discount: number | null;
+};
 
 export function fetchQuotes(): Promise<Quote[]> {
   return apiGet<Quote[]>('/quotes/');
@@ -62,7 +66,7 @@ export function createQuoteItem(quoteId: string, values: QuoteItemCreate): Promi
   return apiPost<QuoteItem>(`/quotes/${quoteId}/items/`, values);
 }
 
-/** Update a line item's quantity/discount; the API recomputes its amount. */
+/** Update a line; the API preserves or replaces its price snapshot as appropriate. */
 export function updateQuoteItem(
   quoteId: string,
   itemId: string,

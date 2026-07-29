@@ -9,8 +9,8 @@ vi.mock('../../../../src/features/products/api/products', () => ({
 }));
 
 const products = [
-  { idProduct: '1', code: 'A-1', description: 'Plantare', price: '10', year: '2026' },
-  { idProduct: '2', code: 'B-2', description: 'Tutore', price: '20', year: '2026' },
+  { idProduct: '1', code: 'A-1', description: 'Plantare', price: '10', year: '2025' },
+  { idProduct: '2', code: 'B-2', description: 'Tutore', price: '20', year: '2025' },
 ];
 
 afterEach(() => {
@@ -42,5 +42,25 @@ describe('ProductSearchField', () => {
     expect(searchProducts).toHaveBeenCalledWith('tu');
     expect(onSelect).toHaveBeenCalledWith(products[1]);
     expect((input as HTMLInputElement).value).toBe('Tutore');
+  });
+
+  it('uses the quote-item-scoped endpoint context when editing a historical line', async () => {
+    vi.useFakeTimers();
+    vi.mocked(searchProducts).mockResolvedValue([products[0]]);
+    render(
+      <ProductSearchField
+        value="A-1"
+        onSelect={vi.fn()}
+        searchContext={{ quoteId: '500', itemId: '11' }}
+      />,
+    );
+
+    fireEvent.focus(screen.getByRole('combobox'));
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+      await Promise.resolve();
+    });
+
+    expect(searchProducts).toHaveBeenCalledWith('A-1', { quoteId: '500', itemId: '11' });
   });
 });

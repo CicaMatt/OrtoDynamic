@@ -1,18 +1,13 @@
 """Thin endpoints for the Product resource."""
 
-from django.db.models import CharField, Q
-from django.db.models.functions import Cast
-
 from apps.common.api.views import (
     ReadUpdateDetailAPIView,
     UnpaginatedListAPIView,
     UnpaginatedListCreateAPIView,
 )
 from apps.products.models import Product
+from apps.products.selectors import quote_product_search
 from .serializers import ProductCreateSerializer, ProductSerializer, ProductUpdateSerializer
-
-# Cap the type-ahead result set: enough to scan, small enough to stay snappy.
-PRODUCT_SEARCH_LIMIT = 25
 
 
 class ProductListView(UnpaginatedListCreateAPIView):
@@ -32,25 +27,12 @@ class ProductSearchView(UnpaginatedListAPIView):
     Type-ahead lookup for picking a `nomenclatore` row, used by both the code and
     the description fields of a quote line.
 
-    `item_preventivi.codice_nomenclatore` stores a `nomenclatore.id`, so the id
-    (cast to text) is matched by prefix — what the user types as a number — while
-    `codice` and `descrizione` are matched as substrings so the same endpoint
-    serves a search by product name. An empty `q` returns nothing; results are
-    capped at `PRODUCT_SEARCH_LIMIT`.
+    This endpoint is for new quote lines, so it returns exact active-year rows
+    only. Existing-line historical selection uses the quote-scoped endpoint,
+    which derives the one additional allowed id from the saved line server-side.
     """
 
     serializer_class = ProductSerializer
 
     def get_queryset(self):
-        query = self.request.query_params.get("q", "").strip()
-        if not query:
-            return Product.objects.none()
-        return (
-            Product.objects.annotate(id_text=Cast("id", output_field=CharField()))
-            .filter(
-                Q(id_text__startswith=query)
-                | Q(codice__icontains=query)
-                | Q(descrizione__icontains=query)
-            )
-            .order_by("id")[:PRODUCT_SEARCH_LIMIT]
-        )
+        return quote_product_search(self.request.query_params.get("q", ""))

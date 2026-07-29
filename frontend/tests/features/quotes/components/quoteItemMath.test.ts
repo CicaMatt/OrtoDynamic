@@ -39,12 +39,25 @@ describe('quote item math', () => {
     expect(draftItemsTotal([])).toBe('');
     expect(
       draftItemsTotal([
-        { productId: '1', code: 'A', description: 'One', price: '10', quantity: '2', discount: '' },
+        {
+          productId: '1',
+          code: 'A',
+          description: 'One',
+          price: '10',
+          productYear: '2025',
+          catalogPrice: '10',
+          isHistorical: false,
+          quantity: '2',
+          discount: '',
+        },
         {
           productId: '2',
           code: 'B',
           description: 'Two',
           price: '5',
+          productYear: '2025',
+          catalogPrice: '5',
+          isHistorical: false,
           quantity: '3',
           discount: '10',
         },
@@ -57,7 +70,7 @@ describe('quote item math', () => {
     expect(quantityError('0')).not.toBeNull();
     expect(quantityError('1')).toBeNull();
     expect(discountError('')).toBeNull();
-    expect(discountError('0')).not.toBeNull();
+    expect(discountError('0')).toBeNull();
     expect(discountError('100')).toBeNull();
     expect(discountError('101')).not.toBeNull();
 
@@ -76,6 +89,9 @@ describe('quote item math', () => {
         productCode: 'T-7',
         productDescription: 'Tutore',
         price: '25',
+        productYear: '2024',
+        catalogPrice: '30',
+        isHistorical: true,
         quantity: '0',
         discount: '',
       }),
@@ -84,6 +100,9 @@ describe('quote item math', () => {
       code: 'T-7',
       description: 'Tutore',
       price: '25',
+      productYear: '2024',
+      catalogPrice: '30',
+      isHistorical: true,
       quantity: '1',
       discount: '',
     });

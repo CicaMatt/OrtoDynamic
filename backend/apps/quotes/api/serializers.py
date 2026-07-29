@@ -6,6 +6,8 @@ detail views expose the full column set, so a single read serializer serves
 both; `NullToEmptySerializer` renders SQL NULLs as empty strings and dates/numbers as
 plain strings, keeping the frontend's all-strings contract.
 """
+
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -98,14 +100,17 @@ class QuoteItemSerializer(NullToEmptySerializer):
     columns the view renders; `productId` is the raw `codice_nomenclatore`
     reference (a `nomenclatore.id`), while `productCode` and `productDescription`
     are that product's `codice`/`descrizione`, read from the row attached by the
-    view (absent for a product that no longer exists). Values follow the
-    all-strings contract.
+    view (absent for a product that no longer exists). Display values follow the
+    all-strings contract; `isHistorical` is the explicit boolean exception.
     """
 
     id = serializers.CharField()
     productId = serializers.CharField(source="codice_nomenclatore")
     productCode = serializers.SerializerMethodField()
     productDescription = serializers.SerializerMethodField()
+    productYear = serializers.SerializerMethodField()
+    catalogPrice = serializers.SerializerMethodField()
+    isHistorical = serializers.SerializerMethodField()
     quantity = serializers.CharField(source="quantita")
     price = serializers.CharField(source="prezzo")
     amount = serializers.CharField(source="importo")
@@ -119,12 +124,24 @@ class QuoteItemSerializer(NullToEmptySerializer):
         product = getattr(item, "product", None)
         return product.descrizione if product is not None else None
 
+    def get_productYear(self, item):
+        product = getattr(item, "product", None)
+        return product.anno if product is not None else None
+
+    def get_catalogPrice(self, item):
+        product = getattr(item, "product", None)
+        return str(product.prezzo) if product is not None else None
+
+    def get_isHistorical(self, item):
+        product = getattr(item, "product", None)
+        return product is not None and product.anno != settings.NOMENCLATORE_ACTIVE_YEAR
+
 
 class QuoteItemCreateSerializer(serializers.Serializer):
     """
     Create a line item for a quote. Only the client-controlled inputs are
     accepted: the product reference (required) plus the line's quantity and
-    discount (a 1–100 percentage, or null for none). `prezzo` and `importo` are
+    discount (a 0–100 percentage, defaulting to zero). `prezzo` and `importo` are
     derived from the product by `create_quote_item`, and the parent
     `id_preventivo` is injected by the caller — none of the three is trusted from
     the client. Used both standalone (the items endpoint) and nested under
@@ -133,8 +150,16 @@ class QuoteItemCreateSerializer(serializers.Serializer):
     """
 
     productId = serializers.IntegerField(source="product_id")
-    quantity = serializers.FloatField(default=1, min_value=1)
-    discount = serializers.FloatField(allow_null=True, default=None, min_value=1, max_value=100)
+    quantity = serializers.FloatField(default=1)
+    discount = serializers.FloatField(allow_null=True, default=0, min_value=0, max_value=100)
+
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("La quantità deve essere maggiore di zero.")
+        return value
+
+    def validate_discount(self, value):
+        return 0 if value is None else value
 
     def create(self, validated_data):
         return create_quote_item(**validated_data)
@@ -145,22 +170,35 @@ class QuoteItemCreateSerializer(serializers.Serializer):
 
 class QuoteItemUpdateSerializer(serializers.Serializer):
     """
-    Edit an existing line's quantity and discount. The product and its `prezzo`
-    are fixed, and `importo` is recomputed by `update_quote_item`, so none of
-    those is accepted here. Both inputs are optional for PATCH; an omitted field
-    keeps the line's current value. `discount` is a 1–100 percentage (or null to
-    clear it). The updated row is rendered with `QuoteItemSerializer`.
+    Edit an existing line. Product, quantity, and discount are optional for PATCH.
+    The service preserves the saved price when the product id is unchanged, or
+    snapshots the active nomenclatore price when it changes.
     """
 
-    quantity = serializers.FloatField(source="quantita", required=False, min_value=1)
+    productId = serializers.IntegerField(source="product_id", required=False)
+    quantity = serializers.FloatField(source="quantita", required=False)
     discount = serializers.FloatField(
-        source="sconto", required=False, allow_null=True, min_value=1, max_value=100
+        source="sconto", required=False, allow_null=True, min_value=0, max_value=100
     )
+
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("La quantità deve essere maggiore di zero.")
+        return value
+
+    def validate_discount(self, value):
+        return 0 if value is None else value
 
     def update(self, instance, validated_data):
         quantity = validated_data.get("quantita", instance.quantita)
         discount = validated_data.get("sconto", instance.sconto)
-        return update_quote_item(quote_item=instance, quantity=quantity, discount=discount)
+        product_id = validated_data.get("product_id", instance.codice_nomenclatore)
+        return update_quote_item(
+            quote_item=instance,
+            product_id=product_id,
+            quantity=quantity,
+            discount=discount,
+        )
 
     def to_representation(self, instance):
         return QuoteItemSerializer(instance).data
@@ -196,7 +234,9 @@ class QuoteUpdateSerializer(UpdateFieldsSerializer):
 
     # Authorization & deadlines
     authorizationNumber = nullable_text("numero_autorizzazione")
-    acceptanceDate = serializers.DateField(source="data_accettazione", required=False, allow_null=True)
+    acceptanceDate = serializers.DateField(
+        source="data_accettazione", required=False, allow_null=True
+    )
     authorizationReceiptDate = serializers.DateField(
         source="data_ricezione_autorizzazione", required=False, allow_null=True
     )

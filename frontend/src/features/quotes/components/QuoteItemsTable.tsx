@@ -127,10 +127,29 @@ export function PersistedQuoteItemRow({
     <tr className="border-b border-surface-variant last:border-0 hover:bg-surface-container-low transition-colors duration-300">
       {PERSISTED_ITEM_COLUMNS.map((column) => {
         const raw = item[column.key];
-        const value = column.format ? column.format(raw) : raw;
+        const value = column.format ? column.format(String(raw)) : String(raw);
         const content =
           column.key === 'productCode' || column.key === 'productDescription' ? (
-            <EntityReference name={value} id={item.productId} entity="product" />
+            <div>
+              <EntityReference name={value} id={item.productId} entity="product" />
+              {column.key === 'productCode' && item.isHistorical && (
+                <span className="mt-1 block w-fit rounded-full bg-tertiary/10 px-2 py-0.5 font-label-caps text-label-caps uppercase text-tertiary">
+                  Storico {item.productYear}
+                </span>
+              )}
+            </div>
+          ) : column.key === 'price' && item.isHistorical ? (
+            <div className="min-w-[180px] space-y-1">
+              <div>
+                <span className="block font-label-caps text-label-caps uppercase text-outline">
+                  Prezzo preventivo
+                </span>
+                <FieldValue value={value} />
+              </div>
+              <div className="font-body-sm text-body-sm text-outline">
+                Catalogo attuale: {formatEuro(item.catalogPrice)}
+              </div>
+            </div>
           ) : (
             <FieldValue value={value} />
           );

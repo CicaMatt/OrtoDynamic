@@ -15,7 +15,7 @@ describe('useQuoteItemDraft', () => {
         code: 'T-7',
         description: 'Tutore',
         price: '25',
-        year: '2026',
+        year: '2025',
       }),
     );
 
@@ -24,6 +24,9 @@ describe('useQuoteItemDraft', () => {
       code: 'T-7',
       description: 'Tutore',
       price: '25',
+      productYear: '2025',
+      catalogPrice: '25',
+      isHistorical: false,
       quantity: '3',
     });
 

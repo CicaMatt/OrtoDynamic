@@ -30,7 +30,7 @@ vi.mock('../../../../src/features/quotes/components/ProductSearchField', () => (
           code: 'T-7',
           description: 'Tutore lungo',
           price: '30',
-          year: '2026',
+          year: '2025',
         })
       }
     >

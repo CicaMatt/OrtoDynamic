@@ -102,7 +102,7 @@ def test_quote_update_accepts_existing_people_and_a_cleared_doctor():
                 {"productId": 8, "quantity": 1, "discount": 25},
             ],
             [
-                call(quote_id=500, product_id=7, quantity=2.0, discount=None),
+                call(quote_id=500, product_id=7, quantity=2.0, discount=0),
                 call(quote_id=500, product_id=8, quantity=1.0, discount=25.0),
             ],
             False,
@@ -186,12 +186,15 @@ def test_quote_creation_does_not_compensate_when_the_quote_insert_itself_fails()
 
 
 def test_create_quote_item_derives_money_and_recomputes_total():
-    product = SimpleNamespace(id=7, prezzo=40.0)
+    product = SimpleNamespace(id=7, prezzo=40.0, anno="2025")
     product_query = MagicMock()
     product_query.first.return_value = product
+    quote_query = MagicMock()
+    quote_query.exists.return_value = True
     item = SimpleNamespace(id=3)
 
     with (
+        patch.object(services.Quote.objects, "filter", return_value=quote_query),
         patch.object(services.Product.objects, "filter", return_value=product_query),
         patch.object(services.QuoteItem.objects, "create", return_value=item) as create,
         patch.object(services, "recompute_quote_total") as recompute,
@@ -214,12 +217,15 @@ def test_create_quote_item_derives_money_and_recomputes_total():
 def test_create_quote_item_rejects_a_product_that_no_longer_exists():
     product_query = MagicMock()
     product_query.first.return_value = None
+    quote_query = MagicMock()
+    quote_query.exists.return_value = True
 
     with (
+        patch.object(services.Quote.objects, "filter", return_value=quote_query),
         patch.object(services.Product.objects, "filter", return_value=product_query),
         patch.object(services.QuoteItem.objects, "create") as create,
         patch.object(services, "recompute_quote_total") as recompute,
-        pytest.raises(ServiceError, match="Prodotto inesistente"),
+        pytest.raises(ServiceError, match="nomenclatore 2025"),
     ):
         services.create_quote_item(
             quote_id=500,
@@ -235,6 +241,7 @@ def test_create_quote_item_rejects_a_product_that_no_longer_exists():
 def test_update_and_delete_quote_items_recompute_the_parent_total():
     item = SimpleNamespace(
         id_preventivo=500,
+        codice_nomenclatore=7,
         prezzo=30.0,
         quantita=1,
         sconto=None,
@@ -243,8 +250,21 @@ def test_update_and_delete_quote_items_recompute_the_parent_total():
         delete=MagicMock(),
     )
 
-    with patch.object(services, "recompute_quote_total") as recompute:
-        assert services.update_quote_item(quote_item=item, quantity=3, discount=10) is item
+    product_query = MagicMock()
+    product_query.first.return_value = SimpleNamespace(id=7, prezzo=999.0, anno="2024")
+    with (
+        patch.object(services.Product.objects, "filter", return_value=product_query),
+        patch.object(services, "recompute_quote_total") as recompute,
+    ):
+        assert (
+            services.update_quote_item(
+                quote_item=item,
+                product_id=7,
+                quantity=3,
+                discount=10,
+            )
+            is item
+        )
         services.delete_quote_item(item)
 
     assert (item.quantita, item.sconto, item.importo) == (3, 10, 81.0)

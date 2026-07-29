@@ -84,7 +84,7 @@ function QuantityCell({
     <td className="py-3 px-4 align-top">
       <EditInput
         type="number"
-        min={1}
+        min={0}
         value={draft.quantity}
         onChange={(value) => {
           if (isAcceptableQuantityInput(value)) onField('quantity', value);
@@ -98,7 +98,21 @@ function DerivedAmountCells({ draft }: { draft: QuoteItemDraft }) {
   return (
     <>
       <td className="py-3 px-4 align-top">
-        <DerivedValue value={formatEuro(draft.price)} />
+        {draft.isHistorical ? (
+          <div className="min-w-[180px] space-y-1">
+            <div>
+              <span className="block font-label-caps text-label-caps uppercase text-outline">
+                Prezzo preventivo
+              </span>
+              <DerivedValue value={formatEuro(draft.price)} />
+            </div>
+            <div className="font-body-sm text-body-sm text-outline">
+              Catalogo attuale: {formatEuro(draft.catalogPrice)}
+            </div>
+          </div>
+        ) : (
+          <DerivedValue value={formatEuro(draft.price)} />
+        )}
       </td>
       <td className="py-3 px-4 align-top">
         <DerivedValue
@@ -120,7 +134,7 @@ function DiscountCell({
     <td className="py-3 px-4 align-top">
       <EditInput
         type="number"
-        min={1}
+        min={0}
         value={draft.discount}
         onChange={(value) => {
           if (isAcceptableDiscountInput(value)) onField('discount', value);
@@ -218,33 +232,53 @@ export function ItemDraftRow({
 }
 
 /**
- * Inline row for editing an existing line: the product and its prezzo are fixed
- * (shown read-only), and only quantity and discount are editable; importo is
- * previewed from the fixed prezzo, mirroring the backend recompute.
+ * Inline row for editing an existing line. Its current selection remains available
+ * even when historical; replacements come from the active catalogue. Price stays
+ * read-only and is previewed as a saved snapshot until the selection changes.
  */
 export function ItemEditRow({
   draft,
   submitting,
   onField,
+  onProductSelect,
   onConfirm,
   onCancel,
+  searchContext,
 }: {
   draft: QuoteItemDraft;
   submitting: boolean;
   onField: (key: keyof QuoteItemDraft, value: string) => void;
+  onProductSelect: (product: Product) => void;
   onConfirm: () => void;
   onCancel: () => void;
+  searchContext: { quoteId: string; itemId: string };
 }) {
-  const canConfirm = !quantityError(draft.quantity) && !submitting;
+  const canConfirm = draft.productId.trim() !== '' && !quantityError(draft.quantity) && !submitting;
   return (
     <tr className="border-b border-surface-variant last:border-0 bg-secondary/5">
-      <td className="py-3 px-4 align-top whitespace-nowrap">
-        <FieldValue value={draft.code} />
+      <td className="py-3 px-4 align-top min-w-[200px]">
+        <ProductSearchField
+          value={draft.code}
+          placeholder="Cerca codice…"
+          inputValueOf={(product) => product.code}
+          onSelect={onProductSelect}
+          className="min-w-[200px]"
+          searchContext={searchContext}
+        />
+        {draft.isHistorical && (
+          <span className="mt-1 inline-flex rounded-full bg-tertiary/10 px-2 py-0.5 font-label-caps text-label-caps uppercase text-tertiary">
+            Storico {draft.productYear}
+          </span>
+        )}
       </td>
-      <td className="py-3 px-4 align-top">
-        <div className="max-w-[360px] whitespace-normal break-words">
-          <FieldValue value={draft.description} />
-        </div>
+      <td className="py-3 px-4 align-top min-w-[260px]">
+        <ProductSearchField
+          value={draft.description}
+          placeholder="Cerca prodotto…"
+          inputValueOf={(product) => product.description}
+          onSelect={onProductSelect}
+          searchContext={searchContext}
+        />
       </td>
       <QuantityCell draft={draft} onField={onField} />
       <DerivedAmountCells draft={draft} />
