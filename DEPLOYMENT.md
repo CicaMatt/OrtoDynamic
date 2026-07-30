@@ -1,15 +1,29 @@
 # OrtoDynamic deployment
 
-The repository supports two independent deployment targets:
+The repository supports three independent deployment targets:
 
-- **Hosted production:** React static files and Django/Passenger on cPanel,
-  connected directly to the existing MySQL database.
+- **Aruba VPS production:** React, Django/Gunicorn, and MySQL in an isolated
+  Coolify Compose stack, with S3-compatible database backups. Its runbook is in
+  [`deployment/aruba/README.md`](deployment/aruba/README.md).
+- **cPanel production alternative:** React static files and Django/Passenger,
+  connected directly to an existing MySQL database.
 - **Temporary demo:** GitHub Pages, Render/Gunicorn, and the existing ngrok MySQL
   tunnel. Its runbook remains in [`scripts/demo/README.md`](scripts/demo/README.md).
 
-The temporary services are not involved in the hosted production request path.
+All targets are additive. Preparing or deploying Aruba does not change the
+Render blueprint, GitHub Pages workflow, ngrok scripts, or cPanel configuration.
 
-## 1. Hosting prerequisites
+## Aruba VPS production
+
+Use [`deployment/aruba/README.md`](deployment/aruba/README.md) for provisioning,
+environment configuration, migration rehearsal, daily backups, domain transfer,
+cutover, and rollback. The checked-in Compose file requires the database image
+and every secret to be supplied through Coolify, keeps MySQL private, and gives
+each public service an independent health check.
+
+The sections below document the cPanel alternative and the temporary demo.
+
+## 1. cPanel hosting prerequisites
 
 Confirm that the cPanel account provides:
 

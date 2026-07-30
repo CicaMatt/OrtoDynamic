@@ -1,0 +1,118 @@
+# Coolify production stack for an Aruba Cloud VPS.
+#
+# The Render/ngrok demo does not use this file. Coolify reads it as an
+# independent Docker Compose deployment and supplies the referenced variables
+# through its environment-variable UI.
+services:
+  mysql:
+    image: ${MYSQL_IMAGE:?Set MYSQL_IMAGE to the MySQL image tested with the source database}
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      TZ: ${DJANGO_TIME_ZONE:-Europe/Rome}
+    expose:
+      - "3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --silent"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    labels:
+      com.ortodynamic.component: mysql
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Set DJANGO_ALLOWED_HOSTS},localhost,127.0.0.1
+      DJANGO_CORS_ALLOWED_ORIGINS: ${DJANGO_CORS_ALLOWED_ORIGINS:?Set DJANGO_CORS_ALLOWED_ORIGINS}
+      DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE:-Europe/Rome}
+      DJANGO_ADMIN_ENABLED: "False"
+      DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+      DJANGO_AUTH_TOKEN_TTL_SECONDS: ${DJANGO_AUTH_TOKEN_TTL_SECONDS:-43200}
+      DJANGO_SECURE_SSL_REDIRECT: "True"
+      DJANGO_SECURE_HSTS_SECONDS: ${DJANGO_SECURE_HSTS_SECONDS:-31536000}
+      DJANGO_DB_ENGINE: django.db.backends.mysql
+      DJANGO_DB_NAME: ${MYSQL_DATABASE:?Set MYSQL_DATABASE}
+      DJANGO_DB_USER: ${MYSQL_USER:?Set MYSQL_USER}
+      DJANGO_DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}
+      DJANGO_DB_HOST: mysql
+      DJANGO_DB_PORT: "3306"
+      DJANGO_DB_CONN_MAX_AGE: ${DJANGO_DB_CONN_MAX_AGE:-60}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+      PORT: "8000"
+    expose:
+      - "8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          request = urllib.request.Request(
+              "http://127.0.0.1:8000/health/ready/",
+              headers={"X-Forwarded-Proto": "https"},
+          );
+          response = urllib.request.urlopen(request, timeout=5);
+          assert response.status == 200
+      start_period: 20s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    labels:
+      com.ortodynamic.component: backend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:?Set VITE_API_BASE_URL}
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
+    restart: unless-stopped
+    init: true
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --output-document=- http://127.0.0.1:8080/healthz | grep -q '^ok'"]
+      start_period: 10s
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    labels:
+      com.ortodynamic.component: frontend
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  mysql_data:
