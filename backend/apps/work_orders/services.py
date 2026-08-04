@@ -1,6 +1,8 @@
 """Work order business operations that go beyond plain field updates."""
+
 from django.utils import timezone
 
+from apps.doctors.models import Doctor
 from apps.products.models import Product
 from apps.quotes.models import QuoteItem
 from apps.work_orders.models import WorkOrder, WorkOrderItem
@@ -8,9 +10,7 @@ from apps.work_orders.models import WorkOrder, WorkOrderItem
 # Quote target states that spawn a work order. Both variants create the work order
 # in the literal "IN LAVORAZIONE" state — the "senza autorizzazione" distinction is
 # recorded only on the quote, never on the work order.
-WORK_ORDER_TRIGGER_STATES = frozenset(
-    {"IN LAVORAZIONE", "IN LAVORAZIONE SENZA AUTORIZZAZIONE"}
-)
+WORK_ORDER_TRIGGER_STATES = frozenset({"IN LAVORAZIONE", "IN LAVORAZIONE SENZA AUTORIZZAZIONE"})
 _WORK_ORDER_STATE = "IN LAVORAZIONE"
 
 
@@ -24,6 +24,7 @@ def create_work_order_from_quote(quote):
     Create the work order (`lavorazioni`) and its lines (`item_lavorazioni`) from a
     quote's items.
 
+    The work order copies the quote's doctor name into `firma_medico` when available.
     Each work-order line copies its quote line's amount/quantity and the product's
     code/description. Idempotent: if a work order already exists for the quote it is
     returned unchanged, so re-triggering the transition never creates a duplicate.
@@ -40,11 +41,17 @@ def create_work_order_from_quote(quote):
         return existing
 
     today = timezone.localdate()
+    doctor_id = getattr(quote, "id_medico", None)
+    doctor = Doctor.objects.filter(pk=doctor_id).first() if doctor_id else None
+    doctor_name = (
+        f"{doctor.nome or ''} {doctor.cognome or ''}".strip() if doctor is not None else None
+    )
     work_order = WorkOrder.objects.create(
         id_preventivo=quote.id,
         id_cliente=quote.id_cliente,
         stato=_WORK_ORDER_STATE,
         data_creazione_lavorazione=today,
+        firma_medico=doctor_name,
     )
     try:
         items = list(QuoteItem.objects.filter(id_preventivo=quote.id).order_by("id"))

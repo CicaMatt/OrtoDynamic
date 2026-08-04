@@ -65,7 +65,7 @@ const trialFields: WorkOrderField[] = [
   { label: 'Verifica Cliente', key: 'clientCheck', type: 'select', options: checkOptions },
   { label: 'Esito Verifica', key: 'clientCheckOutcome', type: 'select', options: outcomeOptions },
   { label: 'Data Verifica Cliente', key: 'clientCheckDate', type: 'date' },
-  { label: 'Firma Medico', key: 'doctorSignature' },
+  { label: 'Firma Medico', key: 'doctorSignature', readonly: true },
 ];
 
 const serviceFields: WorkOrderField[] = [

@@ -13,7 +13,6 @@ const workOrderTextKeys = [
   'clientTrialOutcome',
   'clientCheck',
   'clientCheckOutcome',
-  'doctorSignature',
   'technicalService',
   'serviceStatus',
   'complaintReason',

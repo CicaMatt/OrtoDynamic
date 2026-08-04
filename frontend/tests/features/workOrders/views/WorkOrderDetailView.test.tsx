@@ -129,6 +129,10 @@ describe('WorkOrderDetailView', () => {
 
     expect(screen.queryByDisplayValue('Q-1')).toBeNull();
     expect(screen.queryByDisplayValue('C-1')).toBeNull();
+    const doctorSignatureField = screen.getByText('Firma Medico').closest('div');
+    if (!doctorSignatureField) throw new Error('Campo Firma Medico non trovato.');
+    expect(within(doctorSignatureField).queryByRole('textbox')).toBeNull();
+    expect(within(doctorSignatureField).getByText('Dr. Bianchi')).not.toBeNull();
     fireEvent.change(screen.getByDisplayValue('Vecchia nota tecnica'), {
       target: { value: 'Nota tecnica aggiornata' },
     });

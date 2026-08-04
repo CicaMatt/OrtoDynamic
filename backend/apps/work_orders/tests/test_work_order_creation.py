@@ -62,6 +62,35 @@ def test_creation_reuses_an_existing_work_order_without_writing_rows():
     create_item.assert_not_called()
 
 
+def test_creation_copies_the_quote_doctor_name_to_the_signature_field():
+    quote = SimpleNamespace(id=500, id_cliente=21, id_medico=31)
+    doctor = SimpleNamespace(nome="Luca", cognome="Bianchi")
+    doctor_query = MagicMock()
+    doctor_query.first.return_value = doctor
+    work_order = SimpleNamespace(id=900)
+    item_query = MagicMock()
+    item_query.order_by.return_value = []
+
+    with (
+        patch.object(services, "work_order_for_quote", return_value=None),
+        patch.object(services.timezone, "localdate", return_value="2026-07-22"),
+        patch.object(services.Doctor.objects, "filter", return_value=doctor_query) as doctor_filter,
+        patch.object(services.WorkOrder.objects, "create", return_value=work_order) as create_order,
+        patch.object(services.QuoteItem.objects, "filter", return_value=item_query),
+        patch.object(services.Product.objects, "filter", return_value=[]),
+    ):
+        assert services.create_work_order_from_quote(quote) is work_order
+
+    doctor_filter.assert_called_once_with(pk=31)
+    create_order.assert_called_once_with(
+        id_preventivo=500,
+        id_cliente=21,
+        stato="IN LAVORAZIONE",
+        data_creazione_lavorazione="2026-07-22",
+        firma_medico="Luca Bianchi",
+    )
+
+
 def test_creation_builds_lines_with_and_without_catalogue_products():
     quote = SimpleNamespace(id=500, id_cliente=21)
     work_order = SimpleNamespace(id=900)
@@ -98,6 +127,7 @@ def test_creation_builds_lines_with_and_without_catalogue_products():
         id_cliente=21,
         stato="IN LAVORAZIONE",
         data_creazione_lavorazione="2026-07-22",
+        firma_medico=None,
     )
     item_filter.assert_called_once_with(id_preventivo=500)
     item_query.order_by.assert_called_once_with("id")

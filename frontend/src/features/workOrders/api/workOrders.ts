@@ -13,7 +13,6 @@ export type WorkOrderFieldsPayload = {
   clientCheck: string;
   clientCheckOutcome: string;
   clientCheckDate: string | null;
-  doctorSignature: string;
   technicalService: string;
   serviceStatus: string;
   complaintReason: string;

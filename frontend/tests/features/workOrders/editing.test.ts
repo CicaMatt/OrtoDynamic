@@ -11,6 +11,7 @@ describe('work-order editing payloads', () => {
       toWorkOrderUpdatePayload({
         quoteId: '500',
         clientId: '',
+        doctorSignature: 'Non modificabile',
         deliveryDate: '',
         technicalNotes: 'Controllare',
       }),
